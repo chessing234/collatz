@@ -165,6 +165,27 @@ word. The independent audit checks the reduced layers against the full
 enumeration and tests all 4,096 triples with `1 ≤ v,W ≤ 4` by exact
 interval intersection.
 
+## The universal crossing criterion is equivalent to Collatz
+
+Suppose an odd start `n > 1` reaches 1. There is a genuine excursion
+prefix landing at 1. Append copies of the excursion from 1 back to 1.
+With both coordinates fixed at the lower endpoint `n`, each copy
+multiplies the product scaled by `A/B` by `3n/(4n−1) < 1`. Enough
+copies make the scaled product less than one. The optimal shift
+schedule achieves at most the constant schedule's product.
+
+[Lean](../Collatz/Strategy/ExcursionCrossingEquivalence.lean) checks this
+implication and the converse via descent induction. The universal
+criterion asks for some finite crossing word from each `n > 1`
+congruent to three modulo four. Requiring certification at the
+*first* coefficient crossing is stronger. It would also give descent
+there, the phenomenon studied by
+[Garner](https://www.ams.org/journals/proc/1981-082-01/S0002-9939-1981-0603593-2/).
+
+An exact audit of the first 99,999 odd starts greater than one found
+two constant-floor misses at the first excursion coefficient crossing.
+The local search certified both 27 and 63.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
