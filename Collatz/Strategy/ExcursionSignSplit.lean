@@ -11,7 +11,7 @@ coordinates are held fixed.
 
 namespace Collatz.ExcursionAnchor
 
-private theorem v_ge_two_of_negative_drift {n v W : Nat}
+theorem v_ge_two_of_negative_drift {n v W : Nat}
     (hn : 0 < n) (hv : 0 < v) (hW : 0 < W)
     (hd : (Edge.ofRun n v W).drift < 0) : 2 ≤ v := by
   apply Classical.byContradiction
@@ -107,7 +107,7 @@ theorem costOn_append_at (left right : List Edge) (before after : List Rat) (mid
         simp only [List.cons_append, costOn] at h ⊢
         rw [h, Rat.mul_assoc]
 
-private theorem coordinates_cut (xs : List Rat) (k m : Nat) (hlen : xs.length = k + (m + 1)) :
+theorem coordinates_cut (xs : List Rat) (k m : Nat) (hlen : xs.length = k + (m + 1)) :
     ∃ before mid after, xs = before ++ mid :: after ∧ before.length = k ∧ after.length = m := by
   let before := xs.take k
   have hbefore : before.length = k := by simp [before, hlen]
@@ -119,7 +119,7 @@ private theorem coordinates_cut (xs : List Rat) (k m : Nat) (hlen : xs.length = 
     refine ⟨before, p, rest, ?_, hbefore, hrest⟩
     rw [← he, List.take_append_drop]
 
-private theorem anchorMinimum_le_coordinates {n : Rat} {word : List Edge} {xs : List Rat}
+theorem anchorMinimum_le_coordinates {n : Rat} {word : List Edge} {xs : List Rat}
     (hn : 0 < n) (hlen : xs.length = word.length + 1)
     (hband : ∀ q ∈ xs, n ≤ q ∧ q ≤ n + 1) :
     ∃ best, anchorMinimum n word = some best ∧ best ≤ costOn word xs := by

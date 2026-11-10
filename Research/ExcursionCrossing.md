@@ -249,6 +249,38 @@ formula for the exact optimum and both strict outcomes. The first
 two excursions from 7 prefer the lower endpoint, while the second
 and third excursions from 27 prefer the upper.
 
+## One coordinate controls a whole drift reversal
+
+The quotient of a factor by its source shift decreases as that
+source increases. The product of a factor with its target shift
+increases as that target increases. Together with ordinary shift
+monotonicity, these inequalities give two optimal moves with the
+outer coordinates fixed.
+
+- After a nonnegative-drift edge, choose the greater of the floor
+  and its transport of the previous coordinate.
+- Before a negative-drift edge, choose the lesser of the ceiling
+  and its inverse transport of the next coordinate.
+
+Starting from the common coordinate, apply the second rule backwards
+through the negative block and the first forwards through the
+nonnegative block. These schedules attain the exact optimum for that
+common coordinate. The backward schedule reaches the ceiling by its
+second move, and the forward schedule reaches the floor by its third.
+Every later coordinate stays at the corresponding endpoint. At most
+five excursions around the reversal contribute a shift-dependent
+factor.
+
+[Lean](../Collatz/Strategy/ExcursionGreedyShifts.lean) proves the two
+greedy optima and proves that testing the local anchors at the
+common boundary suffices. At a genuine reversal there are at most
+five candidates. The last negative edge has odd-run length at least
+two and therefore cannot end a two-edge forward zero-offset block.
+The crossing from 199 attains five distinct candidates. On the
+crossing from 543 the unique best shift is `7/9`, obtained by
+transporting backwards over two excursions. The crossing from 127
+has exact product `1343488/1331883`.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16

@@ -62,7 +62,7 @@ private theorem numerator_le {v : Nat} (k : Nat) (hk : k ≤ v) :
       Nat.mul_le_mul_left _ (Collatz.Arith.two_pow_le_three_pow m)
     _ = _ := by ac_rfl
 
-private theorem input_ge_third {n v W : Nat} (hv : 0 < v) {p : Rat}
+theorem input_ge_third {n v W : Nat} (hv : 0 < v) {p : Rat}
     (hq : (n : Rat) ≤ (Edge.ofRun n v W).transport p) :
     (n : Rat) + 1 / 3 ≤ p := by
   let a : Rat := ((3 : Nat) ^ v : Nat)
@@ -186,7 +186,7 @@ theorem two_zero_links {n v W v' W' : Nat} (hW : 0 < W)
   rw [hvone]
   exact short_output_eighth hW' hhalf
 
-private theorem transport_below {n v W : Nat} (hv : 0 < v) {p : Rat} (hp : p ≤ (n : Rat)) :
+theorem transport_below {n v W : Nat} (hv : 0 < v) {p : Rat} (hp : p ≤ (n : Rat)) :
     (Edge.ofRun n v W).transport p < (n : Rat) := by
   let a : Rat := ((3 : Nat) ^ v : Nat)
   let b : Rat := ((2 : Nat) ^ (v + W) : Nat)
@@ -450,6 +450,40 @@ theorem localLayer_length (n : Rat) (priorRev after : List Edge) :
     | nil => simp [backwardLocal]
     | cons _ rest => cases rest <;> simp [backwardLocal]
   simp only [List.length_append, List.length_cons, List.length_nil]
+  omega
+
+/-- A recent odd run of length at least two excludes the second
+forward candidate, so the boundary has at most five shifts. -/
+theorem localLayer_length_of_recent_ge_two {n v W : Nat} {priorRev after : List Edge}
+    (hv : 2 ≤ v) (hW : 0 < W) (ha : ExcursionAlphabet n priorRev) :
+    (localLayer n (Edge.ofRun n v W :: priorRev) after).length ≤ 5 := by
+  let inBand := fun p : Rat => decide ((n : Rat) ≤ p ∧ p ≤ (n : Rat) + 1)
+  have hright : (backwardLocal n after).length ≤ 2 := by
+    cases after with
+    | nil => simp [backwardLocal]
+    | cons _ rest => cases rest <;> simp [backwardLocal]
+  have hleft : ((forwardLocal n (Edge.ofRun n v W :: priorRev)).filter inBand).length ≤ 1 := by
+    cases priorRev with
+    | nil => exact List.length_filter_le ..
+    | cons earlier tail =>
+      obtain ⟨u, V, _, hV, rfl⟩ := ha earlier List.mem_cons_self
+      let e := Edge.ofRun n v W
+      let f := Edge.ofRun n u V
+      have hbad : inBand (e.transport (f.transport ((n : Rat) + 1))) = false := by
+        apply decide_eq_false
+        intro h
+        have hv1 := (two_zero_links hV (by omega : 0 < v) hW Rat.le_refl h.1).2.1
+        omega
+      change ([e.transport ((n : Rat) + 1), e.transport (f.transport ((n : Rat) + 1))].filter
+        inBand).length ≤ 1
+      simp [List.filter_cons, hbad]
+      split <;> simp
+  change ((([(n : Rat), (n : Rat) + 1] ++
+    (forwardLocal n (Edge.ofRun n v W :: priorRev) ++ backwardLocal n after)).filter inBand).length) ≤ 5
+  rw [List.filter_append, List.filter_append, List.length_append, List.length_append]
+  have hends := List.length_filter_le (p := inBand) (l := [(n : Rat), (n : Rat) + 1])
+  have htail := List.length_filter_le (p := inBand) (l := backwardLocal n after)
+  simp only [List.length_cons, List.length_nil] at hends
   omega
 
 /-- On an excursion word, the bounded local layer contains exactly the
