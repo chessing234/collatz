@@ -38,11 +38,6 @@ namespace Collatz.ExcursionBudget
 
 open Collatz.ExcursionPowerGap Collatz.FirstLightDescent
 
-private theorem weight_ones (rs : List Run) : weight (fun _ => 1) rs = rs.length := by
-  induction rs with
-  | nil => rfl
-  | cons run rs ih => simp only [weight, List.length_cons, ih, Nat.add_comm]
-
 /-- Every failed first excursion crossing with fewer than
 6,586,818,670 odd steps starts below 6.4 quintillion. -/
 theorem Trace.first_crossing_failure_source_lt {n e : Nat} {rs : List Run}
@@ -59,11 +54,7 @@ theorem Trace.first_crossing_failure_source_lt {n e : Nat} {rs : List Run}
     apply Nat.le_of_add_le_add_left (a := A * n)
     rw [← Nat.add_mul, hsum, h.affine]
     exact Nat.mul_le_mul_left _ hkeep
-  have hoffset : offset rs ≤ A * rs.length := by
-    have hcharge (v : Nat) : 1 * (3 ^ v - 2 ^ v) ≤ 1 * 3 ^ v := by
-      exact Nat.mul_le_mul_left _ (Nat.sub_le ..)
-    simpa only [Nat.one_mul, weight_ones] using
-      offset_le_weight (charge := fun _ => 1) hcharge hproper
+  have hoffset : offset rs ≤ A * rs.length := offset_le_length_mul_coefficient hproper
   have hgap : a * A ≤ (397573379 * (9448000000 + a)) * D :=
     wide_odd_weight_le_gap (h.odd_count_pos_of_crossing hcross) hbound hcross
   have hsize : n ≤ 397573379 * (9448000000 + a) := by
