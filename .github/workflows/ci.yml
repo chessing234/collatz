@@ -113,3 +113,8 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_alphabet.lean
           python3 scripts/audit_excursion_alphabet.py
+
+      - name: Check reciprocal products for sparse excursions
+        run: |
+          lake env lean scripts/audit_excursion_sparse_product.lean
+          python3 scripts/audit_excursion_sparse_product.py
