@@ -78,21 +78,24 @@ private theorem upper_scale_small {a : Nat} (ha : 17 ≤ a) :
     rw [hpow]
     omega
 
-private theorem lower_bracket {a b : Nat} (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b) :
-    1054 * a < b * 665 := by
-  have hbase : (2 : Nat) ^ 1054 < 3 ^ 665 := by decide +kernel
+private theorem lower_cross_product {a b p q : Nat} (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b)
+    (hbase : 2 ^ p < 3 ^ q) : p * a < b * q := by
   apply Nat.lt_of_not_ge
   intro h
-  have hpower : (2 ^ b) ^ 665 ≤ ((2 : Nat) ^ 1054) ^ a := by
+  have hpower : (2 ^ b) ^ q ≤ ((2 : Nat) ^ p) ^ a := by
     rw [← Nat.pow_mul, ← Nat.pow_mul]
     exact Nat.pow_le_pow_right (by decide) h
   have hstrict := Nat.pow_lt_pow_left hbase (Nat.ne_of_gt ha)
-  have hcompare : (3 ^ a) ^ 665 < (2 ^ b) ^ 665 :=
-    Nat.pow_lt_pow_left hAB (by decide)
-  have he : ((3 : Nat) ^ 665) ^ a = (3 ^ a) ^ 665 := by
-    rw [← Nat.pow_mul, ← Nat.pow_mul, Nat.mul_comm 665 a]
+  have hcompare : (3 ^ a) ^ q ≤ (2 ^ b) ^ q :=
+    Nat.pow_le_pow_left (Nat.le_of_lt hAB) q
+  have he : ((3 : Nat) ^ q) ^ a = (3 ^ a) ^ q := by
+    rw [← Nat.pow_mul, ← Nat.pow_mul, Nat.mul_comm q a]
   rw [he] at hstrict
-  exact (Nat.not_le_of_gt (Nat.lt_trans hstrict hcompare)) hpower
+  exact (Nat.not_le_of_gt (Nat.lt_of_lt_of_le hstrict hcompare)) hpower
+
+private theorem lower_bracket {a b : Nat} (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b) :
+    1054 * a < b * 665 :=
+  lower_cross_product ha hAB (by decide +kernel)
 
 private theorem upper_cross_product {a b p q K : Nat} (ha : 0 < a)
     (hAB : 3 ^ a < 2 ^ b) (hbase : 3 ^ q ≤ 2 ^ p)
@@ -201,6 +204,87 @@ theorem gap_gt_half_odd_exponent_of_tail (tail : LargeExponentGap)
   by_cases hb : b < 5000
   · exact gap_gt_half_odd_exponent_of_time_lt ha hb hAB
   · exact tail a b ha (by omega) hAB
+
+private theorem bernoulli_scaled {X Y K : Nat} (hXY : X ≤ Y)
+    (hscale : (K + 1) * X ≤ K * Y) (a : Nat) :
+    (K + a) * X ^ a ≤ K * Y ^ a := by
+  induction a with
+  | zero => simp
+  | succ a ih =>
+    have hlin : (K + (a + 1)) * X ≤ (K + a) * Y := by
+      have h := Nat.add_le_add hscale (Nat.mul_le_mul_left a hXY)
+      simpa only [← Nat.add_mul, Nat.add_assoc, Nat.add_comm 1 a] using h
+    calc
+      _ = X ^ a * ((K + (a + 1)) * X) := by rw [Nat.pow_succ]; ac_rfl
+      _ ≤ X ^ a * ((K + a) * Y) := Nat.mul_le_mul_left _ hlin
+      _ = ((K + a) * X ^ a) * Y := by ac_rfl
+      _ ≤ (K * Y ^ a) * Y := Nat.mul_le_mul_right Y ih
+      _ = _ := by rw [Nat.pow_succ, Nat.mul_assoc]
+
+private theorem not_between_neighbors {a b p q r s : Nat} (hdet : q * r = s * p + 1)
+    (hbound : a < q + s) (hleft : p * a < b * q) : r * a ≤ b * s := by
+  apply Nat.le_of_not_gt
+  intro hright
+  let u := b * q - p * a
+  let v := r * a - b * s
+  have hu : 0 < u := Nat.sub_pos_iff_lt.mpr hleft
+  have hv : 0 < v := Nat.sub_pos_iff_lt.mpr hright
+  have hleft' : u + p * a = b * q := Nat.sub_add_cancel (Nat.le_of_lt hleft)
+  have hright' : v + b * s = r * a := Nat.sub_add_cancel (Nat.le_of_lt hright)
+  have hsu : s * u + s * (p * a) = s * (b * q) := by rw [← Nat.mul_add, hleft']
+  have hqv : q * v + s * (b * q) = q * (r * a) := by
+    rw [show s * (b * q) = q * (b * s) by ac_rfl, ← Nat.mul_add, hright']
+  have hprod : q * (r * a) = s * (p * a) + a := by
+    rw [← Nat.mul_assoc, hdet, Nat.add_mul, Nat.one_mul, Nat.mul_assoc]
+  have hmin := Nat.add_le_add (Nat.le_mul_of_pos_right s hu) (Nat.le_mul_of_pos_right q hv)
+  omega
+
+/-- A determinant-one bracket gives a uniform, explicit bound on
+the reciprocal relative gap multiplied by the odd exponent. -/
+theorem odd_weight_le_gap_of_bracket {a b p q r s K : Nat}
+    (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b) (hbound : a < q + s)
+    (hdet : q * r = s * p + 1) (hleft : 2 ^ p < 3 ^ q)
+    (hK : 0 < K) (hscale : (K + 1) * 3 ^ s ≤ K * 2 ^ r) :
+    a * 3 ^ a ≤ (s * (K + a)) * (2 ^ b - 3 ^ a) := by
+  have hupper : 3 ^ s ≤ 2 ^ r := by
+    apply Nat.le_of_mul_le_mul_left _ hK
+    exact Nat.le_trans (Nat.mul_le_mul_right _ (Nat.le_succ K)) hscale
+  let A := 3 ^ a
+  let B := 2 ^ b
+  let D := B - A
+  have hpos : 0 < A := Nat.pow_pos (by decide)
+  have hright := not_between_neighbors hdet hbound (lower_cross_product ha hAB hleft)
+  have hpow : (K + a) * A ^ s ≤ K * B ^ s := by
+    calc
+      _ = (K + a) * (3 ^ s) ^ a := by
+        dsimp [A]
+        rw [← Nat.pow_mul, ← Nat.pow_mul, Nat.mul_comm a s]
+      _ ≤ K * (2 ^ r) ^ a := bernoulli_scaled hupper hscale a
+      _ ≤ _ := Nat.mul_le_mul_left K (by
+        dsimp [B]
+        rw [← Nat.pow_mul, ← Nat.pow_mul]
+        exact Nat.pow_le_pow_right (by decide) hright)
+  change a * A ≤ (s * (K + a)) * D
+  rw [Nat.mul_right_comm s (K + a) D, Nat.mul_comm (s * D)]
+  by_cases hD : s * D ≤ A
+  · have hdiff : (A - s * D) * B ^ s ≤ A ^ (s + 1) := by
+      have hraw := scaled_power_gap (Nat.le_of_lt hAB) s
+      have hsum : (A - s * D) * B ^ s + (s * D) * B ^ s = A * B ^ s := by
+        rw [← Nat.add_mul, Nat.sub_add_cancel hD]
+      change A * B ^ s ≤ A ^ (s + 1) + (s * D) * B ^ s at hraw
+      omega
+    have hprod : ((K + a) * (A - s * D)) * A ^ s ≤ (K * A) * A ^ s := by
+      calc
+        _ = (A - s * D) * ((K + a) * A ^ s) := by ac_rfl
+        _ ≤ (A - s * D) * (K * B ^ s) := Nat.mul_le_mul_left _ hpow
+        _ = K * ((A - s * D) * B ^ s) := by ac_rfl
+        _ ≤ K * A ^ (s + 1) := Nat.mul_le_mul_left _ hdiff
+        _ = _ := by rw [Nat.pow_succ]; ac_rfl
+    have hcancel := Nat.le_of_mul_le_mul_right hprod (Nat.pow_pos hpos)
+    have hsum : (K + a) * (A - s * D) + (K + a) * (s * D) = K * A + a * A := by
+      rw [← Nat.mul_add, Nat.sub_add_cancel hD, Nat.add_mul]
+    omega
+  · exact Nat.mul_le_mul (Nat.le_add_left _ _) (Nat.le_of_not_ge hD)
 
 private def endpointGapCheck : Bool :=
   (List.range 23).all fun a => (List.range 46).all fun b =>

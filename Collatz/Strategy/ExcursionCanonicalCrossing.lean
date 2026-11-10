@@ -35,7 +35,8 @@ theorem Trace.endpoint_drop_of_coefficient_and_gap {n e : Nat} {rs : List Run}
       refine Nat.le_trans hgap (Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ ?_))
       exact Nat.pow_le_pow_right (by decide : 0 < 2) hrun.one_le_W
 
-private theorem Trace.odd_count_pos_of_crossing {n e : Nat} {rs : List Run}
+/-- A genuine coefficient crossing uses at least one odd step. -/
+theorem Trace.odd_count_pos_of_crossing {n e : Nat} {rs : List Run}
     (h : Trace n e rs) (hcoef : 3 ^ oddCount rs < 2 ^ time rs) : 0 < oddCount rs := by
   cases h with
   | nil => simp [oddCount, time] at hcoef
