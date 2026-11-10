@@ -354,6 +354,46 @@ the spacing, the bound on the index, and descent from 139 along
 the first crossing word from 11. These two starts are one source
 period apart, with three odd steps in six accelerated steps.
 
+## A power-gap bracket removes larger realizations
+
+Write `A=3^a` and `B=2^b>A`. When `17≤a<3631`, a putative
+gap `2(B−A)≤a` forces
+
+```text
+1054/665 < b/a < 4701/2966.
+```
+
+The lower comparison follows from `2^1054<3^665`. For the upper,
+`2049·3^2966≤2048·2^4701`, while the small gap and
+`2049·2966·a<3^a` imply
+`2048·(B/A)^2966<2049`. The latter inequality follows from an
+integer binomial bound. The bracket has determinant one, so any
+integer fraction strictly between its endpoints has denominator
+at least `665+2966=3631`. Below 17 a small finite check suffices.
+[Lean](../Collatz/Strategy/ExcursionPowerGap.lean) checks all
+these integer steps and gives descent on all nonminimal genuine
+realizations with fewer than 3,631 odd steps.
+
+For the remaining exponents, [Laurent's positive-real bound](https://www.impan.pl/shop/en/publication/transaction/download/product/82485),
+Corollary 2 with table parameter 10, gives the following external
+analytic argument. Set `Λ=b log 2−a log 3>0`. Use logarithmic
+height parameters 1 and `log 3` and `b'<2b`. The bound gives
+`log Λ ≥ −25.2 log 3·max(10,log(2b)+0.38)^2`. When `b≥5000`,
+the expression
+`b log 2 − 25.2 log 3·max(10,log(2b)+0.38)^2 − log b`
+is positive. At 5000 it exceeds
+`5000·0.69−25.2·1.1·11²−10`. On the variable branch its
+derivative is positive since `(log(2b)+0.38)/b` decreases there
+and is at most `11/5000`. On the constant branch the derivative
+is `log 2−1/b`. If `B<2A`, the inequality
+`Λ<(B−A)/A` gives `2(B−A)>BΛ>b>a`. If `B≥2A`,
+the gap is at least `A`, which is greater than `a`.
+The case `b<5000` lies in the Lean range because `3a<2b`.
+
+The Lean theorem takes this analytic tail as a named hypothesis.
+With that input, only the least realization of each contracting
+word can still need a descent argument.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
