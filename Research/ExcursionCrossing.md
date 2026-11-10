@@ -77,6 +77,32 @@ the minimum over schedules with exact rational arithmetic. In 9,999 odd
 starts below 20,000, switching certified every first excursion coefficient
 crossing. Each fixed coordinate missed the crossings from 27 and 63.
 
+## Rational shift grids
+
+The coordinates can use any shifts `s/d` and `t/d` in `[0,1]`.
+Set `P=dn+s`, `Q=dn+t`, and
+`E=max(0,a(d−s)+bt−d·2^v)`. The scaled departure and arrival factors are
+`(aP+E)/(aQ)` and `bP/(bQ−E)`. Their cross-product difference is
+`E(bQ−aP−E)`. When `E>0`, the sign is the sign of
+`bn+2^v−a(n+1)`, independent of both shifts. When `E=0`, the factors
+agree. If the floor test chooses arrival, its denominator is positive.
+
+[Lean](../Collatz/Strategy/ExcursionShiftGrid.lean) checks this reduction,
+the grid computation, and the embedding of each schedule into every
+integer refinement of its grid. For 63 it verifies an eighth-unit factor
+product below `1.0776` by accelerated time 54. The
+[independent audit](../scripts/audit_excursion_shift_grid.py) compares
+the shared rule with per-edge rational minimization and reproduces the
+tighter bound. On the first 9,999 odd starts greater than one, the
+half-unit grid certified each first excursion coefficient crossing.
+
+The permitted shifts can also change with the boundary. On the
+three-excursion trace from 127 to 77, the three shifts `0, 1/3, 1`
+produce a strictly better bound than the entire sixteenth-unit grid.
+The schedule using `1/3` before the second excursion and zero after it
+makes that transition's affine offset zero. Lean verifies the strict
+comparison with every output entry of the uniform table.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
@@ -102,6 +128,10 @@ The rounded budget certified the first excursion coefficient crossing
 - Bernstein and Lagarias conjugated the 2-adic Collatz map to the shift.
   This gives a precise parity encoding for finite coefficient profiles.
   [Bernstein and Lagarias (1996)](https://websites.umich.edu/~lagarias/doc/bernstein.pdf)
+- Rozier and Terracol separate the affine coefficient and remainder
+  to study finite paths that return above their starting value despite
+  coefficient contraction.
+  [Rozier and Terracol (2026)](https://doi.org/10.1016/j.disc.2026.115167)
 - Tao proved that for every function `f(n) → ∞`, the orbit minimum is below
   `f(n)` for logarithmic-density-almost-all starts.
   [Tao (2022)](https://doi.org/10.1017/fmp.2022.8)

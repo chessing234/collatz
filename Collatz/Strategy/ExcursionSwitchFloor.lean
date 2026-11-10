@@ -18,14 +18,18 @@ coordinate `x+s` to `y+t`. The actual offset can be negative. -/
 def shiftOffset (v W s t : Nat) : Nat :=
   3 ^ v * (1 - s) + 2 ^ (v + W) * t - 2 ^ v
 
+/-- Affine excursion identity with the source shifted by one. -/
+theorem affine_source_succ {x y v u W : Nat} (h : IsExcursion x v u W y) :
+    2 ^ (v + W) * y + 2 ^ v = 3 ^ v * (x + 1) := calc
+  _ = 2 ^ v * (2 ^ W * y + 1) := by
+    rw [Nat.pow_add, Nat.mul_assoc, Nat.mul_add, Nat.mul_one]
+  _ = 2 ^ v * (3 ^ v * u) := by rw [h.2.2.2.2.2.2]
+  _ = _ := by rw [h.2.2.2.2.2.1]; ac_rfl
+
 private theorem shifted_affine_le {x y v u W s t : Nat}
     (h : IsExcursion x v u W y) (hs : s ≤ 1) :
     2 ^ (v + W) * (y + t) ≤ 3 ^ v * (x + s) + shiftOffset v W s t := by
-  have hraw : 2 ^ (v + W) * y + 2 ^ v = 3 ^ v * (x + 1) := calc
-    _ = 2 ^ v * (2 ^ W * y + 1) := by
-      rw [Nat.pow_add, Nat.mul_assoc, Nat.mul_add, Nat.mul_one]
-    _ = 2 ^ v * (3 ^ v * u) := by rw [h.2.2.2.2.2.2]
-    _ = _ := by rw [h.2.2.2.2.2.1]; ac_rfl
+  have hraw := affine_source_succ h
   have hsplit : 3 ^ v * (x + 1) = 3 ^ v * (x + s) + 3 ^ v * (1 - s) := by
     rw [← Nat.mul_add, show x + s + (1 - s) = x + 1 by omega]
   rw [hsplit] at hraw
@@ -41,42 +45,57 @@ inductive Factor (n v W s t : Nat) : Nat → Nat → Prop where
       Factor n v W s t
         (2 ^ (v + W) * (n + s)) (2 ^ (v + W) * (n + t) - shiftOffset v W s t)
 
+/-- Departure factor for an affine upper bound, with normalized source floor
+`p` and target floor `q`. -/
+theorem departure_factor_bound {a b p q x y e : Nat}
+    (hlocal : b * y ≤ a * x + e) (hx : p ≤ x) :
+    b * (a * q) * p * y ≤ a * (a * p + e) * q * x := by
+  have hbound : b * y * p ≤ (a * p + e) * x := calc
+    _ ≤ (a * x + e) * p := Nat.mul_le_mul_right _ hlocal
+    _ = a * p * x + e * p := by rw [Nat.add_mul]; congr 1; ac_rfl
+    _ ≤ a * p * x + e * x := Nat.add_le_add_left (Nat.mul_le_mul_left e hx) _
+    _ = _ := by rw [Nat.add_mul]
+  simpa only [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
+    Nat.mul_le_mul_left (a * q) hbound
+
+/-- Arrival factor for an affine upper bound. Its denominator is positive
+when the target floor, scaled by `b`, exceeds the offset. -/
+theorem arrival_factor_bound {a b p q x y e : Nat}
+    (hlocal : b * y ≤ a * x + e) (hy : q ≤ y) (hpos : e < b * q) :
+    b * (b * q - e) * p * y ≤ a * (b * p) * q * x := by
+  let d := b * q - e
+  have hsum : d + e = b * q := Nat.sub_add_cancel (Nat.le_of_lt hpos)
+  have hbound : d * y + e * y ≤ a * x * q + e * q := calc
+    _ = b * y * q := by rw [← Nat.add_mul, hsum]; ac_rfl
+    _ ≤ (a * x + e) * q := Nat.mul_le_mul_right _ hlocal
+    _ = _ := by rw [Nat.add_mul]
+  have hcharge := Nat.mul_le_mul_left e hy
+  have hsimple : d * y ≤ a * x * q := by omega
+  simpa only [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
+    Nat.mul_le_mul_left (b * p) hsimple
+
 /-- Either factor bounds the inverse coefficient times the ratio of
 normalized states, provided both states are above the start floor. -/
 theorem Factor.sound {n x y v u W s t num den : Nat} (f : Factor n v W s t num den)
     (h : IsExcursion x v u W y) (hs : s ≤ 1) (hx : n ≤ x) (hy : n ≤ y) :
     2 ^ (v + W) * den * (n + s) * (y + t) ≤ 3 ^ v * num * (n + t) * (x + s) := by
-  let A := 3 ^ v
-  let B := 2 ^ (v + W)
-  let E := shiftOffset v W s t
-  have hlocal : B * (y + t) ≤ A * (x + s) + E := shifted_affine_le h hs
+  have hlocal := shifted_affine_le h hs (t := t)
   cases f with
-  | departure =>
-    have hbound : B * (y + t) * (n + s) ≤ (A * (n + s) + E) * (x + s) := calc
-      _ ≤ (A * (x + s) + E) * (n + s) := Nat.mul_le_mul_right _ hlocal
-      _ = A * (n + s) * (x + s) + E * (n + s) := by
-        rw [Nat.add_mul]
-        congr 1
-        ac_rfl
-      _ ≤ A * (n + s) * (x + s) + E * (x + s) :=
-        Nat.add_le_add_left (Nat.mul_le_mul_left E (Nat.add_le_add_right hx s)) _
-      _ = _ := by rw [Nat.add_mul]
-    change B * (A * (n + t)) * (n + s) * (y + t) ≤
-      A * (A * (n + s) + E) * (n + t) * (x + s)
-    simpa only [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
-      Nat.mul_le_mul_left (A * (n + t)) hbound
-  | arrival hpos =>
-    let D := B * (n + t) - E
-    have hsum : D + E = B * (n + t) := Nat.sub_add_cancel (Nat.le_of_lt hpos)
-    have hbound : D * (y + t) + E * (y + t) ≤ A * (x + s) * (n + t) + E * (n + t) := calc
-      _ = B * (y + t) * (n + t) := by rw [← Nat.add_mul, hsum]; ac_rfl
-      _ ≤ (A * (x + s) + E) * (n + t) := Nat.mul_le_mul_right _ hlocal
-      _ = _ := by rw [Nat.add_mul]
-    have hcharge := Nat.mul_le_mul_left E (Nat.add_le_add_right hy t)
-    have hsimple : D * (y + t) ≤ A * (x + s) * (n + t) := by omega
-    change B * D * (n + s) * (y + t) ≤ A * (B * (n + s)) * (n + t) * (x + s)
-    simpa only [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
-      Nat.mul_le_mul_left (B * (n + s)) hsimple
+  | departure => exact departure_factor_bound hlocal (Nat.add_le_add_right hx s)
+  | arrival hpos => exact arrival_factor_bound hlocal (Nat.add_le_add_right hy t) hpos
+
+/-- The intermediate normalized floor cancels when two bounds are composed. -/
+theorem compose_floor_bound {A B U D a b num den p q x y : Nat}
+    (hprefix : B * D * x ≤ A * U * p)
+    (hstep : b * den * p * y ≤ a * num * q * x) (hp : 0 < p) :
+    (B * b) * (D * den) * y ≤ (A * a) * (U * num) * q := by
+  apply Nat.le_of_mul_le_mul_right _ hp
+  calc
+    _ = (B * D) * (b * den * p * y) := by ac_rfl
+    _ ≤ (B * D) * (a * num * q * x) := Nat.mul_le_mul_left _ hstep
+    _ = (a * num * q) * (B * D * x) := by ac_rfl
+    _ ≤ (a * num * q) * (A * U * p) := Nat.mul_le_mul_left _ hprefix
+    _ = _ := by ac_rfl
 
 /-- A finite excursion trace decorated with coordinate shifts and with
 either valid local factor at each step. The indices store the landing,
@@ -116,18 +135,8 @@ theorem Trace.floor_bound {n x s elapsed A B U D H : Nat}
     rw [hprev.landing] at hx
     have hy := hfloor (v + W + elapsed) htime
     rw [← Collatz.acceleratedOrbit_add, hprev.landing, landing_eq hstep] at hy
-    have hstepBound := f.sound hstep hprev.shift_le hx hy
-    have hscaled :
-        (B * 2 ^ (v + W)) * (D * den) * (y + t) * (n + s) ≤
-          (A * 3 ^ v) * (U * num) * (n + t) * (n + s) := calc
-      _ = (B * D) * (2 ^ (v + W) * den * (n + s) * (y + t)) := by ac_rfl
-      _ ≤ (B * D) * (3 ^ v * num * (n + t) * (x + s)) :=
-        Nat.mul_le_mul_left _ hstepBound
-      _ = (3 ^ v * num * (n + t)) * (B * D * (x + s)) := by ac_rfl
-      _ ≤ (3 ^ v * num * (n + t)) * (A * U * (n + s)) :=
-        Nat.mul_le_mul_left _ (ih hbefore)
-      _ = _ := by ac_rfl
-    exact Nat.le_of_mul_le_mul_right hscaled (Nat.add_pos_left hn _)
+    exact compose_floor_bound (ih hbefore) (f.sound hstep hprev.shift_le hx hy)
+      (Nat.add_pos_left hn _)
 
 /-- If the inverse coefficient beats the product of the selected factors,
 the accelerated orbit dropped below its start within the trace. -/
