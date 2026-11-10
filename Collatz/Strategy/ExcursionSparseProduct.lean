@@ -448,7 +448,8 @@ theorem box_coefficient_envelope {s : Sequence} {u w : Nat}
   obtain ⟨C, hC⟩ := box_reciprocal_product hL (Sequence.hasBoxFutures hbox)
   exact ⟨C, coefficient_envelope_of_product hinj hC⟩
 
-private theorem injective_eventually_above (states : Nat → Nat)
+/-- A sequence of distinct naturals eventually exceeds each fixed natural. -/
+theorem injective_eventually_above (states : Nat → Nat)
     (hinj : ∀ i j, states i = states j → i = j) (B : Nat) :
     ∃ H, ∀ i, H ≤ i → B < states i := by
   classical
