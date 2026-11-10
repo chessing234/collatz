@@ -133,3 +133,8 @@ jobs:
         run: |
           lake env lean scripts/audit_orbit_window_bootstrap.lean
           python3 scripts/audit_orbit_window_bootstrap.py
+
+      - name: Check near-critical orbit windows
+        run: |
+          lake env lean scripts/audit_orbit_near_return.lean
+          python3 scripts/audit_orbit_near_return.py
