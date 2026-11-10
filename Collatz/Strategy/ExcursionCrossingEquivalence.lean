@@ -1,4 +1,4 @@
-import Collatz.Strategy.ExcursionLocalAnchors
+import Collatz.Strategy.ExcursionContractionTail
 
 /-!
 # Completeness of the excursion crossing criterion
@@ -63,10 +63,8 @@ theorem OrbitWord.to_one {floor x k : Nat} (hx : x % 2 = 1)
   · rw [h2] at hland
     omega
 
-private def loop (n : Nat) : Edge := Edge.ofRun n 1 1
-
 private theorem loop_word (floor j : Nat) :
-    OrbitWord floor 1 (List.replicate j (loop floor)) 1 (2 * j) (3 ^ j) (4 ^ j) := by
+    OrbitWord floor 1 (List.replicate j (unitEdge floor)) 1 (2 * j) (3 ^ j) (4 ^ j) := by
   induction j with
   | zero => exact .nil
   | succ j ih =>
@@ -89,30 +87,20 @@ private theorem flatCost_schedule (p : Rat) (word : List Edge) :
   | nil => rfl
   | cons e word ih => simp only [List.map_cons, costOn, flatCost, ih]
 
-private theorem flat_band (p : Rat) (word : List Edge) :
-    (Layout.ofSchedule p (word.map (fun e => (e, p)))).band p := by
-  have hp : (⟨p, []⟩ : Component).band p := by
-    intro q hq
-    have he : q = p := by simpa [points] using hq
-    rw [he]
-    exact ⟨Rat.le_refl, by grind⟩
-  induction word with
-  | nil => exact hp
-  | cons e rest ih => exact ⟨hp, ih⟩
-
 private theorem anchorMinimum_le_flat {n : Nat} (hn : 0 < n) (word : List Edge) :
     ∃ best, anchorMinimum n word = some best ∧ best ≤ flatCost n word := by
-  let steps := word.map (fun e => (e, (n : Rat)))
-  let layout := Layout.ofSchedule n steps
-  have hword : layout.word = word := by
-    simp [layout, steps, Layout.ofSchedule_word, List.map_map, Function.comp_def]
-  have hcoords : layout.coords = (n : Rat) :: word.map (fun _ => (n : Rat)) := by
-    simp [layout, steps, Layout.ofSchedule_coords, List.map_map, Function.comp_def]
-  have hband : layout.band n := flat_band n word
-  obtain ⟨best, hbest, hle⟩ := layout.anchorMinimum_le (Rat.natCast_pos.mpr hn) hband
-  rw [← layout.costOn_eq, hword, hcoords, flatCost_schedule] at hle
-  rw [hword] at hbest
-  exact ⟨best, hbest, hle⟩
+  have hband (p : Rat) (hp : p ∈ (n : Rat) :: word.map (fun _ => (n : Rat))) :
+      (n : Rat) ≤ p ∧ p ≤ (n : Rat) + 1 := by
+    have he : p = (n : Rat) := by
+      rcases List.mem_cons.mp hp with he | hm
+      · exact he
+      · obtain ⟨_, _, rfl⟩ := List.mem_map.mp hm
+        rfl
+    rw [he]
+    exact ⟨Rat.le_refl, by grind⟩
+  obtain ⟨best, hbest, hle⟩ := anchorMinimum_le_schedule (Rat.natCast_pos.mpr hn)
+    (word := word) (rest := word.map (fun _ => (n : Rat))) (by simp) hband
+  exact ⟨best, hbest, (flatCost_schedule n word) ▸ hle⟩
 
 private theorem OrbitWord.flatWeight_spec {n x y t A B word}
     (h : OrbitWord n x word y t A B) :
@@ -137,30 +125,20 @@ private theorem flatWeight_append (p : Rat) (left right : List Edge) :
   | nil => simp [flatWeight, Rat.one_mul]
   | cons e word ih => simp [flatWeight, ih, Rat.mul_assoc]
 
-private def loopWeight (n : Nat) : Rat := (loop n).a / (loop n).b * (loop n).factor n n
+private def loopWeight (n : Nat) : Rat := (unitEdge n).a / (unitEdge n).b * (unitEdge n).factor n n
 
 private theorem flatWeight_loop (n j : Nat) :
-    flatWeight n (List.replicate j (loop n)) = loopWeight n ^ j := by
+    flatWeight n (List.replicate j (unitEdge n)) = loopWeight n ^ j := by
   induction j with
   | zero => exact (Rat.pow_zero _).symm
   | succ j ih => rw [List.replicate_succ, flatWeight, Rat.pow_succ, ← ih, Rat.mul_comm, loopWeight]
 
 private theorem loopWeight_formula {n : Nat} (hn : 1 < n) :
     loopWeight n = 3 * (n : Rat) / (4 * (n : Rat) - 1) := by
-  let e := loop n
-  have ha : e.a = 3 := rfl
-  have hb : e.b = 4 := rfl
-  have hd : e.drift = (n : Rat) - 1 := by
-    change 4 * (n : Rat) + 2 - 3 * ((n : Rat) + 1) = _
-    grind
-  have hn' : (1 : Rat) < n := Rat.natCast_lt_natCast.mpr hn
-  have hpos : (0 : Rat) < n := by grind
-  have hd' : 0 ≤ e.drift := by rw [hd]; grind
-  have hclip : e.a * (n : Rat) + e.drift ≤ e.b * (n : Rat) := by rw [ha, hb, hd]; grind
-  have hden : (0 : Rat) < 4 * (n : Rat) - 1 := by grind
-  have hden' : 3 * (n : Rat) + ((n : Rat) - 1) = 4 * (n : Rat) - 1 := by grind
-  change e.a / e.b * e.factor n n = _
-  rw [e.factor_of_unclipped hpos hpos hclip, if_pos hd', ha, hb, hd, hden']
+  have hn' : 0 < n := by omega
+  unfold loopWeight
+  rw [unit_factor_floor hn', unitFactor]
+  change (3 : Rat) / 4 * (4 * (n : Rat) / (4 * (n : Rat) - 1)) = _
   rw [Rat.div_def, Rat.div_def, Rat.div_def]
   have hcancel : (4 : Rat) * (4 : Rat)⁻¹ = 1 := Rat.mul_inv_cancel _ (by decide +kernel)
   calc
@@ -240,10 +218,10 @@ theorem OrbitWord.crossing_of_lands_one {n t A B word}
       localMinimum n word' = some best ∧ (A' : Rat) * best < (B' : Rat) := by
   obtain ⟨hpos, hlt⟩ := loopWeight_pos_lt_one hn
   obtain ⟨j, hj⟩ := eventually_scaled_lt_one hpos hlt (flatWeight n word)
-  let word' := word ++ List.replicate j (loop n)
+  let word' := word ++ List.replicate j (unitEdge n)
   have trace := h.append (loop_word n j)
   have hword : flatWeight n word' < 1 := by
-    change flatWeight n (word ++ List.replicate j (loop n)) < 1
+    change flatWeight n (word ++ List.replicate j (unitEdge n)) < 1
     rw [flatWeight_append, flatWeight_loop]
     exact hj
   obtain ⟨best, hbest, hle⟩ := anchorMinimum_le_flat (by omega : 0 < n) word'

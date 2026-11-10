@@ -194,6 +194,39 @@ theorem Layout.anchorMinimum_le (layout : Layout) {n : Rat} (hn : 0 < n)
     rw [hcost] at hle
     exact Rat.le_trans ((List.min?_eq_some_iff.mp hm).2 r hentry) (Rat.le_trans hle hvalue)
 
+private theorem ofSchedule_band {n p : Rat} {steps : List (Edge × Rat)}
+    (h : ∀ q ∈ p :: steps.map Prod.snd, n ≤ q ∧ q ≤ n + 1) :
+    (Layout.ofSchedule p steps).band n := by
+  have singleton {q : Rat} (hq : n ≤ q ∧ q ≤ n + 1) :
+      (⟨q, []⟩ : Component).band n := by
+    intro r hr
+    have he : r = q := by simpa [points] using hr
+    rwa [he]
+  induction steps generalizing p with
+  | nil => exact singleton (h p List.mem_cons_self)
+  | cons step steps ih =>
+    exact ⟨singleton (h p List.mem_cons_self),
+      ih (fun q hq => h q (List.mem_cons_of_mem _ hq))⟩
+
+/-- The minimum is no larger than the product along any specified list
+of rational coordinates in the band. -/
+theorem anchorMinimum_le_schedule {n p : Rat} {word : List Edge} {rest : List Rat}
+    (hn : 0 < n) (hlen : rest.length = word.length)
+    (hband : ∀ q ∈ p :: rest, n ≤ q ∧ q ≤ n + 1) :
+    ∃ best, anchorMinimum n word = some best ∧ best ≤ costOn word (p :: rest) := by
+  let layout := Layout.ofSchedule p (word.zip rest)
+  have hword : layout.word = word := by
+    exact (Layout.ofSchedule_word _ _).trans (List.map_fst_zip (Nat.le_of_eq hlen.symm))
+  have hcoords : layout.coords = p :: rest := by
+    change (Layout.ofSchedule p (word.zip rest)).coords = p :: rest
+    rw [Layout.ofSchedule_coords, List.map_snd_zip (Nat.le_of_eq hlen)]
+  have hlband : layout.band n :=
+    ofSchedule_band (by rwa [List.map_snd_zip (Nat.le_of_eq hlen)])
+  obtain ⟨best, hbest, hle⟩ := layout.anchorMinimum_le hn hlband
+  rw [← layout.costOn_eq, hword, hcoords] at hle
+  rw [hword] at hbest
+  exact ⟨best, hbest, hle⟩
+
 /-- The returned product is attained by a rational schedule on the finite
 anchor layers. Together with `Layout.anchorMinimum_le`, this is exact
 optimization over the rational shift band. -/

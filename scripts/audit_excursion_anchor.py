@@ -3,7 +3,7 @@
 
 from fractions import Fraction
 from itertools import product
-from math import prod
+from math import ceil, prod
 from random import Random
 
 from audit_excursion_crossing import next_excursion
@@ -137,9 +137,34 @@ def check_flat_schedule():
         assert 0 < one_loop < 1
         for cost in (Fraction(1, 2), Fraction(1), Fraction(5, 4), Fraction(13, 4)):
             target = (cost - 1) / (1 / one_loop - 1)
-            copies = max(0, target.__ceil__()) + 1
+            copies = max(0, ceil(target)) + 1
             assert cost * flat_weight(n, [(3, 4, 2)] * copies) < 1
     print("The constant floor missed only 27 and 63 on 99,999 first crossings. The local search certified both.")
+
+
+def check_unit_tails():
+    edge = (3, 4, 2)
+    for n in (1, 2, 3, 7, 127):
+        for length in range(1, 8):
+            word = [edge] * length
+            assert optimum(n, word, local_layers(word)) == Fraction(4 * n, 4 * n - 1)**length
+    for length in range(1, 5):
+        modulus = 2 * 4**length
+        for x in range(1, 3 * modulus, 2):
+            y = x
+            for _ in range(length):
+                y, v, w = next_excursion(y)
+                if (v, w) != (1, 1):
+                    assert (x - 1) % modulus != 0
+                    break
+            else:
+                assert (x - 1) % modulus == 0
+                assert y == 1 + 2 * 3**length * ((x - 1) // modulus)
+    synthetic = [(27, 16, 8), edge, edge]
+    bound = optimum(7, synthetic, local_layers(synthetic))
+    assert bound == Fraction(1792, 1539) > Fraction(256, 243)
+    assert next_excursion(7) == (13, 3, 1) and next_excursion(13) == (5, 1, 2)
+    print("Checked 35 exact unit-block optima, four complete residue ranges, and the synthetic tail from 7.")
 
 
 def main():
@@ -175,6 +200,7 @@ def main():
     print("The exact rational optimizer certified all 9,999 first crossings.")
     print("For 127 the exact product is 1343488/1331883, below the sixteenth-grid ceiling.")
     check_flat_schedule()
+    check_unit_tails()
 
 
 if __name__ == "__main__":
