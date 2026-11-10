@@ -320,6 +320,7 @@ import Collatz.Strategy.SynchronousGrowth
 import Collatz.Strategy.SynchronousExcursion
 import Collatz.Strategy.PeakContraction
 import Collatz.Strategy.InverseFiberTransport
+import Collatz.Strategy.PeakSuffixTable
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32
