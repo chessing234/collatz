@@ -108,3 +108,8 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_rays.lean
           python3 scripts/audit_excursion_rays.py
+
+      - name: Check bounded excursion alphabets and repeated windows
+        run: |
+          lake env lean scripts/audit_excursion_alphabet.lean
+          python3 scripts/audit_excursion_alphabet.py
