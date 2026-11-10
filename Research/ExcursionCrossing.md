@@ -281,6 +281,34 @@ crossing from 543 the unique best shift is `7/9`, obtained by
 transporting backwards over two excursions. The crossing from 127
 has exact product `1343488/1331883`.
 
+## A direct budget at drift reversals
+
+The individual ideal factors are
+`bn/(bn+2^v−a)` for nonnegative drift and
+`[a(n+1)+b−2^v]/[a(n+1)]` for negative drift. The first is attained
+whenever the source shift is the floor. The second is attained
+whenever the target shift is the ceiling. The two requirements
+conflict only when a negative edge is followed by a nonnegative one.
+
+At a conflicting pair, a binary schedule can retain the smaller
+ideal factor and replace the larger by `(n+1)/n`. The sharper rule
+places the outer coordinates at their worst values, source `n+1`
+and target `n`, and compares the two clipping thresholds for the
+common coordinate. Outside the thresholds weighted monotonicity
+moves the product toward one of them. Between them the product is
+linear-fractional, so a threshold attains the minimum there as well.
+
+The conflicting pairs are disjoint. For each pair take its two-
+threshold bound, and for every remaining edge take its ideal factor.
+The product bounds the exact optimizer and certifies descent when
+it is strictly below the inverse homogeneous coefficient.
+[Lean](../Collatz/Strategy/ExcursionReversalBudget.lean) checks the
+schedule construction and the crossing from 63. The independent
+audit found that charging the full band ratio at each reversal
+missed 27 and 63, charging the larger ideal factor missed only 63,
+and the two-threshold budget certified all 99,999 tested first
+crossings.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16

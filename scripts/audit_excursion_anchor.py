@@ -247,6 +247,42 @@ def check_greedy_blocks():
     print(f"Checked one-coordinate greedy minima on {checked:,} genuine sign blocks and 30 longer words.")
 
 
+def check_reversal_budgets():
+    zero, one = Fraction(0), Fraction(1)
+    uniform_misses, binary_misses, threshold_misses = [], [], []
+    for n in range(3, 200_000, 2):
+        word, inverse_coefficient, _ = first_word(n)
+        positive = [b * n + c >= a * (n + 1) for a, b, c in word]
+        ideal = [
+            Fraction(b * n, b * n + c - a) if sign else Fraction(a * (n + 1) + b - c, a * (n + 1))
+            for (a, b, c), sign in zip(word, positive)
+        ]
+        ratio = Fraction(n + 1, n)
+        conflicts = [i for i in range(len(word) - 1) if not positive[i] and positive[i + 1]]
+        uniform = prod(ideal) * ratio**len(conflicts)
+        binary = prod(ideal) * prod(ratio / max(ideal[i], ideal[i + 1]) for i in conflicts)
+        threshold = prod(ideal)
+        for i in conflicts:
+            e, f = word[i:i + 2]
+            left, right = transport(e, one), inverse(f, zero)
+            assert zero <= left <= one and zero <= right <= one
+            pair = min(factor(n, e, one, q) * factor(n, f, q, zero) for q in (left, right))
+            threshold *= pair / (ideal[i] * ideal[i + 1])
+        assert threshold <= binary <= uniform
+        if n < 2_000:
+            assert optimum(n, word, local_layers(word)) <= threshold
+        if uniform >= inverse_coefficient:
+            uniform_misses.append(n)
+        if binary >= inverse_coefficient:
+            binary_misses.append(n)
+        if threshold >= inverse_coefficient:
+            threshold_misses.append(n)
+        if n == 63:
+            assert threshold == Fraction(19334741418193510400, 17917896630434357367)
+    assert uniform_misses == [27, 63] and binary_misses == [63] and not threshold_misses
+    print("The two-threshold budget certified all 99,999 first crossings. The binary budget missed 63.")
+
+
 def main():
     rng = Random(61527)
     sign_cuts = 0
@@ -293,6 +329,7 @@ def main():
     check_unit_tails()
     check_conflicting_pairs()
     check_greedy_blocks()
+    check_reversal_budgets()
 
 
 if __name__ == "__main__":
