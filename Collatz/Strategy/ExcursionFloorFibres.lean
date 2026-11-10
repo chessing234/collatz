@@ -20,7 +20,9 @@ open Collatz.ExcursionMap
 private def chronologicalRuns (rs : List Run) : List (Nat × Nat) :=
   rs.reverse.map fun r => (r.oddSteps, r.halvings)
 
-private theorem Trace.runs_positive {n x : Nat} {rs : List Run} (h : Trace n x rs) :
+/-- A genuine excursion trace has two positive run lengths at
+every letter. -/
+theorem Trace.runs_positive {n x : Nat} {rs : List Run} (h : Trace n x rs) :
     ∀ r ∈ rs, 0 < r.oddSteps ∧ 0 < r.halvings := by
   induction h with
   | nil => simp
