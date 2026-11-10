@@ -18,8 +18,13 @@ private theorem trivialCycleAvoids : ∀ k, acceleratedOrbit k 1 % 2 ^ 2 ≠ 0
 
 example : ForbiddenParity.Avoids 2 0 1 := trivialCycleAvoids
 
+example : NoMerging (fun i => acceleratedOrbit i 1) :=
+  no_merging_of_cycle AccCycle.accIsCycleOf_one
+
 #print axioms ForbiddenParity.count
 #print axioms ForbiddenParity.capacity
 #print axioms occupation
 #print axioms orbit_envelope
 #print axioms multiplier_escapes
+#print axioms uniform_segment_descent
+#print axioms uniform_cycle_gap

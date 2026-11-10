@@ -17,29 +17,37 @@ def weighted_samples():
         def capacity(level):
             return 2 ** ((stride - 1) * level)
 
-        for upper in range(stride, stride + 5):
-            denominator = cutoff(upper)
+        for offset in range(5):
+            lower = stride + offset
+            scale = 2 ** (offset + 1)
             for sample in range(120):
+                upper = lower + sample % 5
+                denominator = cutoff(upper)
                 points = []
-                for level in range(stride, upper + 1):
+                for level in range(lower, upper + 1):
                     room = min(capacity(level + 1) - len(points), 160 - len(points))
-                    band = range(cutoff(level) | 1, cutoff(level + 1), 2)
-                    limit = min(room, len(band))
+                    base = cutoff(level)
+                    size = (cutoff(level + 1) - base) // 2
+                    limit = min(room, size)
                     count = limit if sample == 0 else rng.randint(0, limit)
-                    points.extend(rng.sample(band, count))
+                    offsets = set()
+                    for last in range(size - count, size):
+                        draw = rng.randrange(last + 1)
+                        offsets.add(last if draw in offsets else draw)
+                    points.extend(base + 2 * offset + 1 for offset in offsets)
 
                 weights = [
                     sum(
                         2 ** (stride * (upper - level))
-                        for level in range(stride, upper + 1)
+                        for level in range(lower, upper + 1)
                         if point < cutoff(level + 1)
                     )
                     for point in points
                 ]
                 assert len(set(points)) == len(points)
                 assert all(point * weight >= denominator for point, weight in zip(points, weights))
-                assert 2 * sum(weights) <= denominator
-                assert prod(Fraction(point + 1, point) for point in points) <= 2
+                assert scale * sum(weights) <= denominator
+                assert prod(Fraction(point + 1, point) for point in points) <= Fraction(scale, scale - 1)
                 checked += 1
     return checked
 

@@ -2,7 +2,7 @@ import Collatz.Strategy.ExcursionSparseProduct
 
 open Collatz.ExcursionLattice Collatz.ExcursionSparseProduct
 
-private def tailSample : List Nat := [33, 35, 129, 131]
+private def tailSample : List Nat := [129, 131, 513, 515]
 
 private theorem tailCapacity (j : Nat) :
     (tailSample.filter (fun x => decide (x < cutoff 2 j))).length ≤ 2 ^ ((2 - 1) * j) := by
@@ -15,7 +15,11 @@ private theorem tailCapacity (j : Nat) :
     simpa using Nat.le_trans hf hp
 
 example : factors 1 1 tailSample ≤ 2 * tailSample.prod :=
-  sparse_tail_product (P := 2) (H := 3) (by decide) (by decide)
+  sparse_tail_product (P := 2) (H := 4) (by decide) (by decide)
+    (by simp [tailSample, cutoff]) (by simp [tailSample, cutoff]) tailCapacity
+
+example : 3 * factors 1 1 tailSample ≤ 4 * tailSample.prod :=
+  sparse_tail_product_ratio (P := 2) (q := 1) (H := 4) (by decide) (by decide)
     (by simp [tailSample, cutoff]) (by simp [tailSample, cutoff]) tailCapacity
 
 example : factors 1 1 [5, 9] ≤ 2 * ([5, 9] : List Nat).prod :=
@@ -24,6 +28,8 @@ example : factors 1 1 [5, 9] ≤ 2 * ([5, 9] : List Nat).prod :=
 
 #print axioms reciprocal_le_two
 #print axioms sparse_tail_product
+#print axioms sparse_tail_product_ratio
+#print axioms reciprocal_tail_of_capacity
 #print axioms reciprocal_product_of_capacity
 #print axioms box_coefficient_envelope
 #print axioms coefficient_escapes_of_box
