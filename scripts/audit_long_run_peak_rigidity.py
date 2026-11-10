@@ -117,6 +117,33 @@ def rigidity_checks():
     return checks, meetings, certificates
 
 
+def adaptive_checks():
+    checks = meetings = 0
+    for depth in range(1, 10):
+        modulus = 2**depth
+        for run in range(2 * depth + 2, 6 * depth + 2):
+            for cofactor in range(1, 16, 2):
+                residue = pow(3, run, modulus) * cofactor % modulus
+                _, suffix = parity_run(residue - 1, depth)
+                odd_count = sum(suffix)
+                if run < 2 * depth + 2 + 4 * (depth - odd_count):
+                    continue
+                certified = {
+                    3 ** (run - drop) * cofactor - 1
+                    for drop in range(1, depth + 1)
+                    if peak_certificate(depth, run, cofactor, drop)
+                }
+                actual = {parity_run(x, run)[0] for x in smaller_sources(run, cofactor, depth)}
+                assert certified == actual
+                assert all(
+                    3 ** (run - drop) * cofactor - 1 not in actual
+                    for drop in range(depth - odd_count + 1, depth + 1)
+                )
+                checks += 1
+                meetings += bool(actual)
+    return checks, meetings
+
+
 if __name__ == "__main__":
     print(f"{defect_checks():,} signed defect checks.", flush=True)
     samples, meetings, certificates = rigidity_checks()
@@ -124,3 +151,5 @@ if __name__ == "__main__":
     assert not any(peak_certificate(8, 65, 1, d) for d in range(1, 9))
     print(f"{samples:,} exact rigidity checks, including {meetings:,} with smaller partners "
           f"and {certificates:,} finite-certificate comparisons.")
+    adaptive, meetings = adaptive_checks()
+    print(f"{adaptive:,} checks below the fixed cutoff, including {meetings:,} with smaller partners.")
