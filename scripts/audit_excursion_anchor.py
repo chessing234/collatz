@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Audit the exact anchor search using independent rational factors."""
 
+from argparse import ArgumentParser
 from fractions import Fraction
 from itertools import product
 from math import ceil, gcd, prod
@@ -342,16 +343,72 @@ def check_power_gap_bracket():
     for exponent in range(1, lower_den + upper_den):
         power *= 3
         assert exponent < 2 * ((1 << power.bit_length()) - power)
+    second_upper_num, second_upper_den = 8917, 5626
+    assert second_upper_num * lower_den - lower_num * second_upper_den == 1
+    assert 2049 * 3**second_upper_den <= 2048 * 2**second_upper_num
+    assert 2049 * second_upper_den <= 2**24
+    power = 1
+    for exponent in range(1, lower_den + second_upper_den):
+        power *= 3
+        gap = (1 << power.bit_length()) - power
+        assert 2**(exponent + 1) * gap >= power
     log_two_lower = 2 * (Fraction(1, 3) + Fraction(1, 81))
     log_three_upper = 2 * sum(Fraction(1, 2)**(2*k+1) / (2*k+1) for k in range(3))
     log_three_upper += 2 * Fraction(1, 2)**7 / (7 * (1 - Fraction(1, 4)))
     assert log_two_lower > Fraction(69, 100)
     assert log_three_upper < Fraction(11, 10)
-    assert Fraction(8, 3)**10 > 10_000
+    z = Fraction(1, 5)
+    log_ratio_upper = 2 * (z + z**3 / 3 + z**5 / (5 * (1 - z*z)))
+    assert log_ratio_upper < Fraction(41, 100)
+    assert Fraction(8, 3)**10 > 18_000
     coefficient = Fraction(252, 10) * Fraction(11, 10)
     assert 5000 * Fraction(69, 100) - coefficient * 11**2 - 10 > 0
     assert Fraction(69, 100) - (2 * coefficient * 11 + 1) / 5000 > 0
-    print("Checked the determinant-one bracket, all 3,630 finite exponents, and rational bounds for the external tail.")
+    endpoint_slope = Fraction(69, 100) - Fraction(2, 3) * Fraction(41, 100)
+    assert 9000 * endpoint_slope - coefficient * 11**2 > 0
+    assert endpoint_slope - 2 * coefficient * 11 / 9000 > 0
+    print("Checked both power-gap brackets, 6,290 endpoint exponents, and rational bounds for the external tail.")
+
+
+def scan_coefficient_crossings(limit, check_interior=False):
+    exceptions = {}
+    for n in range(3, limit, 2):
+        x, a, b = n, 1, 1
+        for j in range(1, 101):
+            y, v, w = next_excursion(x)
+            if check_interior:
+                z, odd, dyadic = x, a, b
+                for _ in range(v + w):
+                    if z % 2:
+                        z = (3 * z + 1) // 2
+                        odd *= 3
+                    else:
+                        z //= 2
+                    dyadic *= 2
+                    if dyadic > odd:
+                        break
+                assert (dyadic > odd) == (b * 2**(v + w) > a * 3**v)
+            x, a, b = y, a * 3**v, b * 2**(v + w)
+            if b > a:
+                assert x < n
+                if b * j >= (b - a) * n:
+                    word, ratio, _ = first_word(n)
+                    layers = local_layers(word)
+                    assert optimum(n, word, layers) < ratio
+                    low, high = 0, n
+                    while high - low > 1:
+                        mid = (low + high) // 2
+                        if optimum(mid, word, layers) < ratio:
+                            high = mid
+                        else:
+                            low = mid
+                    exceptions[n] = high
+                break
+        else:
+            raise AssertionError(f"no crossing within 100 excursions for {n}")
+    print(f"All first crossings below {limit:,} landed below their start.")
+    print(f"Coarse bound exceptions and exact optimizer cutoffs: {exceptions}")
+    return exceptions
 
 
 def main():
@@ -404,7 +461,16 @@ def main():
     check_floor_monotonicity()
     check_floor_fibres()
     check_power_gap_bracket()
+    assert scan_coefficient_crossings(20_000, check_interior=True) == {
+        27: 21, 31: 13, 63: 61, 71: 25
+    }
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--coarse-limit", type=int, help="Run only the first-crossing scan below this bound.")
+    args = parser.parse_args()
+    if args.coarse_limit is None:
+        main()
+    else:
+        scan_coefficient_crossings(args.coarse_limit)

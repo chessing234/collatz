@@ -394,6 +394,67 @@ The Lean theorem takes this analytic tail as a named hypothesis.
 With that input, only the least realization of each contracting
 word can still need a descent argument.
 
+## Sources at least the tripling coefficient descend
+
+A stronger bracket uses the same lower fraction `1054/665`
+and upper fraction `8917/5626`. Its determinant is one and
+its denominator sum is 6,291. For `a≥23`, failure of
+`3^a≤2^(a+1)(2^b−3^a)` makes the relative gap small enough
+for the same integer binomial comparison. Below 23 a finite
+integer check handles the remaining small exponents.
+
+For `b≥9000`, Laurent's bound as above supplies this stronger
+gap. Use `3a<2b` and subtract `(2b/3)log(3/2)` from
+`b log 2−25.2 log 3·max(10,log(2b)+0.38)^2`. The result is
+positive at 9000 by `log 2>0.69`, `log(3/2)<0.41`,
+`log 3<1.1`, and `log(18000)+0.38<11`. The same derivative
+bound proves positivity thereafter. Thus `BΛ>(3/2)^a`,
+which gives the desired gap if `B<2A`. The case `B≥2A`
+follows from `B−A≥A`. The case `b<9000` has `a<6291`.
+[Laurent, Corollary 2](https://www.impan.pl/shop/en/publication/transaction/download/product/82485)
+
+For `n≥B`, the terminal-halving offset bound on `main` gives
+`2^a(2^W C+B)≤BA`, where `By=An+C` and `W≥1` is the last
+even run. The gap yields `2^a 2^W(B−A)n≥BA>2^a 2^W C`, so
+the last landing satisfies `y<n`. If `A≤n<B`, the source and
+landing quotient identity already gives `y<A≤n`.
+This holds for any genuine contracting coefficient word, including
+canonical sources between `A` and `2B`.
+[Lean](../Collatz/Strategy/ExcursionCanonicalCrossing.lean) checks
+the finite range and keeps the analytic tail explicit.
+
+For a first-crossing proof, the two remaining tasks are universal
+coefficient coverage and descent at canonical sources below
+the tripling coefficient of their first-crossing word. A finite
+trace with a crossing contains a first crossing whose proper
+excursion prefixes are all heavy.
+
+## Coefficient coverage and divergence
+
+During an excursion, the homogeneous coefficient increases
+through its odd steps and decreases through its even steps.
+Thus any shortcut coefficient crossing from an odd start
+forces an excursion boundary crossing. A repeated shortcut
+state gives a positive period whose homogeneous coefficient
+is strictly below one. Enough repeats then outweigh the
+coefficient of the initial segment.
+
+Conversely, universal coverage gives arbitrarily late odd
+states whose coefficients measured from the original start
+are at most one, by concatenating crossings. The multiplier
+escape theorem on `main` makes this impossible on an
+injective orbit. [Lean](../Collatz/Strategy/ExcursionCoefficientCoverage.lean)
+therefore identifies universal coverage with the absence of
+injective shortcut orbits from odd starts.
+
+The [integer scan](../scripts/audit_excursion_anchor.py) checks
+the boundary argument against individual shortcut steps on
+9,999 odd starts. With `--coarse-limit 10000000`, it checks
+4,999,999 odd starts. Every first excursion crossing lands
+below its start. The coarse bound `Bj<(B−A)n` is inconclusive
+at 27, 31, 63 and 71. Their exact optimizer cutoffs are
+21, 13, 61 and 25 respectively.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
