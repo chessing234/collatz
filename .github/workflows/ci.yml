@@ -82,3 +82,8 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_budget.lean
           python3 scripts/audit_excursion_budget.py
+
+      - name: Check valuation-stratified excursion products
+        run: |
+          lake env lean scripts/audit_excursion_lattice.lean
+          python3 scripts/audit_excursion_lattice.py
