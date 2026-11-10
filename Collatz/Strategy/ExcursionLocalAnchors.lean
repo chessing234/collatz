@@ -48,7 +48,7 @@ private theorem inverse_identity (n v W : Nat) (q : Rat) :
         (((2 : Nat) ^ (v + W) : Nat) : Rat) * q at h
   grind
 
-private theorem three_pow_gt_two {v : Nat} (hv : 0 < v) :
+theorem three_pow_gt_two {v : Nat} (hv : 0 < v) :
     (((2 : Nat) ^ v : Nat) : Rat) < ((3 : Nat) ^ v : Nat) :=
   Rat.natCast_lt_natCast.mpr (Nat.pow_lt_pow_left (by decide) (by omega))
 

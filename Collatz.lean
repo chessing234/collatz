@@ -325,6 +325,7 @@ import Collatz.Strategy.ExcursionPairMinimum
 import Collatz.Strategy.ExcursionGreedyShifts
 import Collatz.Strategy.ExcursionConflictThresholds
 import Collatz.Strategy.ExcursionReversalBudget
+import Collatz.Strategy.ExcursionFloorMonotonicity
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit
