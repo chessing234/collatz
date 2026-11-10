@@ -186,6 +186,29 @@ An exact audit of the first 99,999 odd starts greater than one found
 two constant-floor misses at the first excursion coefficient crossing.
 The local search certified both 27 and 63.
 
+## A symbolic crossing obstructed by its entry residue
+
+For a unit excursion `(v,W)=(1,1)` the floor drift is `n−1`. The
+factor is at least `4P/(3P+n−1)`, including when it is clipped. This
+quantity increases with `P` on the band and equals `4n/(4n−1)` at
+`P=n`. The constant floor attains this bound simultaneously on
+every unit edge, so a length-`j` unit block has exact minimum
+`(4n/(4n−1))^j`.
+
+Genuine unit blocks satisfy `4^j(y−1)=3^j(x−1)`. Since their exit
+is odd, their entry obeys `x≡1 (mod 2·4^j)`. Conversely, an entry
+`1+2·4^j d` has this block and exits at `1+2·3^j d`. If a single
+preceding excursion begins at `n`, lands at `x>1`, and the total
+homogeneous coefficient is less than one, then `n≥2·3^j`.
+
+For example, the first genuine excursion from 7 lands at 13 with
+`(v,W)=(3,1)`. Appending two symbolic unit edges gives its first
+homogeneous crossing `B/A=256/243`, below the exact product
+`1792/1539`. The required entry residue is 1 modulo 32, which
+excludes 13. The actual next excursion lands at 5 with `(1,2)`.
+[Lean](../Collatz/Strategy/ExcursionContractionTail.lean) checks the
+exact unit optimum, the residue criterion, and the example.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
