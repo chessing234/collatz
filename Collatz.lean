@@ -326,6 +326,7 @@ import Collatz.Strategy.PeakSuffixTable
 import Collatz.Strategy.LongRunPeakRigidity
 import Collatz.Strategy.MixedProgressionAncestors
 import Collatz.Strategy.SynchronousGapDelay
+import Collatz.Strategy.BacktraceCompression
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32

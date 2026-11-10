@@ -185,3 +185,8 @@ jobs:
         run: |
           lake env lean scripts/audit_gap_ancestors.lean
           python3 scripts/audit_gap_ancestors.py
+
+      - name: Check compressed Collatz backtraces and periodic targets
+        run: |
+          lake env lean scripts/audit_backtrace_compression.lean
+          python3 scripts/audit_backtrace_compression.py
