@@ -138,3 +138,8 @@ jobs:
         run: |
           lake env lean scripts/audit_orbit_near_return.lean
           python3 scripts/audit_orbit_near_return.py
+
+      - name: Check synchronous Collatz classes and inverse fibers
+        run: |
+          lake env lean scripts/audit_synchronous_classes.lean
+          python3 scripts/audit_synchronous_classes.py
