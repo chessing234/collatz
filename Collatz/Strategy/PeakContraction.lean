@@ -82,12 +82,6 @@ private theorem odd_run_peak (e u : Nat) (hu : 0 < u) :
   have hp := DeviceSwap.run_climb e u (2 ^ e * u - 1) hu hfac
   omega
 
-private theorem leading_halvings (d x : Nat) : acceleratedOrbit d (2 ^ d * x) = x := by
-  induction d with
-  | zero => simp
-  | succ d ih =>
-      rw [Nat.pow_succ', Nat.mul_assoc, ← acceleratedOrbit_add d 1, shortcut_double, ih]
-
 /-- The long odd run and the short odd run with leading halvings have
 equal-time tails whenever the peaks meet in the given suffix. -/
 theorem synchronized_drop {k d e u : Nat} (hu : 0 < u)
@@ -96,7 +90,7 @@ theorem synchronized_drop {k d e u : Nat} (hu : 0 < u)
     acceleratedOrbit (k + (e + d)) (2 ^ (e + d) * u - 1) =
       acceleratedOrbit (k + (e + d)) (2 ^ d * (2 ^ e * u - 1)) := by
   rw [← acceleratedOrbit_add k (e + d), ← acceleratedOrbit_add k (e + d),
-    odd_run_peak (e + d) u hu, ← acceleratedOrbit_add e d, leading_halvings,
+    odd_run_peak (e + d) u hu, ← acceleratedOrbit_add e d, orbit_halvings,
     odd_run_peak e u hu]
   exact h
 
@@ -225,7 +219,7 @@ theorem separated_near_one {B k : Nat} (hB : 3 * B % 2 ^ (k + 2) = 1) :
     rw [show 9 * B = 3 * (3 * B) by omega, hsplit, Nat.mul_add, Nat.mul_one,
       Nat.mul_left_comm 3]
     omega
-  rw [hmid, hbig, leading_halvings, ← acceleratedOrbit_add k 2, hsmall, leading_halvings,
+  rw [hmid, hbig, orbit_halvings, ← acceleratedOrbit_add k 2, hsmall, orbit_halvings,
     Congruence.accOrbit_pow_two_mul_add]
   have hpos := acceleratedOrbit_positive (n := 2) (by decide) (k + 2)
   have hprod := Nat.le_mul_of_pos_left (3 * q) (Nat.pow_pos (by decide : 0 < 3) (n := oddCount 2 (k + 2)))

@@ -30,19 +30,20 @@ instance (k : Nat) (offsets : List (Nat × Nat)) : Decidable (Covers k offsets) 
   unfold Covers
   infer_instance
 
-/-- A finite table classifies every strictly lower inverse peak in
-the corresponding mixed dyadic and ternary progressions. -/
-theorem lower_peak_of_table {k A x : Nat} {offsets : List (Nat × Nat)}
-    (hk : 3 ≤ k) (hcover : Covers k offsets)
-    (hmod : A % 8 = 3) (hdiv : 3 ^ k ∣ A)
-    (hlt : x < A - 1) (hmeet : acceleratedOrbit k x = acceleratedOrbit k (A - 1)) :
-    ∃ dc ∈ offsets, 3 ^ dc.1 * (x + dc.2) = A := by
+/-- Any peak predecessor is an explicit translate of a predecessor
+in one of finitely many base fibers. -/
+theorem inverse_peak_transport {k A x : Nat} (hApos : 0 < A) (hdiv : 3 ^ k ∣ A)
+    (hmeet : acceleratedOrbit k x = acceleratedOrbit k (A - 1)) :
+    ∃ (r : Fin (2 ^ k)) (q w : Nat),
+      let B := 3 ^ k * (r.val + 1)
+      A = 2 ^ k * (3 ^ k * q) + B ∧
+        w ∈ fiber k (acceleratedOrbit k (B - 1)) ∧
+        x = translate k (3 ^ oddCount (B - 1) k * q) w := by
   let D := 2 ^ k
   let M := 3 ^ k
   let q := (A / M - 1) / D
   let r : Fin D := ⟨(A / M - 1) % D, Nat.mod_lt _ (Nat.two_pow_pos _)⟩
   let B := M * (r.val + 1)
-  have hApos : 0 < A := by omega
   have hM : 0 < M := Nat.pow_pos (by decide)
   have hB : 0 < B := Nat.mul_pos hM (Nat.succ_pos _)
   have hmul : M * (A / M) = A := Nat.mul_div_cancel' hdiv
@@ -55,11 +56,6 @@ theorem lower_peak_of_table {k A x : Nat} {offsets : List (Nat × Nat)}
   have hsplit : A = D * (M * q) + B := by
     have hq : A / M = D * q + (r.val + 1) := by omega
     rw [← hmul, hq, Nat.mul_add, Nat.mul_left_comm M]
-  have hD8 : 8 ∣ D := Nat.pow_dvd_pow 2 hk
-  have hBmod : B % 8 = 3 := by
-    have hdiv8 := Nat.mod_eq_zero_of_dvd (Nat.dvd_mul_right_of_dvd hD8 (M * q))
-    rw [hsplit, Nat.add_mod, hdiv8, Nat.zero_add, Nat.mod_mod] at hmod
-    exact hmod
   let a := oddCount (B - 1) k
   let s := 3 ^ a * q
   have hpeak : A - 1 = D * (M * q) + (B - 1) := by omega
@@ -72,6 +68,30 @@ theorem lower_peak_of_table {k A x : Nat} {offsets : List (Nat × Nat)}
   have hmem : x ∈ fiber k (acceleratedOrbit k (B - 1) + 3 ^ k * s) :=
     mem_fiber.mpr (hmeet.trans htarget)
   obtain ⟨w, hw, hx⟩ := mem_fiber_translate.mp hmem
+  exact ⟨r, q, w, hsplit, hw, hx⟩
+
+/-- A finite table classifies every strictly lower inverse peak in
+the corresponding mixed dyadic and ternary progressions. -/
+theorem lower_peak_of_table {k A x : Nat} {offsets : List (Nat × Nat)}
+    (hk : 3 ≤ k) (hcover : Covers k offsets)
+    (hmod : A % 8 = 3) (hdiv : 3 ^ k ∣ A)
+    (hlt : x < A - 1) (hmeet : acceleratedOrbit k x = acceleratedOrbit k (A - 1)) :
+    ∃ dc ∈ offsets, 3 ^ dc.1 * (x + dc.2) = A := by
+  obtain ⟨r, q, w, hsplit, hw, hx⟩ :=
+    inverse_peak_transport (by omega : 0 < A) hdiv hmeet
+  let D := 2 ^ k
+  let M := 3 ^ k
+  let B := M * (r.val + 1)
+  let a := oddCount (B - 1) k
+  let s := 3 ^ a * q
+  change A = D * (M * q) + B at hsplit
+  have hB : 0 < B := Nat.mul_pos (Nat.pow_pos (by decide)) (Nat.succ_pos _)
+  have hpeak : A - 1 = D * (M * q) + (B - 1) := by omega
+  have hD8 : 8 ∣ D := Nat.pow_dvd_pow 2 hk
+  have hBmod : B % 8 = 3 := by
+    have hdiv8 := Nat.mod_eq_zero_of_dvd (Nat.dvd_mul_right_of_dvd hD8 (M * q))
+    rw [hsplit, Nat.add_mod, hdiv8, Nat.zero_add, Nat.mod_mod] at hmod
+    exact hmod
   have htranslate : x = w + D * (3 ^ (k - oddCount w k) * s) := hx
   rcases hcover r hBmod w hw with ⟨hbase, hcount⟩ | ⟨⟨d, c⟩, hdc, hcount, hval⟩
   · have hp : M ≤ 3 ^ (k - oddCount w k) * 3 ^ a := by
@@ -107,6 +127,28 @@ private theorem seven_rejects :
     ∀ dc ∈ sevenOffsets, dc.1 ≤ 2 ∧ dc.2 ≤ 27 ∧
       ∃ p ∈ [1, 2, 3], Reject dc.1 dc.2 p := by decide
 
+/-- A strictly smaller start has a strictly smaller v-step image
+than the start of a full odd run with the given cofactor. -/
+theorem prefix_image_lt {v n u m : Nat} (hu : 0 < u)
+    (hfac : n + 1 = 2 ^ v * u) (hsmall : m < n) :
+    acceleratedOrbit v m < 3 ^ v * u - 1 := by
+  have hpeak := DeviceSwap.run_climb v u n hu hfac
+  have hm : m < 2 ^ v * u := by omega
+  have himage := image_lt (k := v) (c := u) (x := m)
+    (by simpa only [Nat.mul_comm] using hm)
+  have hbound : acceleratedOrbit v m < 3 ^ v * u := by
+    have ha := AffineExact.oddCount_le_self m v
+    exact Nat.lt_of_lt_of_le himage (by
+      rw [Nat.mul_comm u]
+      exact Nat.mul_le_mul_right u (Nat.pow_le_pow_right (by decide) ha))
+  apply Nat.lt_of_le_of_ne (by omega)
+  intro he
+  have hme : acceleratedOrbit v n = acceleratedOrbit v m := by omega
+  have hmin := leastAt_le hme
+  have hn : n = u * 2 ^ v - 1 := by rw [Nat.mul_comm]; omega
+  rw [show leastAt v n = n by rw [hn]; exact leastAt_last_in_period v u hu] at hmin
+  exact Nat.not_le_of_gt hsmall hmin
+
 /-- After a run of at least seven odd steps, a shifted peak congruent
 to three modulo eight gives no smaller equal-time partner through
 seven suffix steps. -/
@@ -121,21 +163,7 @@ theorem leastAt_seven_after_mod_eight {v n u : Nat} (hv : 7 ≤ v)
   intro hsmall
   change m < n at hsmall
   have hm : m < 2 ^ v * u := by omega
-  have himage := image_lt (k := v) (c := u) (x := m)
-    (by simpa only [Nat.mul_comm] using hm)
-  have hbound : acceleratedOrbit v m < A := by
-    have ha := AffineExact.oddCount_le_self m v
-    exact Nat.lt_of_lt_of_le himage (by
-      rw [Nat.mul_comm u]
-      exact Nat.mul_le_mul_right u (Nat.pow_le_pow_right (by decide) ha))
-  have hlt : acceleratedOrbit v m < A - 1 := by
-    apply Nat.lt_of_le_of_ne (by omega)
-    intro he
-    have hme : acceleratedOrbit v n = acceleratedOrbit v m := by omega
-    have hmin := leastAt_le hme
-    have hn : n = u * 2 ^ v - 1 := by rw [Nat.mul_comm]; omega
-    rw [show leastAt v n = n by rw [hn]; exact leastAt_last_in_period v u hu] at hmin
-    exact Nat.not_le_of_gt hsmall hmin
+  have hlt := prefix_image_lt hu hfac hsmall
   have hmeet : acceleratedOrbit 7 (acceleratedOrbit v m) = acceleratedOrbit 7 (A - 1) := by
     have hpn : A - 1 = acceleratedOrbit v n := by omega
     rw [hpn, acceleratedOrbit_add, acceleratedOrbit_add, Nat.add_comm 7]
