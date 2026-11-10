@@ -162,6 +162,61 @@ private theorem pre_peak_sources {j u m : Nat} (hu : 0 < u)
         _ = _ := by ac_rfl
     exact Or.inr (Nat.eq_of_mul_eq_mul_left hpj heq)
 
+/-- The least source of a halving followed by an odd run can be read
+off exactly from the cofactor of that run. -/
+theorem leastAt_leading_halving {j u : Nat} (hu : 0 < u) :
+    leastAt (j + 1) (2 ^ (j + 1) * u - 2) =
+      if 3 ∣ u then 2 ^ (j + 1) * (u / 3) - 1 else 2 ^ (j + 1) * u - 2 := by
+  let D := 2 ^ (j + 1)
+  let n := D * u - 2
+  let m := leastAt (j + 1) n
+  have hD : 2 ≤ D := by
+    dsimp [D]
+    rw [Nat.pow_succ']
+    have hp := Nat.two_pow_pos j
+    omega
+  have hDu : 2 ≤ D * u := Nat.le_trans hD (Nat.le_mul_of_pos_right _ hu)
+  have hsmall := leastAt_le (k := j + 1) (n := n) rfl
+  have hm : m < D * u := by change m ≤ n at hsmall; omega
+  have hhalf : n = 2 * (2 ^ j * u - 1) := by
+    have hmul : D * u = 2 * (2 ^ j * u) := by
+      dsimp [D]
+      rw [Nat.pow_succ', Nat.mul_assoc]
+    omega
+  have htarget : acceleratedOrbit (j + 1) n + 1 = 3 ^ j * u := by
+    rw [← acceleratedOrbit_add j 1, hhalf, shortcut_double]
+    exact DeviceSwap.run_climb j u _ hu (Nat.sub_add_cancel (Nat.mul_pos (Nat.two_pow_pos _) hu))
+  have himage : acceleratedOrbit (j + 1) m + 1 = 3 ^ j * u := by
+    rw [leastAt_meets]
+    exact htarget
+  have hc := pre_peak_sources hu hm himage
+  change m = if 3 ∣ u then D * (u / 3) - 1 else n
+  by_cases hdiv : 3 ∣ u
+  · rw [if_pos hdiv]
+    let p := D * (u / 3) - 1
+    have hup : 0 < u / 3 := by
+      obtain ⟨r, hr⟩ := hdiv
+      rw [hr, Nat.mul_div_cancel_left _ (by decide)]
+      omega
+    have hp : p + 1 = D * (u / 3) := Nat.sub_add_cancel (Nat.mul_pos (by omega) hup)
+    have hval := DeviceSwap.run_climb (j + 1) (u / 3) p hup hp
+    rw [Nat.pow_succ, Nat.mul_assoc, Nat.mul_div_cancel' hdiv] at hval
+    have hmeet : acceleratedOrbit (j + 1) n = acceleratedOrbit (j + 1) p := by omega
+    have hle : m ≤ p := leastAt_le hmeet
+    have heq : D * u = 3 * (D * (u / 3)) := by
+      rw [← Nat.mul_left_comm D, Nat.mul_div_cancel' hdiv]
+    have htwo : 2 ≤ D * (u / 3) :=
+      Nat.le_trans hD (Nat.le_mul_of_pos_right _ hup)
+    rcases hc with ⟨_, h⟩ | h
+    · exact Nat.add_right_cancel (h.trans hp.symm)
+    · change m + 2 = D * u at h
+      omega
+  · rw [if_neg hdiv]
+    rcases hc with ⟨hbad, _⟩ | h
+    · exact (hdiv hbad).elim
+    · change m + 2 = D * u at h
+      omega
+
 private theorem power_mul_succ (j u : Nat) : 3 ^ (j + 1) * u = 3 * (3 ^ j * u) := by
   rw [Nat.pow_succ']
   exact Nat.mul_assoc ..

@@ -180,3 +180,8 @@ jobs:
         run: |
           lake env lean scripts/audit_long_run_peak_rigidity.lean
           python3 scripts/audit_long_run_peak_rigidity.py
+
+      - name: Check delayed synchronous meetings and progression ancestors
+        run: |
+          lake env lean scripts/audit_gap_ancestors.lean
+          python3 scripts/audit_gap_ancestors.py
