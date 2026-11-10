@@ -155,3 +155,23 @@ jobs:
         run: |
           lake env lean scripts/audit_synchronous_growth.lean
           python3 scripts/audit_synchronous_growth.py
+
+      - name: Check the earliest synchronous meetings after odd runs
+        run: |
+          lake env lean scripts/audit_synchronous_excursion.lean
+          python3 scripts/audit_synchronous_excursion.py
+
+      - name: Check uniform peak meetings and exponent reductions
+        run: |
+          lake env lean scripts/audit_peak_contraction.lean
+          python3 scripts/audit_peak_contraction.py
+
+      - name: Check inverse fiber transport and stable minimum profiles
+        run: |
+          lake env lean scripts/audit_inverse_fiber_transport.lean
+          python3 scripts/audit_inverse_fiber_transport.py
+
+      - name: Check finite inverse suffix tables and ternary obstructions
+        run: |
+          lake env lean scripts/audit_peak_suffix_table.lean
+          python3 scripts/audit_peak_suffix_table.py
