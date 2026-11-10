@@ -230,6 +230,25 @@ factorization and the five-excursion prefix from 27, which splits
 after the third excursion. The two products are `875008/841995`
 and `12224/11907`.
 
+## Two excursions in the opposite drift order
+
+Each factor increases weakly with its source shift and decreases
+weakly with its target shift. For a pair with negative drift first
+and nonnegative drift second, set the first coordinate to `n` and
+the last to `n+1`. Both edges are then unclipped for every common
+coordinate `q` in the band. Their product is
+
+```text
+(b₂/a₁) (b₁ q − δ₁) / (a₂ q + δ₂).
+```
+
+It is minimized at an endpoint. The lower endpoint is at least as
+good as the upper exactly when `b₁δ₂ + a₂δ₁ ≥ 0`.
+[Lean](../Collatz/Strategy/ExcursionPairMinimum.lean) checks the
+formula for the exact optimum and both strict outcomes. The first
+two excursions from 7 prefer the lower endpoint, while the second
+and third excursions from 27 prefer the upper.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
