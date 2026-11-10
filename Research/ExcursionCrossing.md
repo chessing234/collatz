@@ -476,6 +476,35 @@ The [independent audit](../scripts/audit_orbit_minimum_spacing.py)
 checked the finite gap implication on 36,723 genuine
 prefixes, including traces of 24 excursions.
 
+### Simultaneous gaps in the coefficient and actual values
+
+For a fixed high tail starting at `n`, let
+`z_i = floor(n·3^(oddCount(n,i))/2^i)`. The affine
+envelope gives `z_i ≤ x_i < 2(z_i+1)`, where `x_i`
+is the actual state. Apply the same minimum-chain
+argument to `z_i`. Its values may repeat, but the
+corresponding states `x_i` are distinct by injectivity.
+A band in the `z_i) coordinate therefore still gives
+a finite occupation bound on the corresponding states.
+
+If `z_(i+k)≥z_i+D`, the floor inequalities give
+`(z_i+D)2^k < (z_i+1)3^a`, where `a` counts odd
+steps from `x_i` to `x_(i+k)`. As `D≥1`, this
+first forces `2^k<3^a`. Adding the same excess
+`x_i−z_i` on both sides gives
+`(x_i+D)2^k < (x_i+1)3^a`. The shifted affine law
+then gives `x_(i+k)≥x_i+D`.
+
+[Lean](../Collatz/Strategy/OrbitCoefficientSpacing.lean)
+finds arbitrarily late starts with such a simultaneous
+gap for every positive `k`, with `D≥2` and
+`x_i≤L·D^20` for a universal constant `L`.
+Thus the multiplier from each of these starts exceeds
+`(x_i+D)/(x_i+1)` at every positive time.
+The [audit](../scripts/audit_orbit_minimum_spacing.py)
+checked 528,150 positive coefficient-floor gaps,
+including 6,800 that exactly match the actual value gap.
+
 ## A finite reduction with billion-scale exponents
 
 The fractions `9809721694/6189245291` and

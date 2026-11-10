@@ -31,5 +31,30 @@ def audit(limit=100_000, max_excursions=24):
     print(f"Checked {checked:,} genuine prefixes with the required gap, up to {longest} excursions.")
 
 
+def audit_coefficient_gaps(limit=2_000, horizon=48):
+    checked = exact = 0
+    for start in range(1, limit):
+        states, odd_counts, floors = [start], [0], [start]
+        for k in range(1, horizon + 1):
+            odd = states[-1] % 2
+            value = (3 * states[-1] + 1) // 2 if odd else states[-1] // 2
+            states.append(value)
+            odd_counts.append(odd_counts[-1] + odd)
+            floors.append(start * 3**odd_counts[-1] // 2**k)
+        for i in range(horizon):
+            for j in range(i + 1, horizon + 1):
+                gap = floors[j] - floors[i]
+                if gap > 0:
+                    a, b = 3**(odd_counts[j] - odd_counts[i]), 2**(j - i)
+                    assert b < a
+                    assert (states[i] + gap) * b < (states[i] + 1) * a
+                    assert states[i] + gap <= states[j]
+                    checked += 1
+                    exact += states[i] + gap == states[j]
+    assert exact > 0
+    print(f"Checked {checked:,} positive coefficient-floor gaps, including {exact:,} exact value gaps.")
+
+
 if __name__ == "__main__":
     audit()
+    audit_coefficient_gaps()
