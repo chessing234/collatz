@@ -447,6 +447,35 @@ injective orbit. [Lean](../Collatz/Strategy/ExcursionCoefficientCoverage.lean)
 therefore identifies universal coverage with the absence of
 injective shortcut orbits from odd starts.
 
+## Gaps at hypothetical divergent minima
+
+The translated-window bound on `main` allows at most
+`C W^(19/20)` distinct orbit states in a window of width
+`W`. Suppose each future minimum in a window has some
+later state within `D` of it. Repeatedly taking the next
+future minimum then places `m` distinct states in a window
+of width `mD+1`. The count bound forces
+`m ≤ C(D+1)^19`. This gives an explicit value window
+containing a minimum separated by `D` from every later
+state. Choosing `D` by the dyadic size of the initial
+minimum gives such gaps on the twentieth-root scale.
+
+A trace with `j≤D` excursions cannot cross below
+coefficient one if each state after its start stays at
+least `D` above that start. At a putative first crossing,
+the affine offset is at most `jA`, whereas landing at
+least `D` higher would require an offset strictly above
+`DA`. The boundary argument extends the coefficient
+inequality to all shortcut steps through the `D`-th
+excursion, including at least `2D` steps.
+
+[Lean](../Collatz/Strategy/OrbitMinimumSpacing.lean) proves
+both statements and restricts the resulting starts to
+`7` or `15` modulo `16`, or `27` modulo `32`.
+The [independent audit](../scripts/audit_orbit_minimum_spacing.py)
+checked the finite gap implication on 36,723 genuine
+prefixes, including traces of 24 excursions.
+
 ## A finite reduction with billion-scale exponents
 
 The fractions `9809721694/6189245291` and
