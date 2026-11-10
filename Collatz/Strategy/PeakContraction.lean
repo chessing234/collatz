@@ -46,6 +46,21 @@ theorem meet_of_certificate {k d r B : Nat} (hr : 0 < r)
   rw [hbig, hsmall, Congruence.accOrbit_pow_two_mul_add,
     Congruence.accOrbit_pow_two_mul_add, hc.1, hc.2, Nat.pow_add, Nat.mul_assoc]
 
+/-- The slope condition of a certificate is an odd-count difference
+for the actual peaks as well as for their low parts. -/
+theorem counts_of_certificate {k d r B : Nat} (hr : 0 < r)
+    (hB : B % 2 ^ k = r) (hc : Certificate k d r) :
+    oddCount (B - 1) k = oddCount (3 ^ d * B - 1) k + d := by
+  have hsplit : 2 ^ k * (B / 2 ^ k) + r = B := by
+    rw [← hB]
+    exact Nat.div_add_mod B (2 ^ k)
+  have ⟨hbig, hsmall⟩ := lift_peaks k d r (B / 2 ^ k) hr
+  rw [hsplit] at hbig hsmall
+  have lift_count (q x : Nat) : oddCount (2 ^ k * q + x) k = oddCount x k := by
+    rw [Density.oddCount_mod, Nat.mul_add_mod, ← Density.oddCount_mod]
+  rw [hsmall, hbig, lift_count, lift_count]
+  exact hc.1
+
 /-- Two distinct lifts with meetings already force the full certificate.
 Thus a dyadic residue without a certificate can meet at most once. -/
 theorem certificate_of_two_lifts {k d r p q : Nat} (hr : 0 < r) (hpq : p < q)

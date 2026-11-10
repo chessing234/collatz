@@ -200,3 +200,13 @@ jobs:
         run: |
           lake env lean scripts/audit_short_prefix_minimum.lean
           python3 scripts/audit_short_prefix_minimum.py
+
+      - name: Check unequal-depth separation of scaled peaks
+        run: |
+          lake env lean scripts/audit_unequal_peak_depth.lean
+          python3 scripts/audit_unequal_peak_depth.py
+
+      - name: Check earlier meetings after long odd runs
+        run: |
+          lake env lean scripts/audit_faster_peak_mates.lean
+          python3 scripts/audit_faster_peak_mates.py
