@@ -112,52 +112,77 @@ private theorem lower_peak_offset {k A x : Nat} (hlarge : 2 ^ k ≤ A - 1)
   dsimp only [c]
   omega
 
+private theorem odd_count_of_shifted_height {j t x C A : Nat} {c : Int}
+    (hx : x < 2 ^ j * C) (hcap : C * 3 ^ t + c.natAbs ≤ A)
+    (hy : (acceleratedOrbit j x : Int) + c = (A : Int)) : t + 1 ≤ oddCount x j := by
+  apply Nat.le_of_not_gt
+  intro hshort
+  have himage := image_lt (k := j) (c := C) (x := x) (by simpa only [Nat.mul_comm] using hx)
+  have hpow := Nat.pow_le_pow_right (by decide : 0 < 3)
+    (show oddCount x j ≤ t by omega)
+  have hlt : acceleratedOrbit j x < C * 3 ^ t :=
+    Nat.lt_of_lt_of_le himage (Nat.mul_le_mul_left C hpow)
+  omega
+
 /-- A source below the long-run input needs enough odd steps to
 reach a nearby power-of-three fraction of its peak. -/
 theorem odd_count_near_peak {v d x u : Nat} {c : Int} (hu : 0 < u)
     (hx : x < 2 ^ v * u) (hd : d < v) (hc : c.natAbs ≤ 3 ^ (v - d - 1))
     (hy : (acceleratedOrbit v x : Int) + c = ((3 ^ (v - d) * u : Nat) : Int)) :
     v - d ≤ oddCount x v := by
-  apply Nat.le_of_not_gt
-  intro hshort
   let B := u * 3 ^ (v - d - 1)
-  have himage := image_lt (k := v) (c := u) (x := x) (by simpa only [Nat.mul_comm] using hx)
-  have hpow := Nat.pow_le_pow_right (by decide : 0 < 3)
-    (show oddCount x v ≤ v - d - 1 by omega)
-  have hlt : acceleratedOrbit v x < B :=
-    Nat.lt_of_lt_of_le himage (Nat.mul_le_mul_left u hpow)
   have hmax : c.natAbs ≤ B := Nat.le_trans hc (Nat.le_mul_of_pos_left _ hu)
   have htriple : 3 ^ (v - d) * u = 3 * B := by
     rw [show v - d = (v - d - 1) + 1 by omega, Nat.pow_succ']
     dsimp only [B]
     ac_rfl
-  rw [htriple, Int.natCast_mul, show ((3 : Nat) : Int) = 3 by rfl] at hy
+  have h := odd_count_of_shifted_height hx
+    (show B + c.natAbs ≤ 3 ^ (v - d) * u by rw [htriple]; omega) hy
   omega
 
 def rigidityCutoff (k : Nat) : Nat := 6 * k + 2
 
 def adaptiveRigidityCutoff (k a : Nat) : Nat := 2 * k + 2 + 4 * (k - a)
 
-/-- The odd count of the original suffix lowers the cutoff for
-exact scaled peaks. -/
-theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
-    (hv : adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) ≤ v)
+/-- A smaller source meeting the original orbit earlier by r steps
+still enters an exact scaled peak before the common suffix. -/
+theorem scaled_peak_after_shortened_prefix {k v r n m u : Nat}
+    (hv : adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) + r ≤ v)
     (hu : 0 < u) (hfac : n + 1 = 2 ^ v * u) (hsmall : m < n)
-    (hfinal : acceleratedOrbit (v + k) m = acceleratedOrbit (v + k) n) :
+    (hfinal : acceleratedOrbit (v - r + k) m = acceleratedOrbit (v + k) n) :
     ∃ d, 0 < d ∧ d ≤ k - oddCount (3 ^ v * u - 1) k ∧
-      acceleratedOrbit v m = 3 ^ (v - d) * u - 1 := by
+      acceleratedOrbit (v - r) m = 3 ^ (v - d) * u - 1 := by
   let A := 3 ^ v * u
   let a := oddCount (A - 1) k
   have hpeak : acceleratedOrbit v n + 1 = A := DeviceSwap.run_climb v u n hu hfac
-  have hV : 2 * k + 2 + 4 * (k - a) ≤ v := hv
-  let y := acceleratedOrbit v m
+  have hV : 2 * k + 2 + 4 * (k - a) + r ≤ v := hv
+  let y := acceleratedOrbit (v - r) m
   change ∃ d, 0 < d ∧ d ≤ k - a ∧ y = 3 ^ (v - d) * u - 1
   have hm : m < 2 ^ v * u := by omega
-  have hy : y < A - 1 := prefix_image_lt hu hfac hsmall
+  have hcap : m < 2 ^ (v - r) * (2 ^ r * u) := by
+    rw [← Nat.mul_assoc, ← Nat.pow_add, Nat.sub_add_cancel (by omega : r ≤ v)]
+    exact hm
+  have hy : y < A - 1 := by
+    rcases Nat.eq_zero_or_pos r with hr | hr
+    · simpa only [y, hr, Nat.sub_zero] using prefix_image_lt hu hfac hsmall
+    · have hpow := Nat.pow_lt_pow_left (by decide : 2 < 3) (Nat.ne_of_gt hr)
+      have himage := image_lt (k := v - r) (c := 2 ^ r * u) (x := m)
+        (by simpa only [Nat.mul_comm (2 ^ (v - r))] using hcap)
+      have hbound : (2 ^ r * u) * 3 ^ (v - r) < A := by
+        calc
+          _ < (3 ^ r * u) * 3 ^ (v - r) :=
+            Nat.mul_lt_mul_of_pos_right (Nat.mul_lt_mul_of_pos_right hpow hu) (Nat.pow_pos (by decide))
+          _ = A := by
+            dsimp only [A]
+            rw [Nat.mul_right_comm, ← Nat.pow_add, Nat.add_sub_of_le (by omega : r ≤ v)]
+      have hycap : y < (2 ^ r * u) * 3 ^ (v - r) :=
+        Nat.lt_of_lt_of_le himage (Nat.mul_le_mul_left _
+          (Nat.pow_le_pow_right (by decide) (AffineExact.oddCount_le_self m (v - r))))
+      omega
   have hmeet : acceleratedOrbit k y = acceleratedOrbit k (A - 1) := by
     have hpn : A - 1 = acceleratedOrbit v n := by omega
-    change acceleratedOrbit k (acceleratedOrbit v m) = _
-    rw [hpn, acceleratedOrbit_add, acceleratedOrbit_add, Nat.add_comm k]
+    change acceleratedOrbit k (acceleratedOrbit (v - r) m) = _
+    rw [hpn, acceleratedOrbit_add, acceleratedOrbit_add, Nat.add_comm k (v - r), Nat.add_comm k v]
     exact hfinal
   have hk : 0 < k := by
     apply Nat.pos_of_ne_zero
@@ -186,7 +211,7 @@ theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
     · exact hc
     exfalso
     let p := 2 * (k + 1) + 3 * d
-    have hp : p ≤ v - d := by dsimp only [p]; omega
+    have hp : p ≤ v - r - d := by dsimp only [p]; omega
     have hsizeC : (1 - c).natAbs < 2 ^ (k + 1) := by
       have ha : (1 - c).natAbs ≤ 1 + c.natAbs := Int.natAbs_sub_le 1 c
       have hD : 2 ≤ 2 ^ k := by
@@ -198,7 +223,26 @@ theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
         calc
           _ ≤ 3 ^ k := Nat.pow_le_pow_left (by decide) _
           _ ≤ _ := Nat.pow_le_pow_right (by decide) (by omega))
-    have hcount := odd_count_near_peak hu hm (by omega) hsize hval
+    let t := v - r - d - 1
+    let G := 3 ^ (v - d - 1) * u
+    have hG : (2 ^ r * u) * 3 ^ t ≤ G := by
+      calc
+        _ ≤ (3 ^ r * u) * 3 ^ t :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.pow_le_pow_left (by decide) _))
+        _ = G := by
+          rw [Nat.mul_right_comm, ← Nat.pow_add]
+          dsimp only [G, t]
+          rw [show r + (v - r - d - 1) = v - d - 1 by omega]
+    have hC : c.natAbs ≤ G := Nat.le_trans hsize (Nat.le_mul_of_pos_right _ hu)
+    have htriple : 3 ^ (v - d) * u = 3 * G := by
+      rw [show v - d = (v - d - 1) + 1 by omega, Nat.pow_succ', Nat.mul_assoc]
+    have htotal : (2 ^ r * u) * 3 ^ t + c.natAbs ≤ 3 ^ (v - d) * u := by
+      rw [htriple]
+      omega
+    have hcount : (v - r) - d ≤ oddCount m (v - r) := by
+      have h := odd_count_of_shifted_height hcap htotal hval
+      dsimp only [t] at h
+      omega
     have hpow : 3 ^ p ∣ 3 ^ (v - d) * u :=
       Nat.dvd_mul_right_of_dvd (Nat.pow_dvd_pow 3 (by omega)) _
     have hdvd : (3 : Int) ^ p ∣ (y : Int) + c := by
@@ -206,7 +250,7 @@ theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
       simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
         (Int.ofNat_dvd.mpr hpow)
     exact excludes_displacement_at_precision d (k + 1) c hc hsizeC
-      m v hcount (Nat.le_trans hp hcount) hdvd
+      m (v - r) hcount (Nat.le_trans hp hcount) hdvd
   have hresult : y = 3 ^ (v - d) * u - 1 := by omega
   have hpos : 0 < d := by
     apply Nat.pos_of_ne_zero
@@ -214,6 +258,18 @@ theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
     rw [hz, Nat.sub_zero] at hresult
     exact Nat.not_le_of_gt hy (by omega)
   exact ⟨d, hpos, hd, hresult⟩
+
+/-- The odd count of the original suffix lowers the cutoff for
+exact scaled peaks. -/
+theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
+    (hv : adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) ≤ v)
+    (hu : 0 < u) (hfac : n + 1 = 2 ^ v * u) (hsmall : m < n)
+    (hfinal : acceleratedOrbit (v + k) m = acceleratedOrbit (v + k) n) :
+    ∃ d, 0 < d ∧ d ≤ k - oddCount (3 ^ v * u - 1) k ∧
+      acceleratedOrbit v m = 3 ^ (v - d) * u - 1 := by
+  simpa only [Nat.sub_zero] using
+    scaled_peak_after_shortened_prefix (r := 0) (by simpa only [Nat.add_zero] using hv)
+      hu hfac hsmall (by simpa only [Nat.sub_zero] using hfinal)
 
 private theorem adaptive_le_fixed (k a : Nat) : adaptiveRigidityCutoff k a ≤ rigidityCutoff k := by
   unfold adaptiveRigidityCutoff rigidityCutoff
