@@ -2,8 +2,9 @@
 
 Let \(T\) be the shortcut map. Start at \(n=2^v u-1\) with odd
 \(u>0\), and take a suffix of length \(k\) after the initial
-odd run. Suppose \(v\ge6k+2\). Each smaller equal-time partner
-has a scaled peak \(3^{v-d}u-1\) for some \(1\le d\le k\).
+odd run. Write \(a\) for the suffix odd count and suppose
+\(v\ge2k+2+4(k-a)\). Each smaller equal-time partner
+has a scaled peak \(3^{v-d}u-1\) for some \(1\le d\le k-a\).
 For each such drop, set \(J=4d-3\). The entire corresponding
 family of smaller partners has the same \(J\)-step image.
 
@@ -30,3 +31,21 @@ The search depths depend on the drops and the suffix length.
 For example, the executable Lean check handles \(v=10015\),
 \(u=1\), and \(k=8\), giving the exact minimum
 \((2^{10015}-5)/3\).
+
+## Chains with varying suffix lengths
+
+A certified drop from \(v\) to \(w\) gives a common endpoint at
+suffix horizon \(k\), with \(v-w\) more odd steps on the shorter
+peak's path. At every later common horizon \(K\), both paths
+have the same additional odd steps. The quantity
+\(v+a_K(3^v u-1)\) is therefore constant along a chain of
+certificates with horizons at most \(K\).
+
+If the chain starts at \(v_0\) and ends at \(v_N\), its total
+drop is at most \(K-a_K(3^{v_0}u-1)\). The adaptive cutoff lets
+us choose \(K=\lfloor v_0/2\rfloor\) for the entire chain, and
+the fixed cutoff lets us choose \(K=\lfloor v_0/6\rfloor\).
+The cofactor stays fixed throughout. For example, the drop from
+79 to 78 has a certificate at horizon 9, and the drop from 78
+to 77 has one at horizon 2. Their combined drop increases the
+odd count at horizon 9 by exactly two.
