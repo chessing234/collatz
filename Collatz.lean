@@ -300,6 +300,7 @@ import Collatz.Strategy.CycleLength2593
 import Collatz.Strategy.LiftExponent
 import Collatz.Strategy.ValuationBridge
 import Collatz.Strategy.ExcursionMap
+import Collatz.Strategy.ExcursionBudget
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32
