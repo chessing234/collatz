@@ -188,3 +188,8 @@ jobs:
         run: |
           lake env lean scripts/audit_backtrace_compression.lean
           python3 scripts/audit_backtrace_compression.py
+
+      - name: Check exact minima from short inverse fibers
+        run: |
+          lake env lean scripts/audit_short_prefix_minimum.lean
+          python3 scripts/audit_short_prefix_minimum.py
