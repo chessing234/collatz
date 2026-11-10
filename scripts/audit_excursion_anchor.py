@@ -331,6 +331,29 @@ def check_floor_fibres():
     print(f"Checked 999 first source lifts, including {common_exponents} with a common exponent divisor.")
 
 
+def check_power_gap_bracket():
+    lower_num, lower_den = 1054, 665
+    upper_num, upper_den = 4701, 2966
+    assert upper_num * lower_den - lower_num * upper_den == 1
+    assert 2**lower_num < 3**lower_den
+    assert 2049 * 3**upper_den <= 2048 * 2**upper_num
+    assert 2049 * upper_den * 17 < 3**17
+    power = 1
+    for exponent in range(1, lower_den + upper_den):
+        power *= 3
+        assert exponent < 2 * ((1 << power.bit_length()) - power)
+    log_two_lower = 2 * (Fraction(1, 3) + Fraction(1, 81))
+    log_three_upper = 2 * sum(Fraction(1, 2)**(2*k+1) / (2*k+1) for k in range(3))
+    log_three_upper += 2 * Fraction(1, 2)**7 / (7 * (1 - Fraction(1, 4)))
+    assert log_two_lower > Fraction(69, 100)
+    assert log_three_upper < Fraction(11, 10)
+    assert Fraction(8, 3)**10 > 10_000
+    coefficient = Fraction(252, 10) * Fraction(11, 10)
+    assert 5000 * Fraction(69, 100) - coefficient * 11**2 - 10 > 0
+    assert Fraction(69, 100) - (2 * coefficient * 11 + 1) / 5000 > 0
+    print("Checked the determinant-one bracket, all 3,630 finite exponents, and rational bounds for the external tail.")
+
+
 def main():
     rng = Random(61527)
     sign_cuts = 0
@@ -380,6 +403,7 @@ def main():
     check_reversal_budgets()
     check_floor_monotonicity()
     check_floor_fibres()
+    check_power_gap_bracket()
 
 
 if __name__ == "__main__":
