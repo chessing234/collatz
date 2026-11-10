@@ -196,7 +196,8 @@ private theorem step_bound (x : Nat) :
   have hb : x % 2 = 0 ∨ x % 2 = 1 := by omega
   rcases hb with hb | hb <;> simp [acceleratedStep, hb] <;> omega
 
-private def orbitPrefix (n k : Nat) : List Nat :=
+/-- The first `k` shortcut sources in chronological order. -/
+def orbitPrefix (n k : Nat) : List Nat :=
   (List.range k).map (fun i => acceleratedOrbit i n)
 
 private theorem prefix_succ (n k : Nat) :
@@ -228,7 +229,7 @@ private theorem correction_bound (n k : Nat) :
         Nat.mul_le_mul_right _ ih
       _ = _ := by ac_rfl
 
-private theorem orbitPrefix_nodup {n k : Nat}
+theorem orbitPrefix_nodup {n k : Nat}
     (hinj : ∀ i j, i < k → j < k → acceleratedOrbit i n = acceleratedOrbit j n → i = j) :
     (orbitPrefix n k).Nodup := by
   apply List.pairwise_map.mpr
@@ -236,12 +237,14 @@ private theorem orbitPrefix_nodup {n k : Nat}
   intro i j hi hj hne heq
   exact hne (hinj i j (List.mem_range.mp hi) (List.mem_range.mp hj) heq)
 
-private theorem orbitPrefix_member {n k x : Nat} (hx : x ∈ orbitPrefix n k) :
+theorem orbitPrefix_member {n k x : Nat} (hx : x ∈ orbitPrefix n k) :
     ∃ i, i < k ∧ acceleratedOrbit i n = x := by
   obtain ⟨i, hi, heq⟩ := List.mem_map.mp hx
   exact ⟨i, List.mem_range.mp hi, heq⟩
 
-private theorem scaled_envelope {n k C A : Nat} (hn : 0 < n)
+/-- Convert a rational upper bound for the reciprocal product into
+an affine bound for the endpoint. -/
+theorem scaled_envelope {n k C A : Nat} (hn : 0 < n)
     (hC : A * factors 1 1 (orbitPrefix n k) ≤ C * (orbitPrefix n k).prod) :
     A * (2 ^ k * acceleratedOrbit k n) ≤ C * (n * 3 ^ oddCount n k) := by
   let xs := orbitPrefix n k
