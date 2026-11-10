@@ -103,3 +103,8 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_greedy_slots.lean
           python3 scripts/audit_excursion_greedy_slots.py
+
+      - name: Check excursion source classes and descent thresholds
+        run: |
+          lake env lean scripts/audit_excursion_rays.lean
+          python3 scripts/audit_excursion_rays.py
