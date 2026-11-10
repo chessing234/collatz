@@ -163,3 +163,8 @@ jobs:
         run: |
           lake env lean scripts/audit_peak_contraction.lean
           python3 scripts/audit_peak_contraction.py
+
+      - name: Check inverse fiber transport and stable minimum profiles
+        run: |
+          lake env lean scripts/audit_inverse_fiber_transport.lean
+          python3 scripts/audit_inverse_fiber_transport.py
