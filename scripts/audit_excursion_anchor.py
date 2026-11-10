@@ -110,6 +110,38 @@ def optimum(n, word, layers):
     return min(table.values())
 
 
+def flat_weight(n, word):
+    numerator, denominator = 1, 1
+    for a, b, c in word:
+        offset = a - c
+        if a * n + offset <= b * n:
+            numerator *= a * n
+            denominator *= b * n - offset
+        else:
+            numerator *= a * n + offset
+            denominator *= b * n
+    return Fraction(numerator, denominator)
+
+
+def check_flat_schedule():
+    misses = []
+    for n in range(3, 200_000, 2):
+        word, ratio, descended = first_word(n)
+        bound = flat_weight(n, word)
+        if bound >= 1:
+            assert descended and optimum(n, word, local_layers(word)) < ratio
+            misses.append(n)
+    assert misses == [27, 63]
+    for n in (2, 3, 27, 63, 127, 10**20):
+        one_loop = Fraction(3 * n, 4 * n - 1)
+        assert 0 < one_loop < 1
+        for cost in (Fraction(1, 2), Fraction(1), Fraction(5, 4), Fraction(13, 4)):
+            target = (cost - 1) / (1 / one_loop - 1)
+            copies = max(0, target.__ceil__()) + 1
+            assert cost * flat_weight(n, [(3, 4, 2)] * copies) < 1
+    print("The constant floor missed only 27 and 63 on 99,999 first crossings. The local search certified both.")
+
+
 def main():
     rng = Random(61527)
     for n in range(3, 20_000, 2):
@@ -142,6 +174,7 @@ def main():
     print("Checked 4,096 triples of small runs by exact affine interval intersection.")
     print("The exact rational optimizer certified all 9,999 first crossings.")
     print("For 127 the exact product is 1343488/1331883, below the sixteenth-grid ceiling.")
+    check_flat_schedule()
 
 
 if __name__ == "__main__":
