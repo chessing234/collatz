@@ -308,6 +308,7 @@ import Collatz.Strategy.ExcursionAdversary
 import Collatz.Strategy.ExcursionBlock
 import Collatz.Strategy.ExcursionReverse
 import Collatz.Strategy.ExcursionCofactor
+import Collatz.Strategy.ExcursionCrossing
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit
