@@ -643,6 +643,30 @@ from 165 to 167 and confirms that its proper prefixes
 disqualify it as a first-crossing failure.
 [Rozier and Terracol](https://arxiv.org/pdf/2502.00948)
 
+## Inverse contraction at the exceptional landing
+
+At the exceptional exponent pair, the mandatory coefficient loss and
+the credited offset together give `e < n + 6443285299` for a source
+`n ≥ 2^71`. If `n` is the least counterexample, an inverse word from
+`e` of slope at most `2^71/(2^71 + 6443285299)` would reach a smaller
+positive counterexample.
+
+The adjacent exponent pairs `(340526703945, 539722056247)` and
+`(137528045312, 217976794617)` bracket the critical ratio. Below
+their denominator sum, any inverse contracting ratio lies on or
+below the lower member. The integer coordinates in this bracket
+show that its relative gap is at least the lower member's gap.
+Lean verifies that this is enough to compensate for the allowance.
+Thus every valid inverse word at the exceptional landing with fewer
+than `478054749257` odd steps has slope at least one. The next
+mediant gives an exact limit to this uniform arithmetic comparison.
+
+With Bařina's range as an explicit premise, the landing is `1` or
+`7` modulo `9` and avoids `10` modulo `81`. The excluded classes
+admit the inverse words `[2,1]` and `[2,2,1,1]` respectively.
+[Lean proof](../Collatz/Strategy/ExcursionInverseGap.lean)
+[Independent rational audit](../scripts/audit_excursion_inverse_gap.py)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks

@@ -1,0 +1,9 @@
+import Collatz.Strategy.ExcursionInverseGap
+
+#print axioms Collatz.ExcursionPowerGap.inverse_exponent_cross_le_of_bracket
+#print axioms Collatz.ExcursionPowerGap.inverse_scaled_gap_of_cross_le
+#print axioms Collatz.ExcursionBudget.Trace.landing_lt_source_add_of_boundary_pair
+#print axioms Collatz.ExcursionBudget.inverse_gap_at_boundary
+#print axioms Collatz.ExcursionBudget.inverse_gap_boundary_mediant
+#print axioms Collatz.ExcursionBudget.Trace.no_inverse_contraction_of_boundary
+#print axioms Collatz.ExcursionBudget.Trace.boundary_landing_avoids_mod_nine_and_eighty_one
