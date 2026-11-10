@@ -64,37 +64,48 @@ private theorem cross_weight_product (D : Nat) (weight : Nat → Nat) (xs : List
         Nat.mul_le_mul hpair ht
       _ = _ := by ac_rfl
 
-/-- If a common integer envelope bounds the reciprocal sum by one half,
-the total reciprocal product is at most two. -/
+/-- If a common integer envelope bounds the reciprocal sum by `1/K`,
+the reciprocal product is at most `K/(K-1)`, in cross-multiplied form. -/
+theorem reciprocal_le_ratio {D K : Nat} (hD : 0 < D) (hK : 0 < K)
+    (weight : Nat → Nat) (xs : List Nat)
+    (hpoint : ∀ x ∈ xs, D ≤ x * weight x)
+    (hsum : K * (xs.map weight).sum ≤ D) :
+    (K - 1) * factors 1 1 xs ≤ K * xs.prod := by
+  let ws := xs.map weight
+  let S := ws.sum
+  let product := (xs.map (fun x => D + weight x)).prod
+  change K * S ≤ D at hsum
+  have hs : S ≤ D := Nat.le_trans (Nat.le_mul_of_pos_left _ hK) hsum
+  have hp : (D - S) * product ≤ D ^ (xs.length + 1) := by
+    simpa only [product, S, ws, List.length_map, List.map_map, Function.comp_def]
+      using product_shift_le_power D ws hs
+  have hscale : (K - 1) * D ≤ K * (D - S) := by
+    rw [Nat.sub_mul, Nat.one_mul, Nat.mul_sub_left_distrib]
+    omega
+  have hproduct : (K - 1) * product ≤ K * D ^ xs.length := by
+    apply Nat.le_of_mul_le_mul_left _ hD
+    calc
+      _ = ((K - 1) * D) * product := by ac_rfl
+      _ ≤ (K * (D - S)) * product := Nat.mul_le_mul_right _ hscale
+      _ = K * ((D - S) * product) := Nat.mul_assoc ..
+      _ ≤ K * D ^ (xs.length + 1) := Nat.mul_le_mul_left _ hp
+      _ = D * (K * D ^ xs.length) := by rw [Nat.pow_succ]; ac_rfl
+  have hDpow : 0 < D ^ xs.length := Nat.pow_pos hD
+  apply Nat.le_of_mul_le_mul_right _ hDpow
+  calc
+    _ = (K - 1) * (factors 1 1 xs * D ^ xs.length) := Nat.mul_assoc ..
+    _ ≤ (K - 1) * (xs.prod * product) := Nat.mul_le_mul_left _
+      (cross_weight_product D weight xs hpoint)
+    _ = xs.prod * ((K - 1) * product) := by ac_rfl
+    _ ≤ xs.prod * (K * D ^ xs.length) := Nat.mul_le_mul_left _ hproduct
+    _ = (K * xs.prod) * D ^ xs.length := by ac_rfl
+
+/-- A reciprocal sum bounded by one half gives a product bounded by two. -/
 theorem reciprocal_le_two {D : Nat} (hD : 0 < D) (weight : Nat → Nat) (xs : List Nat)
     (hpoint : ∀ x ∈ xs, D ≤ x * weight x)
     (hsum : 2 * (xs.map weight).sum ≤ D) :
     factors 1 1 xs ≤ 2 * xs.prod := by
-  let ws := xs.map weight
-  let S := ws.sum
-  let product := (xs.map (fun x => D + weight x)).prod
-  have hs : S ≤ D := by
-    change 2 * S ≤ D at hsum
-    omega
-  have hp : (D - S) * product ≤ D ^ (xs.length + 1) := by
-    simpa only [product, S, ws, List.length_map, List.map_map, Function.comp_def]
-      using product_shift_le_power D ws hs
-  have hdouble : D ≤ 2 * (D - S) := by
-    change 2 * S ≤ D at hsum
-    omega
-  have hproduct : product ≤ 2 * D ^ xs.length := by
-    apply Nat.le_of_mul_le_mul_left _ hD
-    calc
-      D * product ≤ (2 * (D - S)) * product := Nat.mul_le_mul_right _ hdouble
-      _ = 2 * ((D - S) * product) := Nat.mul_assoc ..
-      _ ≤ 2 * D ^ (xs.length + 1) := Nat.mul_le_mul_left _ hp
-      _ = D * (2 * D ^ xs.length) := by rw [Nat.pow_succ]; ac_rfl
-  have hDpow : 0 < D ^ xs.length := Nat.pow_pos hD
-  apply Nat.le_of_mul_le_mul_right _ hDpow
-  calc
-    _ ≤ xs.prod * product := cross_weight_product D weight xs hpoint
-    _ ≤ xs.prod * (2 * D ^ xs.length) := Nat.mul_le_mul_left _ hproduct
-    _ = (2 * xs.prod) * D ^ xs.length := by ac_rfl
+  simpa using reciprocal_le_ratio hD (by decide : 0 < 2) weight xs hpoint hsum
 
 /-- The upper endpoint of a dyadic band. -/
 def cutoff (P j : Nat) : Nat := 2 ^ (P * j) * 2
@@ -102,10 +113,10 @@ def cutoff (P j : Nat) : Nat := 2 ^ (P * j) * 2
 private def contribution (P H x j : Nat) : Nat :=
   if x < cutoff P (j + 1) then 2 ^ (P * (H - j)) else 0
 
-private def bands (P H : Nat) : List Nat := List.range' P (H + 1 - P)
+private def bands (B H : Nat) : List Nat := List.range' B (H + 1 - B)
 
-private def weight (P H x : Nat) : Nat :=
-  ((bands P H).map (contribution P H x)).sum
+private def weight (P B H x : Nat) : Nat :=
+  ((bands B H).map (contribution P H x)).sum
 
 private theorem le_sum_of_mem {x : Nat} {xs : List Nat} (h : x ∈ xs) : x ≤ xs.sum := by
   induction xs with
@@ -115,24 +126,24 @@ private theorem le_sum_of_mem {x : Nat} {xs : List Nat} (h : x ∈ xs) : x ≤ x
     · exact Nat.le_add_right _ _
     · exact Nat.le_trans (ih hy) (Nat.le_add_left _ _)
 
-private theorem point_weight {P H x : Nat} (hPH : P ≤ H)
-    (hlo : cutoff P P ≤ x) (hhi : x < cutoff P (H + 1)) :
-    cutoff P H ≤ x * weight P H x := by
-  have hex : ∃ j, P ≤ j ∧ x < cutoff P (j + 1) := ⟨H, hPH, hhi⟩
+private theorem point_weight {P B H x : Nat} (hBH : B ≤ H)
+    (hlo : cutoff P B ≤ x) (hhi : x < cutoff P (H + 1)) :
+    cutoff P H ≤ x * weight P B H x := by
+  have hex : ∃ j, B ≤ j ∧ x < cutoff P (j + 1) := ⟨H, hBH, hhi⟩
   obtain ⟨j, ⟨hPj, hjx⟩, hmin⟩ := Collatz.Minimum.exists_min hex
-  have hjH : j ≤ H := Nat.le_of_not_gt (fun hlt => hmin H hlt ⟨hPH, hhi⟩)
+  have hjH : j ≤ H := Nat.le_of_not_gt (fun hlt => hmin H hlt ⟨hBH, hhi⟩)
   have hxj : cutoff P j ≤ x := by
-    by_cases hjP : j = P
+    by_cases hjP : j = B
     · simpa only [hjP] using hlo
-    · have hlt : P < j := by omega
+    · have hlt : B < j := by omega
       apply Nat.le_of_not_gt
       intro hbad
       apply hmin (j - 1) (by omega)
       refine ⟨by omega, ?_⟩
       rw [show j - 1 + 1 = j by omega]
       exact hbad
-  have hjmem : j ∈ bands P H := List.mem_range'_1.mpr ⟨hPj, by omega⟩
-  have hterm : 2 ^ (P * (H - j)) ≤ weight P H x := by
+  have hjmem : j ∈ bands B H := List.mem_range'_1.mpr ⟨hPj, by omega⟩
+  have hterm : 2 ^ (P * (H - j)) ≤ weight P B H x := by
     have hm := List.mem_map_of_mem (f := contribution P H x) hjmem
     rw [contribution, if_pos hjx] at hm
     exact le_sum_of_mem hm
@@ -143,7 +154,7 @@ private theorem point_weight {P H x : Nat} (hPH : P ≤ H)
         rw [← Nat.mul_add, Nat.add_sub_of_le hjH]
       rw [← he, Nat.pow_add]
       ac_rfl
-    _ ≤ x * weight P H x := Nat.mul_le_mul hxj hterm
+    _ ≤ x * weight P B H x := Nat.mul_le_mul hxj hterm
 
 private theorem sum_map_add {α : Type} (xs : List α) (f g : α → Nat) :
     (xs.map (fun x => f x + g x)).sum = (xs.map f).sum + (xs.map g).sum := by
@@ -196,13 +207,15 @@ private theorem sum_map_le {α : Type} (xs : List α) (f g : α → Nat)
     exact Nat.add_le_add (h x List.mem_cons_self)
       (ih (fun y hy => h y (List.mem_cons_of_mem _ hy)))
 
-private theorem cumulative_weight_le {P H : Nat} {xs : List Nat} (hP : 0 < P) (hPH : P ≤ H)
+private theorem cumulative_weight_le {P q H : Nat} {xs : List Nat}
+    (hP : 0 < P) (hPH : P + q ≤ H)
     (hcap : ∀ j, (xs.filter (fun x => decide (x < cutoff P j))).length ≤ 2 ^ ((P - 1) * j)) :
-    2 * (xs.map (weight P H)).sum ≤ cutoff P H := by
-  have hlen : P + (H + 1 - P) ≤ P * (H + 1) := by
-    rw [Nat.add_sub_of_le (by omega : P ≤ H + 1)]
+    2 ^ (q + 1) * (xs.map (weight P (P + q) H)).sum ≤ cutoff P H := by
+  let B := P + q
+  have hlen : B + (H + 1 - B) ≤ P * (H + 1) := by
+    rw [Nat.add_sub_of_le (by dsimp [B]; omega : B ≤ H + 1)]
     exact Nat.le_mul_of_pos_left _ hP
-  have hband (j : Nat) (hj : j ∈ bands P H) :
+  have hband (j : Nat) (hj : j ∈ bands B H) :
       2 ^ (P * (H - j)) * (xs.filter (fun x => decide (x < cutoff P (j + 1)))).length ≤
         2 ^ (P * (H + 1) - (j + 1)) := by
     have hj' := (List.mem_range'_1.mp hj).2
@@ -219,24 +232,42 @@ private theorem cumulative_weight_le {P H : Nat} {xs : List Nat} (hP : 0 < P) (h
     calc
       _ ≤ 2 ^ (P * (H - j)) * 2 ^ ((P - 1) * (j + 1)) := Nat.mul_le_mul_left _ (hcap (j + 1))
       _ = _ := by rw [← Nat.pow_add, he]
-  have hsum : (xs.map (weight P H)).sum ≤ 2 ^ (P * H) := by
+  have hsum : (xs.map (weight P B H)).sum ≤ 2 ^ (P * (H + 1) - B) := by
     unfold weight
     rw [sum_weight_swap]
     calc
-      _ ≤ ((bands P H).map (fun j => 2 ^ (P * (H + 1) - (j + 1)))).sum :=
+      _ ≤ ((bands B H).map (fun j => 2 ^ (P * (H + 1) - (j + 1)))).sum :=
         sum_map_le _ _ _ hband
-      _ ≤ 2 ^ (P * (H + 1) - P) := exponent_sum_le _ _ _ hlen
-      _ = _ := by rw [Nat.mul_succ, Nat.add_sub_cancel]
-  simpa only [cutoff, Nat.mul_comm] using Nat.mul_le_mul_left 2 hsum
+      _ ≤ _ := exponent_sum_le _ _ _ hlen
+  calc
+    _ ≤ 2 ^ (q + 1) * 2 ^ (P * (H + 1) - B) := Nat.mul_le_mul_left _ hsum
+    _ = cutoff P H := by
+      have he : q + 1 + (P * (H + 1) - B) = P * H + 1 := by
+        have hq : q ≤ P * H := Nat.le_trans (by omega) (Nat.le_mul_of_pos_left _ hP)
+        dsimp [B]
+        rw [Nat.mul_succ]
+        omega
+      rw [← Nat.pow_add, he, Nat.pow_succ, cutoff]
+
+/-- Raising the lower cutoff by `q` bands improves the reciprocal
+product bound to `2^(q+1)/(2^(q+1)-1)`. -/
+theorem sparse_tail_product_ratio {P q H : Nat} {xs : List Nat}
+    (hP : 0 < P) (hPH : P + q ≤ H)
+    (hlo : ∀ x ∈ xs, cutoff P (P + q) ≤ x)
+    (hhi : ∀ x ∈ xs, x < cutoff P (H + 1))
+    (hcap : ∀ j, (xs.filter (fun x => decide (x < cutoff P j))).length ≤ 2 ^ ((P - 1) * j)) :
+    (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod :=
+  reciprocal_le_ratio (Nat.mul_pos (Nat.two_pow_pos _) (by decide)) (Nat.two_pow_pos _)
+    (weight P (P + q) H) xs
+    (fun x hx => point_weight hPH (hlo x hx) (hhi x hx)) (cumulative_weight_le hP hPH hcap)
 
 /-- A distinct dyadic tail with geometric capacity has reciprocal
 product at most two, uniformly in its finite upper cutoff. -/
 theorem sparse_tail_product {P H : Nat} {xs : List Nat} (hP : 0 < P) (hPH : P ≤ H)
     (hlo : ∀ x ∈ xs, cutoff P P ≤ x) (hhi : ∀ x ∈ xs, x < cutoff P (H + 1))
     (hcap : ∀ j, (xs.filter (fun x => decide (x < cutoff P j))).length ≤ 2 ^ ((P - 1) * j)) :
-    factors 1 1 xs ≤ 2 * xs.prod :=
-  reciprocal_le_two (Nat.mul_pos (Nat.two_pow_pos _) (by decide)) (weight P H) xs
-    (fun x hx => point_weight hPH (hlo x hx) (hhi x hx)) (cumulative_weight_le hP hPH hcap)
+    factors 1 1 xs ≤ 2 * xs.prod := by
+  simpa using sparse_tail_product_ratio (q := 0) hP hPH hlo hhi hcap
 
 private theorem product_filter_partition (xs : List Nat) (f : Nat → Nat) (p : Nat → Bool) :
     (xs.map f).prod =
@@ -266,6 +297,29 @@ def DyadicCapacity (states : Nat → Nat) (P : Nat) : Prop :=
     (∀ x ∈ xs, x < cutoff P j ∧ ∃ i, states i = x) →
     xs.length ≤ 2 ^ ((P - 1) * j)
 
+/-- A finite selection above the specified cutoff has a correction
+bound independent of how far its upper endpoint lies. -/
+theorem reciprocal_tail_of_capacity {states : Nat → Nat} {P q : Nat}
+    (hP : 0 < P) (hcap : DyadicCapacity states P) {xs : List Nat}
+    (hnd : xs.Nodup) (hmember : ∀ x ∈ xs, ∃ i, states i = x)
+    (hlo : ∀ x ∈ xs, cutoff P (P + q) ≤ x) :
+    (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod := by
+  let H := P + q + xs.sum
+  have hPH : P + q ≤ H := Nat.le_add_right _ _
+  have hhi : ∀ x ∈ xs, x < cutoff P (H + 1) := by
+    intro x hx
+    have hxH : x ≤ H := Nat.le_trans (le_sum_of_mem hx) (Nat.le_add_left _ _)
+    have hpow : 2 ^ H ≤ 2 ^ (P * (H + 1)) := Nat.pow_le_pow_right (by decide)
+      (Nat.le_trans (Nat.le_succ H) (Nat.le_mul_of_pos_left _ hP))
+    exact Nat.lt_of_lt_of_le (Nat.lt_of_le_of_lt hxH Nat.lt_two_pow_self)
+      (Nat.le_trans hpow (Nat.le_mul_of_pos_right _ (by decide)))
+  apply sparse_tail_product_ratio hP hPH hlo hhi
+  intro j
+  apply hcap j _ (List.filter_sublist.nodup hnd)
+  intro x hx
+  obtain ⟨hxmem, hxlt⟩ := List.mem_filter.mp hx
+  exact ⟨of_decide_eq_true hxlt, hmember x hxmem⟩
+
 /-- A geometrically sparse sequence has a uniform reciprocal product
 bound on every finite subcollection of distinct values. -/
 theorem reciprocal_product_of_capacity {states : Nat → Nat} {P : Nat}
@@ -292,28 +346,13 @@ theorem reciprocal_product_of_capacity {states : Nat → Nat} {P : Nat}
   have hsmall : factors 1 1 low ≤ 2 ^ M * low.prod :=
     Nat.le_trans (reciprocal_le_pow_length low hlowPos)
       (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by decide) hlowLen))
-  let H := P + xs.sum
-  have hPH : P ≤ H := Nat.le_add_right _ _
-  have hlo : ∀ x ∈ high, cutoff P P ≤ x := by
+  have hlo : ∀ x ∈ high, cutoff P (P + 0) ≤ x := by
     intro x hx
     have h := (List.mem_filter.mp hx).2
     simpa [inside, M, Nat.not_lt] using h
-  have hhi : ∀ x ∈ high, x < cutoff P (H + 1) := by
-    intro x hx
-    have hxH : x ≤ H :=
-      Nat.le_trans (le_sum_of_mem (List.mem_filter.mp hx).1) (Nat.le_add_left _ _)
-    have hpow : 2 ^ H ≤ 2 ^ (P * (H + 1)) := Nat.pow_le_pow_right (by decide)
-      (Nat.le_trans (Nat.le_succ H) (Nat.le_mul_of_pos_left _ hP))
-    exact Nat.lt_of_lt_of_le (Nat.lt_of_le_of_lt hxH Nat.lt_two_pow_self)
-      (Nat.le_trans hpow (Nat.le_mul_of_pos_right _ (by decide)))
-  have hcap : ∀ j, (high.filter (fun x => decide (x < cutoff P j))).length ≤
-      2 ^ ((P - 1) * j) := by
-    intro j
-    apply hcapacity j _ (List.filter_sublist.nodup hhighNodup)
-    intro x hx
-    obtain ⟨hxhigh, hxlt⟩ := List.mem_filter.mp hx
-    exact ⟨of_decide_eq_true hxlt, hmember x (List.mem_filter.mp hxhigh).1⟩
-  have hlarge := sparse_tail_product hP hPH hlo hhi hcap
+  have hlarge : factors 1 1 high ≤ 2 * high.prod := by
+    simpa using reciprocal_tail_of_capacity hP hcapacity hhighNodup
+      (fun x hx => hmember x (List.mem_filter.mp hx).1) hlo
   have hnum : factors 1 1 xs = factors 1 1 low * factors 1 1 high :=
     product_filter_partition xs (fun x => 1 * x + 1) inside
   have hden : xs.prod = low.prod * high.prod := by
