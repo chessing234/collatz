@@ -370,6 +370,45 @@ def check_power_gap_bracket():
     print("Checked both power-gap brackets, 6,290 endpoint exponents, and rational bounds for the external tail.")
 
 
+def dyadic_interval(base, exponent, precision):
+    def multiply(x, y, round_up):
+        value, shift = x[0] * y[0], x[1] + y[1]
+        cut = max(0, value.bit_length() - precision)
+        unit = 1 << cut
+        return (value + (unit - 1 if round_up else 0)) // unit, shift + cut
+
+    low = high = (1, 0)
+    for bit in bin(exponent)[2:]:
+        low, high = multiply(low, low, False), multiply(high, high, True)
+        if bit == "1":
+            low = multiply(low, (base, 0), False)
+            high = multiply(high, (base, 0), True)
+    return low, high
+
+
+def dyadic_less(x, y):
+    shift = min(x[1], y[1])
+    return (x[0] << (x[1] - shift)) < (y[0] << (y[1] - shift))
+
+
+def check_wide_power_bracket():
+    rng = Random(21967)
+    for _ in range(500):
+        base, exponent, precision = rng.randrange(40), rng.randrange(500), rng.randrange(1, 129)
+        low, high = dyadic_interval(base, exponent, precision)
+        assert low[0] << low[1] <= base**exponent <= high[0] << high[1]
+    p, q = 9_809_721_694, 6_189_245_291
+    r, s = 630_138_897, 397_573_379
+    k = 9_448_000_000
+    assert q * r - s * p == 1
+    low, _ = dyadic_interval(3, q, 128)
+    assert dyadic_less((1, p), low)
+    _, high = dyadic_interval(3, s, 128)
+    assert dyadic_less(((k + 1) * high[0], high[1]), (k, r))
+    assert s * (k + q + s) < 6_400_000_000_000_000_000
+    print("Checked 500 small interval enclosures and both billion-scale bracket comparisons.")
+
+
 def scan_coefficient_crossings(limit, check_interior=False):
     exceptions = {}
     for n in range(3, limit, 2):
@@ -461,6 +500,7 @@ def main():
     check_floor_monotonicity()
     check_floor_fibres()
     check_power_gap_bracket()
+    check_wide_power_bracket()
     assert scan_coefficient_crossings(20_000, check_interior=True) == {
         27: 21, 31: 13, 63: 61, 71: 25
     }

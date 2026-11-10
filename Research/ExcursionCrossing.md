@@ -447,6 +447,36 @@ injective orbit. [Lean](../Collatz/Strategy/ExcursionCoefficientCoverage.lean)
 therefore identifies universal coverage with the absence of
 injective shortcut orbits from odd starts.
 
+## A finite reduction with billion-scale exponents
+
+The fractions `9809721694/6189245291` and
+`630138897/397573379` bracket `log₂ 3` and have
+determinant one. Lean checks both sides by outward-rounded
+dyadic interval squaring with 128-bit precision. Only the
+small significands are multiplied. Binary shifts cancel
+when the intervals are compared.
+
+Write `p/q` for the lower fraction, `r/s` for the upper,
+and let `K=9448000000`. If `a<q+s` and `A=3^a<B=2^b`,
+then `b/a≥r/s`. The verified upper comparison
+`(K+1)3^s≤K·2^r` implies `(K+a)A^s≤K·B^s` by
+Bernoulli's inequality. The gap estimate
+`(A−s(B−A))B^s≤A^(s+1)` then gives
+`aA≤s(K+a)(B−A)`. The same conclusion is immediate
+when `s(B−A)≥A`.
+
+At a failed first excursion crossing, `(B−A)n≤C≤aA`.
+Thus `n<6.4·10^18` whenever `a<6,586,818,670`.
+The first shortcut coefficient crossing lies in the final
+halving run of that same excursion word. Its orbit value
+is at least the excursion landing. So the published
+coefficient-stopping-time equality through `2.8·10^19`
+excludes every failure in the bracket's range. Lean keeps
+that finite verification as an explicit premise of the
+descent theorem and proves the source bound independently.
+[Lean](../Collatz/Strategy/ExcursionFiniteCrossing.lean)
+[Rozier and Terracol, Corollary 5.4](https://arxiv.org/pdf/2502.00948)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks
