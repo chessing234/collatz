@@ -37,6 +37,8 @@ def defect_checks():
                         if integer:
                             modulus = 3 ** precision(budget, integer)
                             assert (2**length * integer - defect) % modulus
+                            linear = 2 * abs(integer).bit_length() + 3 * budget
+                            assert (2**length * integer - defect) % 3**linear
                             checks += 1
     return checks
 
@@ -79,11 +81,19 @@ def smaller_sources(run, cofactor, suffix):
     return current
 
 
+def peak_certificate(depth, run, cofactor, drop):
+    modulus = 2**depth
+    residue = pow(3, run - drop, modulus) * cofactor % modulus
+    left, left_word = parity_run(3**drop * residue - 1, depth)
+    right, right_word = parity_run(residue - 1, depth)
+    return left == right and sum(left_word) + drop == sum(right_word)
+
+
 def rigidity_checks():
-    checks = meetings = 0
+    checks = meetings = certificates = 0
     for depth in range(10):
         start = safe_run_length(depth)
-        for run in (start, start + 1, start + 7):
+        for run in sorted({start, start + 1, start + 7, 6 * depth + 2}):
             for cofactor in range(1, 32, 2):
                 peak = 3**run * cofactor - 1
                 endpoint, _ = parity_run(peak, depth)
@@ -94,12 +104,23 @@ def rigidity_checks():
                 }
                 actual_peaks = {parity_run(source, run)[0] for source in smaller_sources(run, cofactor, depth)}
                 assert actual_peaks == scaled
+                if run >= 6 * depth + 2:
+                    certified = {
+                        3 ** (run - drop) * cofactor - 1
+                        for drop in range(1, depth + 1)
+                        if peak_certificate(depth, run, cofactor, drop)
+                    }
+                    assert certified == actual_peaks
+                    certificates += 1
                 meetings += bool(scaled)
                 checks += 1
-    return checks, meetings
+    return checks, meetings, certificates
 
 
 if __name__ == "__main__":
     print(f"{defect_checks():,} signed defect checks.", flush=True)
-    samples, meetings = rigidity_checks()
-    print(f"{samples:,} exact rigidity checks, including {meetings:,} with smaller partners.")
+    samples, meetings, certificates = rigidity_checks()
+    assert peak_certificate(8, 10**18 + 31, 1, 2)
+    assert not any(peak_certificate(8, 65, 1, d) for d in range(1, 9))
+    print(f"{samples:,} exact rigidity checks, including {meetings:,} with smaller partners "
+          f"and {certificates:,} finite-certificate comparisons.")
