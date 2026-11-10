@@ -153,3 +153,8 @@ jobs:
         run: |
           lake env lean scripts/audit_synchronous_growth.lean
           python3 scripts/audit_synchronous_growth.py
+
+      - name: Check the earliest synchronous meetings after odd runs
+        run: |
+          lake env lean scripts/audit_synchronous_excursion.lean
+          python3 scripts/audit_synchronous_excursion.py
