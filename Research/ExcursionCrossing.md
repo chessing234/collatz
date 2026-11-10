@@ -140,6 +140,31 @@ rational product by the inverse coefficient for every start greater than
 one congruent to three modulo four. A finite scan supplies evidence for
 this condition on its tested range.
 
+## Six shifts per boundary suffice
+
+A zero-offset transition in the relative shifts `s,t ∈ [0,1]` satisfies
+`2^(v+W)t = 3^v(s−1)+2^v`. Its input is at least `1/3` and its output
+is at most `1/2`. If the first of two links has `W ≥ 2`, its output
+is at most `1/4`, too small for the second. If the second link has
+`v ≥ 2`, its input is at least `5/9`, too large for the first.
+Thus a pair requires `W_first=1` and `v_second=1`. Its final shift is
+at most `1/8`, which excludes a third link.
+
+Forward transports from the lower endpoint leave the band permanently.
+Backward transports from the upper endpoint do the same. Consequently
+the candidates at a boundary are its two endpoints, up to two forward
+transports from the upper endpoint, and up to two backward transports
+from the lower endpoint. A one-pass enumeration and a backward dynamic
+program use at most 36 factor evaluations per excursion. This counts
+rational arithmetic operations. The bit lengths of the operands can
+grow along the word.
+
+[Lean](../Collatz/Strategy/ExcursionLocalAnchors.lean) proves equality
+with the unrestricted rational optimum for every positive excursion
+word. The independent audit checks the reduced layers against the full
+enumeration and tests all 4,096 triples with `1 ≤ v,W ≤ 4` by exact
+interval intersection.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
