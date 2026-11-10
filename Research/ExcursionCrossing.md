@@ -38,6 +38,25 @@ cancelling the intermediate shifted states gives
 the prefix, regardless of whether its coefficient ratio ever passed two.
 The two-excursion prefix from 7 to 5 is a checked example.
 
+## Rounded budgets for individual prefixes
+
+The previous coefficient ratios need not share a single upper bound.
+For a grid of size `1/s`, each proper prefix with denominator `Bᵢ`,
+numerator `Aᵢ`, and charge `wᵢ) contributes
+`wᵢ ceil(s Bᵢ/Aᵢ)` to an integer debt `D`. This avoids charging a
+prefix that expands strongly as much as one near contraction. The last
+excursion keeps its actual coefficient. The exact affine offset appears
+only in the proof of the budget invariant. The landing is below the start
+whenever
+
+```text
+A D + s B w_last < 2 s (B − A) (n+1).
+```
+
+The Lean proof gives a strict one-grid-unit bound on each ratio's
+rounding error. The first excursion coefficient crossing of 63 lands
+at 61 with a proper-prefix debt of 24 at scale four.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
@@ -50,6 +69,9 @@ Every factor-two crossing met the budget. At threshold 3/2, the bound was
 inconclusive for 27, whose crossing still landed below its start. The
 multiplicative bound certified a descent before the factor-two crossing for
 49,929 starts and detected the first excursion descent for 99,997 starts.
+The rounded budget certified the first excursion coefficient crossing
+`B/A > 1` for 99,997 starts at scale one, 99,998 at scale two, and all
+99,999 at scale four.
 
 ## Relation to published results
 

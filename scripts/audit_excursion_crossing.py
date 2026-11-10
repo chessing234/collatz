@@ -58,6 +58,29 @@ def analyze(n):
     return crossings, first_drop, first_product
 
 
+def rounded_certificates(n):
+    scales = (1, 2, 4)
+    debts = [0] * len(scales)
+    x, a, b = n, 1, 1
+    for k in range(1, MAX_EXCURSIONS + 1):
+        x, v, w = next_excursion(x)
+        a *= 3**v
+        b <<= v + w
+        charge = 1 if w == 1 else 2
+        if b > a:
+            certified = tuple(
+                scale for scale, debt in zip(scales, debts)
+                if a * debt + scale * b * charge < 2 * scale * (b - a) * (n + 1)
+            )
+            assert not certified or x < n
+            return k, x, certified
+        for i, scale in enumerate(scales):
+            numerator = (scale * b + a - 1) // a
+            assert scale * b <= a * numerator < scale * b + a
+            debts[i] += charge * numerator
+    return None
+
+
 def main():
     assert analyze(1)[0][2, 1] == (3, 1, 3, False)
     assert analyze(27)[0][2, 1] == (16, 5, 22, True)
@@ -68,8 +91,14 @@ def main():
     assert analyze(7)[1:] == (2, 2)
     longest_doubling = 0
     earlier_products = exact_products = 0
+    rounded_counts = Counter()
+    assert rounded_certificates(1) == (1, 1, ())
+    assert rounded_certificates(27) == (15, 23, (2, 4))
+    assert rounded_certificates(63) == (12, 61, (4,))
     for n in range(3, MAX_START + 1, 2):
         crossings, first_drop, first_product = analyze(n)
+        _, _, certificates = rounded_certificates(n)
+        rounded_counts.update(certificates)
         for (p, q), (k, _, cost, paid) in crossings.items():
             counted[p, q] += 1
             funded[p, q] += paid
@@ -83,12 +112,15 @@ def main():
     assert longest_doubling == 33
     assert earlier_products == 49_929
     assert exact_products == 99_997
+    assert rounded_counts == {1: 99_997, 2: 99_998, 4: 99_999}
     for p, q in RATIOS:
         print(f"{p}/{q}: {counted[p, q]} crossings, {funded[p, q]} funded, "
               f"{discounted[p, q]} funded only after discount")
     print(f"Longest factor-two crossing in the scan: {longest_doubling} excursions")
     print(f"Product bound beat the factor-two crossing for {earlier_products} starts")
     print(f"Product bound detected the first excursion descent for {exact_products} starts")
+    for scale in (1, 2, 4):
+        print(f"Rounding to units of 1/{scale} certified {rounded_counts[scale]} first crossings")
 
 
 if __name__ == "__main__":
