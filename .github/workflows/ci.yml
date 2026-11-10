@@ -123,3 +123,8 @@ jobs:
         run: |
           lake env lean scripts/audit_orbit_capacity.lean
           python3 scripts/audit_orbit_capacity.py
+
+      - name: Check the bootstrapped orbit occupation bound
+        run: |
+          lake env lean scripts/audit_orbit_occupation_bootstrap.lean
+          python3 scripts/audit_orbit_occupation_bootstrap.py
