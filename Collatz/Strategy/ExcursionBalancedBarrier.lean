@@ -1,5 +1,5 @@
 import Collatz.Strategy.DyadicPowerBounds
-import Collatz.Strategy.ExcursionRays
+import Collatz.Strategy.ExcursionRealization
 
 /-!
 # A barrier for coefficient-only offset estimates
@@ -105,6 +105,21 @@ private theorem balanced_spec (j : Nat) : Spec (balanced j) j := by
         change 8 * 2 ^ time rs ≤ 9 * 3 ^ ExcursionBudget.oddCount rs
         omega
       · exact ⟨by simpa only [Nat.one_mul] using ih.heavy, ih.proper⟩
+
+private theorem balanced_positive (j : Nat) : ExcursionRays.PositiveProfile (balanced j) := by
+  induction j with
+  | zero => intro r hr; simp [balanced] at hr
+  | succ j ih =>
+    rw [balanced]
+    split
+    · intro r hr
+      rcases List.mem_cons.mp hr with rfl | hr
+      · decide
+      · exact ih r hr
+    · intro r hr
+      rcases List.mem_cons.mp hr with rfl | hr
+      · decide
+      · exact ih r hr
 
 private theorem balanced_contains_earlier (k j : Nat) (hk : k ≤ j) :
     ∃ later, balanced j = later ++ balanced k := by
@@ -230,7 +245,7 @@ private theorem exists_balanced_first_crossing {a j : Nat} (hj : 0 < j)
     (hcross : 3 ^ a < 2 ^ (a + j)) (hnear : 3 * 2 ^ (a + j) < 4 * 3 ^ a) :
     ∃ rs, ExcursionBudget.oddCount rs = a ∧ time rs = a + j ∧ ProperPrefixBound 1 1 rs ∧
       (5 * a) * 3 ^ a ≤ 24 * offset rs ∧
-      ∀ k, k < j → ∃ later, rs = later ++ balanced k := by
+      (∀ k, k < j → ∃ later, rs = later ++ balanced k) ∧ ExcursionRays.PositiveProfile rs := by
   have hspec := balanced_spec j
   have hlow : a + 1 ≤ ExcursionBudget.oddCount (balanced j) := by
     apply Nat.le_of_not_gt
@@ -279,12 +294,16 @@ private theorem exists_balanced_first_crossing {a j : Nat} (hj : 0 < j)
     have hs := hprev.elapsed
     simp only [unit, ExcursionBudget.oddCount, time] at ha ⊢
     omega
-  refine ⟨unit :: rs, ha, hb, ⟨by simpa only [Nat.one_mul] using hprev.heavy, hprev.proper⟩, ?_, ?_⟩
+  refine ⟨unit :: rs, ha, hb, ⟨by simpa only [Nat.one_mul] using hprev.heavy, hprev.proper⟩, ?_, ?_, ?_⟩
   · have h := add_unit_offset hprev.low hprev.offset_lower
     rwa [ha] at h
   · intro l hl
     obtain ⟨later, hprefix⟩ := balanced_contains_earlier l k (by omega)
     exact ⟨unit :: later, congrArg (unit :: ·) hprefix⟩
+  · intro r hr
+    rcases List.mem_cons.mp hr with rfl | hr
+    · decide
+    · exact balanced_positive k r hr
 
 private theorem barrier_at_coefficients {a b j floor : Nat} (hj : 26 < j) (hb : b = a + j)
     (hcross : 3 ^ a < 2 ^ b) (hnear : 3 * 2 ^ b < 4 * 3 ^ a)
@@ -292,11 +311,12 @@ private theorem barrier_at_coefficients {a b j floor : Nat} (hj : 26 < j) (hb : 
     ∃ rs, ExcursionBudget.oddCount rs = a ∧ time rs = b ∧ ProperPrefixBound 1 1 rs ∧
       3 ^ ExcursionBudget.oddCount rs < 2 ^ time rs ∧
       (2 ^ time rs - 3 ^ ExcursionBudget.oddCount rs) * floor < offset rs ∧
-      ∀ n e, Trace n e rs → 4697939311072332635131 ≤ n := by
-  obtain ⟨rs, ha, ht, hp, hoff, hprefix⟩ :=
+      (∀ n e, Trace n e rs → 4697939311072332635131 ≤ n) ∧
+      ExcursionRays.PositiveProfile rs := by
+  obtain ⟨rs, ha, ht, hp, hoff, hprefix, hvalid⟩ :=
     exists_balanced_first_crossing (by omega : 0 < j) (hb ▸ hcross) (hb ▸ hnear)
   have ht' := ht.trans hb.symm
-  refine ⟨rs, ha, ht', hp, ?_, ?_, ?_⟩
+  refine ⟨rs, ha, ht', hp, ?_, ?_, ?_, hvalid⟩
   · rwa [ha, ht']
   · have hsum : 3 ^ a + (2 ^ b - 3 ^ a) = 2 ^ b := Nat.add_sub_of_le (Nat.le_of_lt hcross)
     have hh : (24 * floor) * (2 ^ b - 3 ^ a) < (5 * a) * 3 ^ a := by
@@ -330,15 +350,35 @@ private theorem special_offset_comparison :
   scaled_lower_comparison 3 oddExponent 192 (24 * 2 ^ 71)
     (24 * 2 ^ 71 + 5 * oddExponent) elapsedExponent (by decide +kernel)
 
-/-- Proper-prefix heaviness alone cannot make the normalized offset
-small enough to exclude the exceptional pair at the verified floor. -/
-theorem exceptional_pair_has_large_word_offset :
-    ∃ rs, ExcursionBudget.oddCount rs = 72057431991 ∧ time rs = 114208327604 ∧ ProperPrefixBound 1 1 rs ∧
-      3 ^ ExcursionBudget.oddCount rs < 2 ^ time rs ∧
+private theorem exceptional_word :
+    ∃ rs, ExcursionBudget.oddCount rs = oddExponent ∧ time rs = elapsedExponent ∧
+      ProperPrefixBound 1 1 rs ∧ 3 ^ ExcursionBudget.oddCount rs < 2 ^ time rs ∧
       (2 ^ time rs - 3 ^ ExcursionBudget.oddCount rs) * 2 ^ 71 < offset rs ∧
-      ∀ n e, Trace n e rs → 4697939311072332635131 ≤ n :=
+      (∀ n e, Trace n e rs → 4697939311072332635131 ≤ n) ∧
+      ExcursionRays.PositiveProfile rs :=
   barrier_at_coefficients (a := oddExponent) (b := elapsedExponent)
     (j := excursionCount) (floor := 2 ^ 71) (by decide) (by decide)
     special_contracts special_near special_offset_comparison
+
+/-- Proper-prefix heaviness alone cannot make the normalized offset
+small enough to exclude the exceptional pair at the verified floor. -/
+theorem exceptional_pair_has_large_word_offset :
+    ∃ rs, ExcursionBudget.oddCount rs = 72057431991 ∧ time rs = 114208327604 ∧
+      ProperPrefixBound 1 1 rs ∧ 3 ^ ExcursionBudget.oddCount rs < 2 ^ time rs ∧
+      (2 ^ time rs - 3 ^ ExcursionBudget.oddCount rs) * 2 ^ 71 < offset rs ∧
+      ∀ n e, Trace n e rs → 4697939311072332635131 ≤ n := by
+  obtain ⟨rs, ha, hb, hp, hc, hoff, hsrc, _⟩ := exceptional_word
+  exact ⟨rs, ha, hb, hp, hc, hoff, hsrc⟩
+
+/-- The large-offset profile itself has a genuine canonical
+realization above the exceptional window. -/
+theorem exceptional_pair_canonical_realization :
+    ∃ rs, ExcursionBudget.oddCount rs = 72057431991 ∧ time rs = 114208327604 ∧
+      ProperPrefixBound 1 1 rs ∧ (2 ^ time rs - 3 ^ ExcursionBudget.oddCount rs) * 2 ^ 71 < offset rs ∧
+      Trace (ExcursionRays.canonicalSource rs) (ExcursionRays.canonicalLanding rs) rs ∧
+      4697939311072332635131 ≤ ExcursionRays.canonicalSource rs := by
+  obtain ⟨rs, ha, hb, hp, _, hoff, hsrc, hvalid⟩ := exceptional_word
+  have ht := ExcursionRays.canonical_trace_of_positive_profile hvalid
+  exact ⟨rs, ha, hb, hp, hoff, ht, hsrc _ _ ht⟩
 
 end Collatz.ExcursionBalancedBarrier
