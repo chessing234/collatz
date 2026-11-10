@@ -210,16 +210,10 @@ theorem orbit_count_nineteen_twentieths :
   exact Nat.pow_le_pow_left tilt149_rate j
 
 set_option exponentiation.threshold 4000 in
-/-- A uniform power bound at every positive cutoff, expressed without
-real powers. -/
-theorem orbit_count_power :
-    ∃ C, ∀ {n X : Nat}, 0 < X → NoMerging (fun i => acceleratedOrbit i n) →
-      ∀ xs : List Nat, xs.Nodup →
-        (∀ x ∈ xs, x < X ∧ ∃ i, acceleratedOrbit i n = x) →
-        xs.length ^ 20 ≤ C * X ^ 19 := by
-  obtain ⟨C, hC⟩ := orbit_count_nineteen_twentieths
-  refine ⟨C ^ 20 * ((2 : Nat) ^ 2980) ^ 19, ?_⟩
-  intro n X hX hmerge xs hnd hx
+/-- Interpolate a count between the aligned dyadic scales. -/
+theorem power_of_aligned {C X count : Nat} (hX : 0 < X)
+    (hcount : ∀ j, X ≤ 2 ^ (2980 * j) → count ≤ C * 2 ^ (2831 * j)) :
+    count ^ 20 ≤ (C ^ 20 * ((2 : Nat) ^ 2980) ^ 19) * X ^ 19 := by
   let j := X.log2 / 2980 + 1
   have hlow : X.log2 + 1 ≤ 2980 * j := by
     have hsplit := Nat.mod_add_div X.log2 2980
@@ -237,17 +231,30 @@ theorem orbit_count_power :
       _ ≤ 2 ^ (X.log2 + 2980) := Nat.pow_le_pow_right (by decide) hhigh
       _ = 2 ^ 2980 * 2 ^ X.log2 := by rw [Nat.add_comm, Nat.pow_add]
       _ ≤ _ := Nat.mul_le_mul_left _ (Nat.log2_self_le (Nat.ne_of_gt hX))
-  have hsmall (x : Nat) (hxm : x ∈ xs) : x < 2 ^ (2980 * j) * 2 ∧
-      ∃ i, acceleratedOrbit i n = x := by
-    obtain ⟨hlt, him⟩ := hx x hxm
-    exact ⟨Nat.lt_of_lt_of_le (Nat.lt_trans hlt hXj)
-      (Nat.le_mul_of_pos_right _ (by decide)), him⟩
   calc
-    _ ≤ (C * 2 ^ (2831 * j)) ^ 20 := Nat.pow_le_pow_left (hC hmerge j xs hnd hsmall) 20
+    _ ≤ (C * 2 ^ (2831 * j)) ^ 20 := Nat.pow_le_pow_left (hcount j (Nat.le_of_lt hXj)) 20
     _ = C ^ 20 * (2 ^ (2980 * j)) ^ 19 := by
       rw [Nat.mul_pow, ← Nat.pow_mul, ← Nat.pow_mul,
         show 2831 * j * 20 = 2980 * j * 19 by omega]
     _ ≤ C ^ 20 * (2 ^ 2980 * X) ^ 19 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hscale _)
     _ = _ := by rw [Nat.mul_pow, Nat.mul_assoc]
+
+/-- A uniform power bound at every positive cutoff, expressed without
+real powers. -/
+theorem orbit_count_power :
+    ∃ C, ∀ {n X : Nat}, 0 < X → NoMerging (fun i => acceleratedOrbit i n) →
+      ∀ xs : List Nat, xs.Nodup →
+        (∀ x ∈ xs, x < X ∧ ∃ i, acceleratedOrbit i n = x) →
+        xs.length ^ 20 ≤ C * X ^ 19 := by
+  obtain ⟨C, hC⟩ := orbit_count_nineteen_twentieths
+  refine ⟨C ^ 20 * ((2 : Nat) ^ 2980) ^ 19, ?_⟩
+  intro n X hX hmerge xs hnd hx
+  apply power_of_aligned hX
+  intro j hj
+  apply hC hmerge j xs hnd
+  intro x hxm
+  obtain ⟨hlt, him⟩ := hx x hxm
+  exact ⟨Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hlt hj)
+    (Nat.le_mul_of_pos_right _ (by decide)), him⟩
 
 end Collatz.OrbitOccupationBootstrap
