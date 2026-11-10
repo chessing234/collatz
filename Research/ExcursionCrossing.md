@@ -23,6 +23,21 @@ fits the budget. A universal proof of a crossing within that budget for
 odd starts greater than 1 would imply Collatz. The crossing theorem itself
 is conditional.
 
+## Multiplicative bound for an orbit floor
+
+For an excursion ending at `y ≥ n`, write `w = 1` when `W = 1` and
+`w = 2` otherwise. Its affine identity implies
+
+```text
+2^(v+W) (2n)^w (y+1) ≤ 3^v (2n+1)^w (x+1).
+```
+
+Multiplying along a prefix whose landings all stay above or at `n` and
+cancelling the intermediate shifted states gives
+`B (2n)^c ≤ A (2n+1)^c`. A strict violation forces a descent somewhere in
+the prefix, regardless of whether its coefficient ratio ever passed two.
+The two-excursion prefix from 7 to 5 is a checked example.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
@@ -32,7 +47,9 @@ uses elementary accelerated steps and integer arithmetic. All 99,999 odd
 starts from 3 through 199,999 crossed each of the thresholds 3/2, 2 and 3
 within 100 excursions. The longest factor-two crossing took 33 excursions.
 Every factor-two crossing met the budget. At threshold 3/2, the bound was
-inconclusive for 27, whose crossing still landed below its start.
+inconclusive for 27, whose crossing still landed below its start. The
+multiplicative bound certified a descent before the factor-two crossing for
+49,929 starts and detected the first excursion descent for 99,997 starts.
 
 ## Relation to published results
 
