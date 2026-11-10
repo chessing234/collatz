@@ -1,5 +1,6 @@
 import Collatz.Strategy.ExcursionSparseProduct
 import Collatz.Strategy.AccumulatorArith
+import Collatz.Structure.AccCycle
 
 /-!
 # Geometric occupation bounds for injective Collatz orbits
@@ -117,10 +118,15 @@ theorem occupation (h : Nat) {xs : List Nat} (hxs : xs.Nodup)
   have h27 : 2 * 27 ^ h ≤ 2 * 31 ^ h := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by decide) h)
   omega
 
-/-- One stride works for every positive injective orbit. -/
-theorem capacity {n : Nat} (hn : 0 < n)
-    (hinj : ∀ i j, acceleratedOrbit i n = acceleratedOrbit j n → i = j) :
-    ∃ P, 0 < P ∧ DyadicCapacity (fun i => acceleratedOrbit i n) P := by
+/-- A collection in which distinct states stay distinct under every
+common number of shortcut steps. -/
+def NoMerging (states : Nat → Nat) : Prop :=
+  ∀ k i j, acceleratedOrbit k (states i) = acceleratedOrbit k (states j) → states i = states j
+
+/-- One stride works for every positive collection whose states do not merge. -/
+theorem uniform_capacity :
+    ∃ P, 0 < P ∧ ∀ states : Nat → Nat, (∀ i, 0 < states i) →
+      NoMerging states → DyadicCapacity states P := by
   obtain ⟨b, hb⟩ := ExcursionAlphabetMass.exists_weight_power (by decide : 31 < 32) 8
   have hb0 : 0 < b := by
     cases b with
@@ -129,13 +135,13 @@ theorem capacity {n : Nat} (hn : 0 < n)
   let P := 5 * b
   have hP : 0 < P := Nat.mul_pos (by decide) hb0
   refine ⟨P, hP, ?_⟩
-  intro j xs hnd hx
+  intro states hpos hsep j xs hnd hx
   by_cases hj : j = 0
   · subst j
     have hs : xs ⊆ [1] := by
       intro x hmem
       obtain ⟨hlt, i, rfl⟩ := hx x hmem
-      have hp := acceleratedOrbit_positive hn i
+      have hp := hpos i
       simp [cutoff] at hlt
       simp
       omega
@@ -148,9 +154,7 @@ theorem capacity {n : Nat} (hn : 0 < n)
       x = y := by
     obtain ⟨_, i, rfl⟩ := hx x hxm
     obtain ⟨_, t, rfl⟩ := hx y hym
-    rw [acceleratedOrbit_add, acceleratedOrbit_add] at hxy
-    have hit := Nat.add_left_cancel (hinj _ _ hxy)
-    rw [hit]
+    exact hsep _ i t hxy
   have hcnt := occupation (b * j) hnd hsmall himages
   have hpower : 8 ^ j * 31 ^ (b * j) ≤ 2 ^ (P * j) := by
     simpa only [show 32 = 2 ^ 5 by decide, P, Nat.mul_pow, ← Nat.pow_mul, Nat.mul_assoc]
@@ -171,6 +175,21 @@ theorem capacity {n : Nat} (hn : 0 < n)
           _ = 1 * j + (P - 1) * j := by rw [Nat.one_mul]
           _ = (1 + (P - 1)) * j := by rw [Nat.add_mul]
           _ = P * j := by rw [show 1 + (P - 1) = P by omega]]
+
+theorem no_merging_of_injective {n : Nat}
+    (hinj : ∀ i j, acceleratedOrbit i n = acceleratedOrbit j n → i = j) :
+    NoMerging (fun i => acceleratedOrbit i n) := by
+  intro k i j heq
+  rw [acceleratedOrbit_add, acceleratedOrbit_add] at heq
+  have hij := Nat.add_left_cancel (hinj _ _ heq)
+  rw [hij]
+
+/-- One stride works for every positive injective orbit. -/
+theorem capacity {n : Nat} (hn : 0 < n)
+    (hinj : ∀ i j, acceleratedOrbit i n = acceleratedOrbit j n → i = j) :
+    ∃ P, 0 < P ∧ DyadicCapacity (fun i => acceleratedOrbit i n) P := by
+  obtain ⟨P, hP, hcap⟩ := uniform_capacity
+  exact ⟨P, hP, hcap _ (acceleratedOrbit_positive hn) (no_merging_of_injective hinj)⟩
 
 private theorem step_bound (x : Nat) :
     2 * acceleratedStep x ≤ 3 ^ (x % 2) * (x + 1) := by
@@ -209,6 +228,37 @@ private theorem correction_bound (n k : Nat) :
         Nat.mul_le_mul_right _ ih
       _ = _ := by ac_rfl
 
+private theorem orbitPrefix_nodup {n k : Nat}
+    (hinj : ∀ i j, i < k → j < k → acceleratedOrbit i n = acceleratedOrbit j n → i = j) :
+    (orbitPrefix n k).Nodup := by
+  apply List.pairwise_map.mpr
+  apply List.Pairwise.imp_of_mem _ List.nodup_range
+  intro i j hi hj hne heq
+  exact hne (hinj i j (List.mem_range.mp hi) (List.mem_range.mp hj) heq)
+
+private theorem orbitPrefix_member {n k x : Nat} (hx : x ∈ orbitPrefix n k) :
+    ∃ i, i < k ∧ acceleratedOrbit i n = x := by
+  obtain ⟨i, hi, heq⟩ := List.mem_map.mp hx
+  exact ⟨i, List.mem_range.mp hi, heq⟩
+
+private theorem scaled_envelope {n k C A : Nat} (hn : 0 < n)
+    (hC : A * factors 1 1 (orbitPrefix n k) ≤ C * (orbitPrefix n k).prod) :
+    A * (2 ^ k * acceleratedOrbit k n) ≤ C * (n * 3 ^ oddCount n k) := by
+  let xs := orbitPrefix n k
+  have hpos : 0 < xs.prod := by
+    apply List.prod_pos_iff_forall_pos_nat.mpr
+    intro x hx
+    obtain ⟨i, _, rfl⟩ := orbitPrefix_member hx
+    exact acceleratedOrbit_positive hn i
+  apply Nat.le_of_mul_le_mul_right _ hpos
+  calc
+    _ = A * (2 ^ k * acceleratedOrbit k n * xs.prod) := Nat.mul_assoc ..
+    _ ≤ A * (n * 3 ^ oddCount n k * factors 1 1 xs) :=
+      Nat.mul_le_mul_left _ (correction_bound n k)
+    _ = (n * 3 ^ oddCount n k) * (A * factors 1 1 xs) := by ac_rfl
+    _ ≤ (n * 3 ^ oddCount n k) * (C * xs.prod) := Nat.mul_le_mul_left _ hC
+    _ = _ := by ac_rfl
+
 /-- With sparse dyadic occupation, an injective orbit stays below a
 fixed multiple of its affine multiplier. -/
 theorem orbit_envelope_of_capacity {P n : Nat} (hP : 0 < P) (hn : 0 < n)
@@ -219,26 +269,14 @@ theorem orbit_envelope_of_capacity {P n : Nat} (hP : 0 < P) (hn : 0 < n)
   obtain ⟨C, hC⟩ := reciprocal_product_of_capacity hP hp hcap
   refine ⟨C, ?_⟩
   intro k
-  let xs := orbitPrefix n k
-  have hnd : xs.Nodup := by
-    apply List.pairwise_map.mpr
-    have hnd : (List.range k).Nodup := List.nodup_range
-    exact hnd.imp (fun hne heq => hne (hinj _ _ heq))
-  have hmember : ∀ x ∈ xs, ∃ i, acceleratedOrbit i n = x := by
+  have hnd : (orbitPrefix n k).Nodup := orbitPrefix_nodup (fun i j _ _ => hinj i j)
+  have hmember : ∀ x ∈ orbitPrefix n k, ∃ i, acceleratedOrbit i n = x := by
     intro x hx
-    obtain ⟨i, _, hi⟩ := List.mem_map.mp hx
+    obtain ⟨i, _, hi⟩ := orbitPrefix_member hx
     exact ⟨i, hi⟩
-  have hpos : 0 < xs.prod := by
-    apply List.prod_pos_iff_forall_pos_nat.mpr
-    intro x hx
-    obtain ⟨i, rfl⟩ := hmember x hx
-    exact hp i
-  apply Nat.le_of_mul_le_mul_right _ hpos
-  calc
-    2 ^ k * acceleratedOrbit k n * xs.prod ≤ n * 3 ^ oddCount n k * factors 1 1 xs :=
-      correction_bound n k
-    _ ≤ n * 3 ^ oddCount n k * (C * xs.prod) := Nat.mul_le_mul_left _ (hC xs hnd hmember)
-    _ = (C * n * 3 ^ oddCount n k) * xs.prod := by ac_rfl
+  have hscaled : 1 * (2 ^ k * acceleratedOrbit k n) ≤ C * (n * 3 ^ oddCount n k) :=
+    scaled_envelope hn (by simpa using hC _ hnd hmember)
+  simpa only [Nat.one_mul, ← Nat.mul_assoc] using hscaled
 
 /-- For every fixed bound, the multiplier eventually exceeds that bound. -/
 def MultiplierEscapes (n : Nat) : Prop :=
@@ -274,5 +312,112 @@ theorem multiplier_escapes {n : Nat} (hn : 0 < n)
     MultiplierEscapes n := by
   obtain ⟨_, hC⟩ := orbit_envelope hn hinj
   exact multiplier_escapes_of_envelope hinj hC
+
+/-- A segment of distinct large states from a nonmerging orbit has
+an affine correction bounded by a ratio that tends to one. -/
+theorem uniform_segment_envelope :
+    ∃ P, 0 < P ∧ ∀ {n k q : Nat}, 0 < n →
+      NoMerging (fun i => acceleratedOrbit i n) →
+      (∀ i j, i < k → j < k → acceleratedOrbit i n = acceleratedOrbit j n → i = j) →
+      (∀ i, i < k → cutoff P (P + q) ≤ acceleratedOrbit i n) →
+      (2 ^ (q + 1) - 1) * (2 ^ k * acceleratedOrbit k n) ≤
+        2 ^ (q + 1) * (n * 3 ^ oddCount n k) := by
+  obtain ⟨P, hP, hcap⟩ := uniform_capacity
+  refine ⟨P, hP, ?_⟩
+  intro n k q hn hmerge hinj hlo
+  have hnd := orbitPrefix_nodup hinj
+  have hmember : ∀ x ∈ orbitPrefix n k, ∃ i, acceleratedOrbit i n = x := by
+    intro x hx
+    obtain ⟨i, _, heq⟩ := orbitPrefix_member hx
+    exact ⟨i, heq⟩
+  have hlow : ∀ x ∈ orbitPrefix n k, cutoff P (P + q) ≤ x := by
+    intro x hx
+    obtain ⟨i, hi, rfl⟩ := orbitPrefix_member hx
+    exact hlo i hi
+  exact scaled_envelope hn (reciprocal_tail_of_capacity hP
+    (hcap _ (acceleratedOrbit_positive hn) hmerge) hnd hmember hlow)
+
+/-- A sufficiently contracting multiplier certifies descent for a
+segment whose distinct sources lie above the same cutoff. -/
+theorem uniform_segment_descent :
+    ∃ P, 0 < P ∧ ∀ {n k q : Nat}, 0 < n →
+      NoMerging (fun i => acceleratedOrbit i n) →
+      (∀ i j, i < k → j < k → acceleratedOrbit i n = acceleratedOrbit j n → i = j) →
+      (∀ i, i < k → cutoff P (P + q) ≤ acceleratedOrbit i n) →
+      2 ^ (q + 1) * 3 ^ oddCount n k < (2 ^ (q + 1) - 1) * 2 ^ k →
+      acceleratedOrbit k n < n := by
+  obtain ⟨P, hP, henv⟩ := uniform_segment_envelope
+  refine ⟨P, hP, ?_⟩
+  intro n k q hn hmerge hinj hlo hcontraction
+  have hbound := henv hn hmerge hinj hlo
+  apply Nat.lt_of_not_ge
+  intro hno
+  have hle : ((2 ^ (q + 1) - 1) * 2 ^ k) * n ≤
+      (2 ^ (q + 1) * 3 ^ oddCount n k) * n := by
+    calc
+      _ = (2 ^ (q + 1) - 1) * (2 ^ k * n) := Nat.mul_assoc ..
+      _ ≤ (2 ^ (q + 1) - 1) * (2 ^ k * acceleratedOrbit k n) :=
+        Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hno)
+      _ ≤ 2 ^ (q + 1) * (n * 3 ^ oddCount n k) := hbound
+      _ = _ := by ac_rfl
+  exact (Nat.not_le_of_gt hcontraction) (Nat.le_of_mul_le_mul_right hle hn)
+
+open Collatz.AccCycle
+
+theorem no_merging_of_cycle {n L : Nat} (hcycle : AccIsCycleOf n L) :
+    NoMerging (fun i => acceleratedOrbit i n) := by
+  intro k i j heq
+  let u := L * (k + 1) - k
+  have hu : u + k = L * (k + 1) := by
+    have hle := Nat.le_mul_of_pos_left (k + 1) hcycle.1
+    dsimp [u]
+    omega
+  have hback := congrArg (acceleratedOrbit u) heq
+  rw [acceleratedOrbit_add u k, acceleratedOrbit_add u k, hu,
+    accOrbit_mul_period (accIsCycleOf_orbit hcycle i).2,
+    accOrbit_mul_period (accIsCycleOf_orbit hcycle j).2] at hback
+  exact hback
+
+private theorem cycle_prefix_injective {n L : Nat} (hcycle : AccIsCycleOf n L)
+    (hleast : ∀ j, 0 < j → acceleratedOrbit j n = n → L ≤ j) :
+    ∀ i j, i < L → j < L → acceleratedOrbit i n = acceleratedOrbit j n → i = j := by
+  have hbad (i j : Nat) (hlt : i < j) (hj : j < L)
+      (heq : acceleratedOrbit i n = acceleratedOrbit j n) : False := by
+    have hsame : acceleratedOrbit i (acceleratedOrbit (j - i) n) =
+        acceleratedOrbit i (acceleratedOrbit 0 n) := by
+      rw [acceleratedOrbit_add, acceleratedOrbit_zero, Nat.add_sub_of_le (Nat.le_of_lt hlt)]
+      exact heq.symm
+    have hret := no_merging_of_cycle hcycle i (j - i) 0 hsame
+    have hle := hleast (j - i) (by omega) hret
+    omega
+  intro i j hi hj heq
+  rcases Nat.lt_trichotomy i j with hlt | hsame | hgt
+  · exact (hbad i j hlt hj heq).elim
+  · exact hsame
+  · exact (hbad j i hgt hi heq.symm).elim
+
+/-- The normalized gap of a positive cycle with large minimum is
+at most `2^(-(q+1))`, independently of its least period. -/
+theorem uniform_cycle_gap :
+    ∃ P, 0 < P ∧ ∀ {n L q : Nat}, 0 < n → AccIsCycleOf n L →
+      (∀ j, 0 < j → acceleratedOrbit j n = n → L ≤ j) →
+      (∀ i, i < L → cutoff P (P + q) ≤ acceleratedOrbit i n) →
+      0 < 2 ^ L - 3 ^ oddCount n L ∧
+        2 ^ (q + 1) * (2 ^ L - 3 ^ oddCount n L) ≤ 2 ^ L := by
+  obtain ⟨P, hP, henv⟩ := uniform_segment_envelope
+  refine ⟨P, hP, ?_⟩
+  intro n L q hn hcycle hleast hlo
+  have hscaled := henv hn (no_merging_of_cycle hcycle)
+    (cycle_prefix_injective hcycle hleast) hlo
+  rw [hcycle.2] at hscaled
+  have hbound : (2 ^ (q + 1) - 1) * 2 ^ L ≤ 2 ^ (q + 1) * 3 ^ oddCount n L := by
+    apply Nat.le_of_mul_le_mul_right _ hn
+    simpa only [Nat.mul_assoc, Nat.mul_comm n] using hscaled
+  have hlt := (accCycle_bounds hn hcycle).2.2
+  refine ⟨by omega, ?_⟩
+  rw [Nat.sub_mul, Nat.one_mul] at hbound
+  rw [Nat.mul_sub_left_distrib]
+  rw [Nat.sub_le_iff_le_add] at hbound ⊢
+  simpa only [Nat.add_comm] using hbound
 
 end Collatz.OrbitCapacity

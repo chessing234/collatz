@@ -37,3 +37,26 @@ $Lk+1$ each such start uses $k$ allowed length-$L$ blocks and one last bit.
 The Terras residue bijection then bounds the number of distinct starts
 below $2^{Lk+1}$ by $2(2^L-1)^k$.
 [Terras (1976)](https://www.impan.pl/en/publishing-house/journals-and-series/acta-arithmetica/all/30/3/101028/a-stopping-time-problem-on-the-positive-integers)
+
+## Large segments and least periods
+
+The occupation argument only requires distinct states to have distinct
+images after a common number of steps. Both injective orbits and the
+distinct states on a cycle satisfy this condition.
+
+Let $P$ be the universal dyadic stride, and let $K=2^{q+1}$.
+For a segment of distinct sources all at least $2^{P(P+q)+1}$,
+the common-denominator calculation bounds its correction by
+$K/(K-1)$. In particular, a multiplier below $(K-1)/K$
+forces the endpoint below the start. For a positive cycle of least
+shortcut period $L$ with all states above the cutoff, the endpoint
+equals the start, so its normalized gap satisfies
+
+$$
+0 < 1-rac{3^{a_L}}{2^L} le rac{1}{K}.
+$$
+
+The bound on the normalized gap depends on the size cutoff and applies
+uniformly in the least period. The stride supplied by the elementary
+moment bound gives very large cutoffs. The result supplies a
+necessary constraint on large cycles.
