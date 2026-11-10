@@ -341,6 +341,7 @@ import Collatz.Strategy.ExcursionFloorMonotonicity
 import Collatz.Strategy.ExcursionFloorFibres
 import Collatz.Strategy.ExcursionPowerGap
 import Collatz.Strategy.ExcursionCanonicalCrossing
+import Collatz.Strategy.ExcursionCoefficientCoverage
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit

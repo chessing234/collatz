@@ -184,7 +184,7 @@ private theorem exists_nat_gt (r : Rat) : ∃ j : Nat, r < (j : Rat) := by
   change r < (j : Rat) + 1
   grind
 
-private theorem eventually_scaled_lt_one {r : Rat} (hr : 0 < r) (hr' : r < 1) (C : Rat) :
+theorem eventually_scaled_lt_one {r : Rat} (hr : 0 < r) (hr' : r < 1) (C : Rat) :
     ∃ j : Nat, C * r ^ j < 1 := by
   let q := r⁻¹
   have hq : 1 < q := by
