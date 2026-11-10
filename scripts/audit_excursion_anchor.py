@@ -205,6 +205,48 @@ def check_conflicting_pairs():
     print(f"Checked both endpoint choices against exact optimization on {checked:,} conflicting pairs.")
 
 
+def greedy_schedule(part, cut, middle):
+    left = [middle]
+    for edge in reversed(part[:cut]):
+        left.append(min(Fraction(1), inverse(edge, left[-1])))
+    right = [middle]
+    for edge in part[cut:]:
+        right.append(max(Fraction(0), transport(edge, right[-1])))
+    assert all(value == 1 for value in left[2:])
+    assert all(value == 0 for value in right[3:])
+    return list(reversed(left[1:])) + right
+
+
+def check_greedy_part(n, part):
+    cut = next((i for i, (a, b, c) in enumerate(part) if b * n + c >= a * (n + 1)), len(part))
+    assert all(b * n + c >= a * (n + 1) for a, b, c in part[cut:])
+    layers = local_layers(part)
+    best = min(cost(n, part, greedy_schedule(part, cut, q)) for q in layers[cut])
+    assert best == optimum(n, part, layers)
+
+
+def check_greedy_blocks():
+    checked = 0
+    for n in range(3, 2_000, 2):
+        word, _, _ = first_word(n)
+        for part in sign_parts(n, word):
+            check_greedy_part(n, part)
+            checked += 1
+    rng = Random(25031)
+    for _ in range(30):
+        n = rng.randrange(1, 300)
+        word = [rng.choice([(9, 8, 4), (27, 16, 8)]) for _ in range(rng.randrange(3, 9))]
+        word.extend(rng.choice([(3, 4, 2), (3, 8, 2)]) for _ in range(rng.randrange(4, 10)))
+        check_greedy_part(n, word)
+    word, _, _ = first_word(199)
+    assert len(local_layers(word)[1]) == 5
+    word, _, _ = first_word(543)
+    prices = {q: cost(543, word, greedy_schedule(word, 1, q)) for q in local_layers(word)[1]}
+    assert prices[Fraction(7, 9)] == Fraction(2719744, 2714067)
+    assert all(prices[Fraction(7, 9)] < value for q, value in prices.items() if q != Fraction(7, 9))
+    print(f"Checked one-coordinate greedy minima on {checked:,} genuine sign blocks and 30 longer words.")
+
+
 def main():
     rng = Random(61527)
     sign_cuts = 0
@@ -250,6 +292,7 @@ def main():
     check_flat_schedule()
     check_unit_tails()
     check_conflicting_pairs()
+    check_greedy_blocks()
 
 
 if __name__ == "__main__":
