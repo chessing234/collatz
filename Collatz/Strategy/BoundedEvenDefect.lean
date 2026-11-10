@@ -30,18 +30,6 @@ theorem last_even (x j : Nat) :
       · refine Or.inr ⟨i, t + 1, by omega, by omega, ?_⟩
         rw [runA_odd ho, hA, Nat.pow_succ', Nat.mul_assoc]
 
-private theorem bounded (f : Nat → Nat) (B : Nat) :
-    ∃ K, ∀ t, t < B → f t ≤ K := by
-  induction B with
-  | zero => exact ⟨0, fun t ht => (Nat.not_lt_zero t ht).elim⟩
-  | succ B ih =>
-    obtain ⟨K, hK⟩ := ih
-    refine ⟨max K (f B), fun t ht => ?_⟩
-    by_cases he : t = B
-    · rw [he]
-      exact Nat.le_max_right _ _
-    · exact Nat.le_trans (hK t (by omega)) (Nat.le_max_left _ _)
-
 private theorem three_pow_dvd {a b : Nat} (h : a ≤ b) : (3 : Int) ^ a ∣ 3 ^ b := by
   simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
     (Int.ofNat_dvd.mpr (Nat.pow_dvd_pow 3 h))
@@ -53,13 +41,13 @@ private theorem cancel_dyadic {C : Int} {p j : Nat}
   simp only [Int.natAbs_mul, Int.natAbs_pow] at hnat ⊢
   exact ((by decide : Nat.Coprime 3 2).pow p j).dvd_of_dvd_mul_left hnat
 
-private theorem integer_precision (C : Int) (hC : C ≠ 0) :
-    ¬ (3 : Int) ^ C.natAbs ∣ C := by
+private theorem integer_precision {C : Int} {p : Nat} (hC : C ≠ 0) (hsize : C.natAbs < 3 ^ p) :
+    ¬ (3 : Int) ^ p ∣ C := by
   intro h
   have hd := Int.natAbs_dvd_natAbs.mpr h
   have hn : 0 < C.natAbs := by omega
   simp only [Int.natAbs_pow] at hd
-  exact Nat.not_le_of_gt (Nat.lt_pow_self (by decide : 1 < 3)) (Nat.le_of_dvd hn hd)
+  exact Nat.not_le_of_gt hsize (Nat.le_of_dvd hn hd)
 
 private def residual (C : Int) (t : Nat) : Int := (2 : Int) ^ (t + 1) * (C / 3 ^ t) - 1
 
@@ -68,39 +56,65 @@ private theorem residual_ne_zero (C : Int) (t : Nat) : residual C t ≠ 0 := by
   rw [Int.pow_succ, Int.mul_right_comm ((2 : Int) ^ t) 2, Int.mul_comm _ 2]
   omega
 
-/-- With a fixed even-step budget, the normalized shifted defect
-stays away from every nonzero integer modulo a sufficiently large
-power of three, uniformly over the length of the orbit segment. -/
-theorem avoids_nonzero_integer (d : Nat) :
-    ∀ C : Int, C ≠ 0 → ∃ p, ∀ x j, j - d ≤ oddCount x j →
+private theorem residual_size {C : Int} {t : Nat} (hC : C ≠ 0)
+    (hdiv : (3 : Int) ^ t ∣ C) :
+    3 ^ t * (residual C t).natAbs ≤ (3 * 2 ^ t) * C.natAbs := by
+  let R := C / (3 : Int) ^ t
+  have hCR : C = (3 : Int) ^ t * R := (Int.mul_ediv_cancel' hdiv).symm
+  have habs : C.natAbs = 3 ^ t * R.natAbs := by
+    simpa only [Int.natAbs_mul, Int.natAbs_pow, show (3 : Int).natAbs = 3 by rfl] using
+      congrArg Int.natAbs hCR
+  have hpos : 0 < R.natAbs := by
+    apply Nat.pos_of_ne_zero
+    intro hz
+    rw [hz, Nat.mul_zero] at habs
+    omega
+  have hproduct := Nat.mul_pos (Nat.two_pow_pos t) hpos
+  have hR : (residual C t).natAbs ≤ 3 * (2 ^ t * R.natAbs) := by
+    calc
+      _ ≤ ((2 : Int) ^ (t + 1) * R).natAbs + (1 : Int).natAbs := Int.natAbs_sub_le _ _
+      _ = 2 * (2 ^ t * R.natAbs) + 1 := by
+        rw [Int.natAbs_mul, Int.natAbs_pow]
+        change 2 ^ (t + 1) * R.natAbs + 1 = _
+        rw [Nat.pow_succ', Nat.mul_assoc]
+      _ ≤ _ := by omega
+  calc
+    _ ≤ 3 ^ t * (3 * (2 ^ t * R.natAbs)) := Nat.mul_le_mul_left _ hR
+    _ = _ := by rw [habs]; ac_rfl
+
+private theorem precision_of_size {d p : Nat} {C : Int} (hC : C ≠ 0)
+    (hsize : 2 ^ p * (3 ^ d * C.natAbs) < 3 ^ p) : ¬ (3 : Int) ^ p ∣ C := by
+  have hle : C.natAbs ≤ 2 ^ p * (3 ^ d * C.natAbs) :=
+    Nat.le_trans (Nat.le_mul_of_pos_left _ (Nat.pow_pos (by decide)))
+      (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _))
+  exact integer_precision hC (Nat.lt_of_le_of_lt hle hsize)
+
+private theorem avoids_at_precision (d p : Nat) {C : Int} (hC : C ≠ 0)
+    (hsize : 2 ^ p * (3 ^ d * C.natAbs) < 3 ^ p) :
+    ∀ x j, j - d ≤ oddCount x j →
       ¬ (3 : Int) ^ p ∣ (2 : Int) ^ j * C - (runA j x : Int) := by
-  induction d with
+  induction d generalizing p C with
   | zero =>
-    intro C hC
-    refine ⟨C.natAbs, fun x j hodd hdvd => ?_⟩
+    intro x j hodd hdvd
+    have hprec := precision_of_size hC hsize
     rcases last_even x j with ⟨_, hzero⟩ | ⟨i, t, hlen, ha, _⟩
     · rw [hzero] at hdvd
       simp only [Int.ofNat_zero, Int.sub_zero] at hdvd
-      exact integer_precision C hC (cancel_dyadic hdvd)
+      exact hprec (cancel_dyadic hdvd)
     · have hcap := AffineExact.oddCount_le_self x i
       omega
   | succ d ih =>
-    intro C hC
-    let B := C.natAbs
-    let precision := fun t => Classical.choose (ih (residual C t) (residual_ne_zero C t))
-    have hprecision (t : Nat) := Classical.choose_spec (ih (residual C t) (residual_ne_zero C t))
-    obtain ⟨K, hK⟩ := bounded precision B
-    refine ⟨B + K, fun x j hodd hdvd => ?_⟩
-    have hdB := Int.dvd_trans (three_pow_dvd (show B ≤ B + K by omega)) hdvd
+    intro x j hodd hdvd
+    have hprec := precision_of_size hC hsize
     rcases last_even x j with ⟨_, hzero⟩ | ⟨i, t, hlen, ha, hA⟩
-    · rw [hzero] at hdB
-      simp only [Int.ofNat_zero, Int.sub_zero] at hdB
-      exact integer_precision C hC (cancel_dyadic hdB)
+    · rw [hzero] at hdvd
+      simp only [Int.ofNat_zero, Int.sub_zero] at hdvd
+      exact hprec (cancel_dyadic hdvd)
     · have hAint : (runA j x : Int) = (3 : Int) ^ t * ((runA i x : Int) + 2 ^ i) := by
         simpa only [Int.natCast_mul, Int.natCast_add, Int.natCast_pow,
           show ((3 : Nat) : Int) = 3 by rfl, show ((2 : Nat) : Int) = 2 by rfl] using
           congrArg (fun n : Nat => (n : Int)) hA
-      have hCsmall (b : Nat) (hb : b ≤ B + K) (hbt : b ≤ t) : (3 : Int) ^ b ∣ C := by
+      have hCsmall (b : Nat) (hb : b ≤ p) (hbt : b ≤ t) : (3 : Int) ^ b ∣ C := by
         have hdiff := Int.dvd_trans (three_pow_dvd hb) hdvd
         have hpart : (3 : Int) ^ b ∣ (runA j x : Int) := by
           rw [hAint]
@@ -108,13 +122,14 @@ theorem avoids_nonzero_integer (d : Nat) :
         have hprod := Int.dvd_add hdiff hpart
         rw [Int.sub_add_cancel] at hprod
         exact cancel_dyadic hprod
-      have ht : t < B := by
+      have ht : t < p := by
         apply Nat.lt_of_not_ge
         intro ht
-        exact integer_precision C hC (hCsmall B (by omega) ht)
+        exact hprec (hCsmall p (Nat.le_refl _) ht)
+      have hCt : (3 : Int) ^ t ∣ C := hCsmall t (by omega) (Nat.le_refl _)
       let R := C / (3 : Int) ^ t
       have hCR : C = (3 : Int) ^ t * R :=
-        (Int.mul_ediv_cancel' (hCsmall t (by omega) (Nat.le_refl _))).symm
+        (Int.mul_ediv_cancel' hCt).symm
       have h₂ : (2 : Int) ^ j = 2 ^ i * 2 ^ (t + 1) := by
         rw [hlen, Nat.add_assoc, Nat.add_comm 1 t, Int.pow_add]
       have hfactor : (2 : Int) ^ j * C - (runA j x : Int) =
@@ -131,23 +146,65 @@ theorem avoids_nonzero_integer (d : Nat) :
             congr 1
             rw [Int.mul_sub, Int.mul_one, Int.mul_assoc]
             omega
-      have hbound := hK t ht
-      have hp : t + precision t ≤ B + K := by omega
-      have hdiv := Int.dvd_trans (three_pow_dvd hp) hdvd
-      rw [hfactor, Int.pow_add] at hdiv
+      let q := p - t
+      have htp : t + q = p := Nat.add_sub_of_le (Nat.le_of_lt ht)
+      have hqp : q + t = p := Nat.sub_add_cancel (Nat.le_of_lt ht)
+      have hdiv := hdvd
+      conv at hdiv => lhs; rw [← htp, Int.pow_add]
+      rw [hfactor] at hdiv
       have hnon : (3 : Int) ^ t ≠ 0 := Int.ne_of_gt (Int.pow_pos (by decide : (0 : Int) < 3))
       have hpre : i - d ≤ oddCount x i := by omega
-      exact hprecision t x i hpre (Int.dvd_of_mul_dvd_mul_left hnon hdiv)
+      have hsize' : 2 ^ q * (3 ^ d * (residual C t).natAbs) < 3 ^ q := by
+        apply Nat.lt_of_mul_lt_mul_left (a := 3 ^ t)
+        calc
+          _ = (2 ^ q * 3 ^ d) * (3 ^ t * (residual C t).natAbs) := by ac_rfl
+          _ ≤ (2 ^ q * 3 ^ d) * ((3 * 2 ^ t) * C.natAbs) :=
+            Nat.mul_le_mul_left _ (residual_size hC hCt)
+          _ = 2 ^ p * (3 ^ (d + 1) * C.natAbs) := by
+            calc
+              _ = (2 ^ q * 2 ^ t) * ((3 ^ d * 3) * C.natAbs) := by ac_rfl
+              _ = _ := by rw [← Nat.pow_add, hqp, ← Nat.pow_succ]
+          _ < 3 ^ p := hsize
+          _ = 3 ^ t * 3 ^ q := by rw [← Nat.pow_add, htp]
+      exact ih q (residual_ne_zero C t) hsize'
+        x i hpre (Int.dvd_of_mul_dvd_mul_left hnon hdiv)
 
-/-- For every signed integer displacement other than one, a fixed
-ternary precision excludes that displacement in a sufficiently
-odd prefix with a fixed even-step budget. -/
-theorem excludes_displacement (d : Nat) (c : Int) (hc : c ≠ 1) :
-    ∃ p, ∀ x j, j - d ≤ oddCount x j → p ≤ oddCount x j →
-      ¬ (3 : Int) ^ p ∣ (acceleratedOrbit j x : Int) + c := by
-  obtain ⟨p, hp⟩ := avoids_nonzero_integer d (1 - c) (by omega)
-  refine ⟨p, fun x j hbudget hcount hdiv => ?_⟩
-  apply hp x j hbudget
+/-- An explicit linear ternary precision separates every nonzero integer
+of absolute value below 2^B from defects with at most d even steps. -/
+theorem avoids_bounded_integer (d B : Nat) {C : Int} (hC : C ≠ 0) (hsize : C.natAbs < 2 ^ B) :
+    ∀ x j, j - d ≤ oddCount x j →
+      ¬ (3 : Int) ^ (2 * B + 3 * d) ∣ (2 : Int) ^ j * C - (runA j x : Int) := by
+  let p := 2 * B + 3 * d
+  apply avoids_at_precision d p hC
+  calc
+    _ < 2 ^ p * (3 ^ d * 2 ^ B) :=
+      Nat.mul_lt_mul_of_pos_left (Nat.mul_lt_mul_of_pos_left hsize (Nat.pow_pos (by decide)))
+        (Nat.two_pow_pos _)
+    _ = 8 ^ B * 24 ^ d := by
+      dsimp only [p]
+      rw [Nat.pow_add, Nat.pow_mul, Nat.pow_mul]
+      have h₈ : ((2 : Nat) ^ 2) ^ B * 2 ^ B = 8 ^ B := by rw [← Nat.mul_pow]
+      have h₂₄ : ((2 : Nat) ^ 3) ^ d * 3 ^ d = 24 ^ d := by rw [← Nat.mul_pow]
+      calc
+        _ = (((2 : Nat) ^ 2) ^ B * 2 ^ B) * (((2 : Nat) ^ 3) ^ d * 3 ^ d) := by ac_rfl
+        _ = _ := by rw [h₈, h₂₄]
+    _ ≤ 9 ^ B * 27 ^ d := Nat.mul_le_mul
+      (Nat.pow_le_pow_left (by decide) _) (Nat.pow_le_pow_left (by decide) _)
+    _ = _ := by dsimp only [p]; rw [Nat.pow_add, Nat.pow_mul, Nat.pow_mul]
+
+/-- For every nonzero integer, a fixed precision works for all orbit
+segments with the same even-step budget. -/
+theorem avoids_nonzero_integer (d : Nat) (C : Int) (hC : C ≠ 0) :
+    ∃ p, ∀ x j, j - d ≤ oddCount x j →
+      ¬ (3 : Int) ^ p ∣ (2 : Int) ^ j * C - (runA j x : Int) := by
+  refine ⟨2 * (C.natAbs.log2 + 1) + 3 * d, ?_⟩
+  exact avoids_bounded_integer d _ hC ((Nat.log2_lt (by omega)).mp (Nat.lt_succ_self _))
+
+private theorem excludes_of_defect {p x j : Nat} {c : Int} (hcount : p ≤ oddCount x j)
+    (havoid : ¬ (3 : Int) ^ p ∣ (2 : Int) ^ j * (1 - c) - (runA j x : Int)) :
+    ¬ (3 : Int) ^ p ∣ (acceleratedOrbit j x : Int) + c := by
+  intro hdiv
+  apply havoid
   let y : Int := acceleratedOrbit j x
   have hshift : (2 : Int) ^ j * (y + 1) =
       (3 : Int) ^ oddCount x j * ((x : Int) + 1) + (runA j x : Int) := by
@@ -167,5 +224,35 @@ theorem excludes_displacement (d : Nat) (c : Int) (hc : c ≠ 1) :
     omega
   rw [he]
   exact hdiff
+
+/-- A ternary precision whose scaled budget dominates the integer
+offset excludes that displacement from the prefix image. -/
+theorem excludes_displacement_with_budget (d p : Nat) (c : Int) (hc : c ≠ 1)
+    (hsize : 2 ^ p * (3 ^ d * (1 - c).natAbs) < 3 ^ p) :
+    ∀ x j, j - d ≤ oddCount x j → p ≤ oddCount x j →
+      ¬ (3 : Int) ^ p ∣ (acceleratedOrbit j x : Int) + c := by
+  intro x j hbudget hcount
+  exact excludes_of_defect hcount
+    (avoids_at_precision d p (by omega : (1 : Int) - c ≠ 0) hsize x j hbudget)
+
+/-- An explicit precision excludes a signed displacement different
+from one in a prefix with a bounded even-step budget. -/
+theorem excludes_displacement_at_precision (d B : Nat) (c : Int) (hc : c ≠ 1)
+    (hsize : (1 - c).natAbs < 2 ^ B) :
+    ∀ x j, j - d ≤ oddCount x j → 2 * B + 3 * d ≤ oddCount x j →
+      ¬ (3 : Int) ^ (2 * B + 3 * d) ∣ (acceleratedOrbit j x : Int) + c := by
+  intro x j hbudget hcount
+  exact excludes_of_defect hcount
+    (avoids_bounded_integer d B (by omega : (1 : Int) - c ≠ 0) hsize x j hbudget)
+
+/-- For every signed displacement other than one, a fixed precision
+works uniformly in the prefix length. -/
+theorem excludes_displacement (d : Nat) (c : Int) (hc : c ≠ 1) :
+    ∃ p, ∀ x j, j - d ≤ oddCount x j → p ≤ oddCount x j →
+      ¬ (3 : Int) ^ p ∣ (acceleratedOrbit j x : Int) + c := by
+  let B := (1 - c).natAbs.log2 + 1
+  have hsize : (1 - c).natAbs < 2 ^ B :=
+    (Nat.log2_lt (by omega)).mp (Nat.lt_succ_self _)
+  exact ⟨2 * B + 3 * d, excludes_displacement_at_precision d B c hc hsize⟩
 
 end Collatz.BoundedEvenDefect

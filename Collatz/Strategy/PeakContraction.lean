@@ -75,6 +75,62 @@ theorem certificate_of_two_lifts {k d r p q : Nat} (hr : 0 < r) (hpq : p < q)
   rw [hcoeff] at hfirst
   exact ⟨hexp.symm, by omega⟩
 
+private theorem ordered_lift_bands {a b q x y : Nat} (hab : a < b) (hq : 0 < q)
+    (hx : x < 3 ^ a) :
+    3 ^ a * q + x < 3 ^ b * q + y := by
+  have hgap : 3 * 3 ^ a ≤ 3 ^ b := by
+    rw [← Nat.pow_succ']
+    exact Nat.pow_le_pow_right (by decide) (by omega)
+  calc
+    _ < 3 ^ a * (q + 1) := by rw [Nat.mul_succ]; omega
+    _ ≤ 3 ^ a * (3 * q) := Nat.mul_le_mul_left _ (by omega)
+    _ = (3 * 3 ^ a) * q := by ac_rfl
+    _ ≤ 3 ^ b * q := Nat.mul_le_mul_right _ hgap
+    _ ≤ _ := Nat.le_add_right _ _
+
+/-- At positive high part, a peak meeting forces the certificate.
+Different slopes have disjoint image bands because each low endpoint
+is strictly below its own slope. -/
+theorem certificate_of_large_meeting {k d B : Nat} (hB : 2 ^ k ≤ B)
+    (hr : 0 < B % 2 ^ k)
+    (h : acceleratedOrbit k (3 ^ d * B - 1) = acceleratedOrbit k (B - 1)) :
+    Certificate k d (B % 2 ^ k) := by
+  let r := B % 2 ^ k
+  let q := B / 2 ^ k
+  let large := 3 ^ d * r - 1
+  let small := r - 1
+  let a := oddCount large k + d
+  let b := oddCount small k
+  let x := acceleratedOrbit k large
+  let y := acceleratedOrbit k small
+  have hq : 0 < q := Nat.div_pos hB (Nat.two_pow_pos _)
+  have hsplit : 2 ^ k * q + r = B := Nat.div_add_mod _ _
+  have ⟨hbig, hsmall⟩ := lift_peaks k d r q hr
+  rw [hsplit] at hbig hsmall
+  have he : 3 ^ a * q + x = 3 ^ b * q + y := by
+    rw [hbig, hsmall, Congruence.accOrbit_pow_two_mul_add,
+      Congruence.accOrbit_pow_two_mul_add] at h
+    simpa only [a, b, x, y, large, small, Nat.pow_add, Nat.mul_assoc] using h
+  have hr' : r < 2 ^ k := Nat.mod_lt _ (Nat.two_pow_pos _)
+  have hx : x < 3 ^ a := by
+    have hlarge : large < 3 ^ d * 2 ^ k :=
+      Nat.lt_of_le_of_lt (Nat.sub_le _ _) (Nat.mul_lt_mul_of_pos_left hr' (Nat.pow_pos (by decide)))
+    have hbound := OrbitCapacity.image_lt (k := k) (c := 3 ^ d) (x := large) hlarge
+    change acceleratedOrbit k large < 3 ^ (oddCount large k + d)
+    rw [Nat.pow_add, Nat.mul_comm]
+    exact hbound
+  have hy : y < 3 ^ b := by
+    have hsmall' : small < 1 * 2 ^ k := by rw [Nat.one_mul]; exact Nat.lt_of_le_of_lt (Nat.sub_le _ _) hr'
+    simpa only [Nat.one_mul] using OrbitCapacity.image_lt (k := k) (c := 1) (x := small) hsmall'
+  have hcounts : a = b := by
+    rcases Nat.lt_trichotomy a b with hl | heq | hg
+    · exact (Nat.ne_of_lt (ordered_lift_bands (y := y) hl hq hx) he).elim
+    · exact heq
+    · exact (Nat.ne_of_lt (ordered_lift_bands (y := x) hg hq hy) he.symm).elim
+  change b = a ∧ x = y
+  rw [hcounts] at he
+  exact ⟨hcounts.symm, Nat.add_left_cancel he⟩
+
 private theorem odd_run_peak (e u : Nat) (hu : 0 < u) :
     acceleratedOrbit e (2 ^ e * u - 1) = 3 ^ e * u - 1 := by
   have hpos : 0 < 2 ^ e * u := Nat.mul_pos (Nat.two_pow_pos _) hu
