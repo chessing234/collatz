@@ -173,3 +173,8 @@ jobs:
         run: |
           lake env lean scripts/audit_peak_suffix_table.lean
           python3 scripts/audit_peak_suffix_table.py
+
+      - name: Check bounded even defects and long-run peak rigidity
+        run: |
+          lake env lean scripts/audit_long_run_peak_rigidity.lean
+          python3 scripts/audit_long_run_peak_rigidity.py
