@@ -36,7 +36,7 @@ private theorem Trace.chronological_positive {n x : Nat} {rs : List Run} (h : Tr
   obtain ⟨run, hrun, rfl⟩ := List.mem_map.mp hr
   exact h.runs_positive run (List.mem_reverse.mp hrun)
 
-private theorem Trace.length_le_oddCount {n x : Nat} {rs : List Run} (h : Trace n x rs) :
+theorem Trace.length_le_oddCount {n x : Nat} {rs : List Run} (h : Trace n x rs) :
     rs.length ≤ oddCount rs := by
   induction h with
   | nil => decide
