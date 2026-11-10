@@ -23,17 +23,7 @@ private theorem mass_capacity :
   refine ⟨A, ?_⟩
   intro n hmerge j xs hnd hx
   have hc := hC (Nat.mul_pos (Nat.two_pow_pos (20 * j)) (by decide)) hmerge xs hnd hx
-  have hA : C * 2 ^ 19 ≤ A ^ 20 :=
-    Nat.le_trans (Nat.le_succ _) (Nat.le_pow (by decide : 0 < 20))
-  apply (Nat.pow_le_pow_iff_left (by decide : (20 : Nat) ≠ 0)).mp
-  calc
-    _ ≤ C * cutoff 20 j ^ 19 := hc
-    _ = (C * 2 ^ 19) * (2 ^ (19 * j)) ^ 20 := by
-      rw [cutoff, Nat.mul_pow, ← Nat.pow_mul, ← Nat.pow_mul,
-        show 20 * j * 19 = 19 * j * 20 by omega]
-      ac_rfl
-    _ ≤ A ^ 20 * (2 ^ (19 * j)) ^ 20 := Nat.mul_le_mul_right _ hA
-    _ = _ := (Nat.mul_pow ..).symm
+  exact count_mass_twenty hc
 
 /-- The correction error has the dyadic rate corresponding to
 an inverse twentieth power of the size cutoff. -/

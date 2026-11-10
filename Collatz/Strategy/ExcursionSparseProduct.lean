@@ -319,6 +319,23 @@ def DyadicCapacity (states : Nat → Nat) (P : Nat) : Prop :=
     (∀ x ∈ xs, x < cutoff P j ∧ ∃ i, states i = x) →
     xs.length ≤ 2 ^ ((P - 1) * j)
 
+/-- A `19/20` occupation estimate at a dyadic cutoff gives a
+geometric count at stride twenty, with a fixed mass factor. -/
+theorem count_mass_twenty {C j length : Nat} (h : length ^ 20 ≤ C * cutoff 20 j ^ 19) :
+    length ≤ (C * 2 ^ 19 + 1) * 2 ^ (19 * j) := by
+  let A := C * 2 ^ 19 + 1
+  have hA : C * 2 ^ 19 ≤ A ^ 20 :=
+    Nat.le_trans (Nat.le_succ _) (Nat.le_pow (by decide : 0 < 20))
+  apply (Nat.pow_le_pow_iff_left (by decide : (20 : Nat) ≠ 0)).mp
+  calc
+    _ ≤ C * cutoff 20 j ^ 19 := h
+    _ = (C * 2 ^ 19) * (2 ^ (19 * j)) ^ 20 := by
+      rw [cutoff, Nat.mul_pow, ← Nat.pow_mul, ← Nat.pow_mul,
+        show 20 * j * 19 = 19 * j * 20 by omega]
+      ac_rfl
+    _ ≤ A ^ 20 * (2 ^ (19 * j)) ^ 20 := Nat.mul_le_mul_right _ hA
+    _ = _ := (Nat.mul_pow ..).symm
+
 /-- A finite selection above the specified cutoff has a correction
 bound independent of how far its upper endpoint lies. -/
 theorem reciprocal_tail_from_count {P j q A : Nat} {xs : List Nat}
@@ -349,13 +366,16 @@ theorem reciprocal_tail_of_capacity {states : Nat → Nat} {P q : Nat}
     obtain ⟨hxmem, hxlt⟩ := List.mem_filter.mp hx
     exact ⟨of_decide_eq_true hxlt, hmember x hxmem⟩)
 
-/-- A geometrically sparse sequence has a uniform reciprocal product
-bound on every finite subcollection of distinct values. -/
-theorem reciprocal_product_of_capacity {states : Nat → Nat} {P : Nat}
-    (hP : 0 < P) (hpos : ∀ i, 0 < states i) (hcapacity : DyadicCapacity states P) :
+/-- Geometric counts with a uniform mass factor bound the entire
+reciprocal product of any finite collection of distinct values. -/
+theorem reciprocal_product_of_mass {keep : Nat → Prop} {P J A : Nat}
+    (hP : 0 < P) (hA : A ≤ 2 ^ J)
+    (hpos : ∀ x, keep x → 0 < x)
+    (hcapacity : ∀ j (xs : List Nat), xs.Nodup →
+      (∀ x ∈ xs, x < cutoff P j ∧ keep x) → xs.length ≤ A * 2 ^ ((P - 1) * j)) :
     ∃ C, ∀ xs : List Nat, xs.Nodup →
-      (∀ x ∈ xs, ∃ i, states i = x) → factors 1 1 xs ≤ C * xs.prod := by
-  let M := cutoff P P
+      (∀ x ∈ xs, keep x) → factors 1 1 xs ≤ C * xs.prod := by
+  let M := cutoff P (P + J)
   refine ⟨2 ^ M * 2, ?_⟩
   intro xs hnodup hmember
   let inside := fun x => decide (x < M)
@@ -370,18 +390,22 @@ theorem reciprocal_product_of_capacity {states : Nat → Nat} {P : Nat}
     simpa using hlowNodup.length_le_of_subset hlowSubset
   have hlowPos : ∀ x ∈ low, 0 < x := by
     intro x hx
-    obtain ⟨i, rfl⟩ := hmember x (List.mem_filter.mp hx).1
-    exact hpos i
+    exact hpos x (hmember x (List.mem_filter.mp hx).1)
   have hsmall : factors 1 1 low ≤ 2 ^ M * low.prod :=
     Nat.le_trans (reciprocal_le_pow_length low hlowPos)
       (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by decide) hlowLen))
-  have hlo : ∀ x ∈ high, cutoff P (P + 0) ≤ x := by
+  have hlo : ∀ x ∈ high, cutoff P (P + J + 0) ≤ x := by
     intro x hx
     have h := (List.mem_filter.mp hx).2
     simpa [inside, M, Nat.not_lt] using h
   have hlarge : factors 1 1 high ≤ 2 * high.prod := by
-    simpa using reciprocal_tail_of_capacity hP hcapacity hhighNodup
-      (fun x hx => hmember x (List.mem_filter.mp hx).1) hlo
+    suffices 1 * factors 1 1 high ≤ 2 * high.prod by simpa using this
+    apply reciprocal_tail_from_count (q := 0) hP hA hlo
+    intro j
+    apply hcapacity j _ (List.filter_sublist.nodup hhighNodup)
+    intro x hx
+    obtain ⟨hxh, hlt⟩ := List.mem_filter.mp hx
+    exact ⟨of_decide_eq_true hlt, hmember x (List.mem_filter.mp hxh).1⟩
   have hnum : factors 1 1 xs = factors 1 1 low * factors 1 1 high :=
     product_filter_partition xs (fun x => 1 * x + 1) inside
   have hden : xs.prod = low.prod * high.prod := by
@@ -390,6 +414,18 @@ theorem reciprocal_product_of_capacity {states : Nat → Nat} {P : Nat}
   calc
     _ ≤ (2 ^ M * low.prod) * (2 * high.prod) := Nat.mul_le_mul hsmall hlarge
     _ = _ := by ac_rfl
+
+/-- A geometrically sparse sequence has a uniform reciprocal product
+bound on every finite subcollection of distinct values. -/
+theorem reciprocal_product_of_capacity {states : Nat → Nat} {P : Nat}
+    (hP : 0 < P) (hpos : ∀ i, 0 < states i) (hcapacity : DyadicCapacity states P) :
+    ∃ C, ∀ xs : List Nat, xs.Nodup →
+      (∀ x ∈ xs, ∃ i, states i = x) → factors 1 1 xs ≤ C * xs.prod := by
+  apply reciprocal_product_of_mass (J := 0) (A := 1) hP (by decide)
+  · rintro x ⟨i, rfl⟩
+    exact hpos i
+  · intro j xs hnd hx
+    simpa only [Nat.one_mul] using hcapacity j xs hnd hx
 
 theorem box_reciprocal_product {states : Nat → Nat} {u w : Nat}
     (hL : 0 < u + w) (hf : HasBoxFutures states u w) :
