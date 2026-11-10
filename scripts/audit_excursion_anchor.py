@@ -3,7 +3,7 @@
 
 from fractions import Fraction
 from itertools import product
-from math import ceil, prod
+from math import ceil, gcd, prod
 from random import Random
 
 from audit_excursion_crossing import next_excursion
@@ -305,6 +305,32 @@ def check_floor_monotonicity():
     print("Checked 8,192 translated factors, 999 complete words, and the exact threshold 61 for the word from 63.")
 
 
+def check_floor_fibres():
+    common_exponents = 0
+    for n in range(3, 2_000, 2):
+        word, inverse_coefficient, _ = first_word(n)
+        a, b = inverse_coefficient.denominator, inverse_coefficient.numerator
+        lifted = n + 2 * b
+        assert first_word(lifted)[:2] == (word, inverse_coefficient)
+        x, y = n, lifted
+        elapsed, odd_count = 0, 0
+        for _ in word:
+            x, v, w = next_excursion(x)
+            y, vv, ww = next_excursion(y)
+            assert (v, w) == (vv, ww)
+            elapsed += v + w
+            odd_count += v
+        assert y - x == 2 * a
+        if len(word) < 2 * (b - a):
+            assert b * len(word) < (b - a) * lifted
+            assert y < lifted
+        if gcd(elapsed, odd_count) > 1:
+            assert len(word) < 2 * (b - a)
+            common_exponents += 1
+    assert common_exponents > 0
+    print(f"Checked 999 first source lifts, including {common_exponents} with a common exponent divisor.")
+
+
 def main():
     rng = Random(61527)
     sign_cuts = 0
@@ -353,6 +379,7 @@ def main():
     check_greedy_blocks()
     check_reversal_budgets()
     check_floor_monotonicity()
+    check_floor_fibres()
 
 
 if __name__ == "__main__":

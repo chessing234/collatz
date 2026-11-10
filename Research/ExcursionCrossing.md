@@ -333,6 +333,27 @@ checks the threshold exactly for the word of the first crossing from
 63. Its abstract threshold is 61. A floor in this interval certifies
 an actual start when that start follows the word.
 
+## Spacing restricts the unresolved starts of a word
+
+Two starts following the same excursion word satisfy
+`B(y₂−y₁)=A(n₂−n₁)`. Both exits are odd. Since `A` is a power
+of three and `B` is a power of two, the starts differ by a multiple
+of `2B`.
+
+If `2(B−A)>j`, where `j` is the number of excursions, every
+realization after the least one is above the certificate cutoff.
+More generally, a realization at distance `2Bq` from an earlier
+one can avoid descent through the word only if `2(B−A)q≤j`.
+The gap condition is automatic when the total odd and accelerated
+step counts share a divisor greater than one and `B>A`. Factoring
+the difference of powers leaves a term at least as large as the
+penultimate power of three.
+
+[Lean](../Collatz/Strategy/ExcursionFloorFibres.lean) verifies
+the spacing, the bound on the index, and descent from 139 along
+the first crossing word from 11. These two starts are one source
+period apart, with three odd steps in six accelerated steps.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
