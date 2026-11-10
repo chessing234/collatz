@@ -23,3 +23,6 @@ example : leastAt 39 (2 ^ 31 - 1) < 2 ^ 31 - 1 := by
 #print axioms mersenne_79_reaches_one
 #print axioms mersenne_111_reaches_one
 #print axioms mersenne_2047_reaches_one
+#print axioms separated_near_one
+#print axioms mersenne_separation
+#print axioms mersenne_wait_lower_bound

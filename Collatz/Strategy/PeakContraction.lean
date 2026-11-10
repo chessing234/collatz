@@ -200,4 +200,86 @@ theorem mersenne_2047_reaches_one (t : Nat) :
     (by decide) (by omega) hm
   simpa only [Nat.mul_one] using h
 
+/-- When the middle shifted peak is one modulo the dyadic period, its
+image and the smaller peak's image coincide. The larger peak remains
+strictly above both after the same number of steps. -/
+theorem separated_near_one {B k : Nat} (hB : 3 * B % 2 ^ (k + 2) = 1) :
+    acceleratedOrbit (k + 2) (B - 1) = acceleratedOrbit (k + 2) (3 * B - 1) ∧
+      acceleratedOrbit (k + 2) (3 * B - 1) < acceleratedOrbit (k + 2) (9 * B - 1) := by
+  let q := 3 * B / 2 ^ (k + 2)
+  have hsplit : 3 * B = 2 ^ (k + 2) * q + 1 := by
+    simpa only [q, hB] using (Nat.div_add_mod (3 * B) (2 ^ (k + 2))).symm
+  have hfour : 3 * B = 4 * (2 ^ k * q) + 1 := by
+    rw [hsplit, Nat.pow_add, show (2 : Nat) ^ 2 = 4 by decide]
+    ac_rfl
+  have hmod : B % 4 = 3 := by omega
+  have hsmall : acceleratedOrbit 2 (B - 1) = 2 ^ k * q := by
+    have hfirst : acceleratedStep (B - 1) = (B - 1) / 2 := by
+      rw [acceleratedStep, if_pos (by omega)]
+    rw [← acceleratedOrbit_add 1 1]
+    change acceleratedStep (acceleratedStep (B - 1)) = 2 ^ k * q
+    rw [hfirst, acceleratedStep, if_neg (by omega)]
+    omega
+  have hmid : 3 * B - 1 = 2 ^ (k + 2) * q := by omega
+  have hbig : 9 * B - 1 = 2 ^ (k + 2) * (3 * q) + 2 := by
+    rw [show 9 * B = 3 * (3 * B) by omega, hsplit, Nat.mul_add, Nat.mul_one,
+      Nat.mul_left_comm 3]
+    omega
+  rw [hmid, hbig, leading_halvings, ← acceleratedOrbit_add k 2, hsmall, leading_halvings,
+    Congruence.accOrbit_pow_two_mul_add]
+  have hpos := acceleratedOrbit_positive (n := 2) (by decide) (k + 2)
+  have hprod := Nat.le_mul_of_pos_left (3 * q) (Nat.pow_pos (by decide : 0 < 3) (n := oddCount 2 (k + 2)))
+  exact ⟨rfl, by omega⟩
+
+/-- For every fixed suffix length at least three, there are arbitrarily
+large odd Mersenne exponents whose peaks cannot be matched by a drop of
+one or two within that length. -/
+theorem mersenne_separation {k e : Nat} (hk : 3 ≤ k)
+    (hperiod : 2 ^ (k - 2) ∣ e + 1) :
+    acceleratedOrbit k (3 ^ e - 1) = acceleratedOrbit k (3 ^ (e + 1) - 1) ∧
+      acceleratedOrbit k (3 ^ (e + 1) - 1) < acceleratedOrbit k (3 ^ (e + 2) - 1) := by
+  obtain ⟨t, ht⟩ := hperiod
+  have hmod : 3 ^ (e + 1) % 2 ^ k = 1 := by
+    rw [ht]
+    have hlift := exponent_lift (e := 0) hk t
+    simp only [Nat.zero_add, Nat.pow_zero] at hlift
+    rw [hlift]
+    exact Nat.mod_eq_of_lt (by simpa using
+      (Nat.pow_lt_pow_iff_right (by decide : 1 < 2)).mpr (show 0 < k by omega))
+  have hsmall : 3 * 3 ^ e = 3 ^ (e + 1) := (Nat.pow_succ' ..).symm
+  have hlarge : 9 * 3 ^ e = 3 ^ (e + 2) := by
+    rw [Nat.pow_add, show (3 : Nat) ^ 2 = 9 by decide, Nat.mul_comm 9]
+  have hperiod' : 3 * 3 ^ e % 2 ^ ((k - 2) + 2) = 1 := by
+    rwa [Nat.sub_add_cancel (by omega : 2 ≤ k), hsmall]
+  have hs := separated_near_one hperiod'
+  rwa [Nat.sub_add_cancel (by omega : 2 ≤ k), hsmall, hlarge] at hs
+
+/-- Above any exponent cutoff, a one- or two-exponent drop can require
+more than a prescribed number of suffix steps. -/
+theorem mersenne_wait_lower_bound (k E : Nat) (hk : 3 ≤ k) :
+    ∃ e, E < e + 2 ∧ (e + 2) % 2 = 1 ∧ ∀ h, h ≤ k →
+      acceleratedOrbit h (3 ^ (e + 2) - 1) ≠ acceleratedOrbit h (3 ^ (e + 1) - 1) ∧
+      acceleratedOrbit h (3 ^ (e + 2) - 1) ≠ acceleratedOrbit h (3 ^ e - 1) := by
+  let P := 2 ^ (k - 2)
+  let e := P * (E + 1) - 1
+  have hP : 0 < P := Nat.two_pow_pos _
+  have hEq : e + 1 = P * (E + 1) := Nat.sub_add_cancel (Nat.mul_pos hP (by omega))
+  have hP2 : P % 2 = 0 := by
+    dsimp [P]
+    rw [show k - 2 = (k - 3) + 1 by omega, Nat.pow_succ]
+    omega
+  have heven : (P * (E + 1)) % 2 = 0 := by rw [Nat.mul_mod, hP2, Nat.zero_mul]
+  have hle : E + 1 ≤ P * (E + 1) := Nat.le_mul_of_pos_left _ hP
+  have hsep := mersenne_separation hk (show P ∣ e + 1 from ⟨E + 1, hEq⟩)
+  have before {x y h : Nat} (hh : h ≤ k) (hne : acceleratedOrbit k x ≠ acceleratedOrbit k y) :
+      acceleratedOrbit h x ≠ acceleratedOrbit h y := by
+    intro he
+    have hl := congrArg (acceleratedOrbit (k - h)) he
+    rw [acceleratedOrbit_add, acceleratedOrbit_add, Nat.sub_add_cancel hh] at hl
+    exact hne hl
+  refine ⟨e, by omega, by omega, fun h hh => ⟨before hh (Nat.ne_of_gt hsep.2), ?_⟩⟩
+  apply before hh
+  rw [hsep.1]
+  exact Nat.ne_of_gt hsep.2
+
 end Collatz.PeakContraction
