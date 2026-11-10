@@ -34,5 +34,20 @@ Monks's sufficiency theorem for arithmetic progressions.
 Applied to the delay progression, it gives ancestors of
 every such \(z\) with the prescribed run and delay.
 
+The construction also bounds the total depth uniformly in
+the unit target. Let \(a\) be the odd count of the chosen
+dyadic prefix and \(B\) the offset after the extra odd step.
+For index cutoff \(H\), write \(C=3^{a+b+1}H+B\). The
+doubling exponent is at most
+\(\lfloor\log_2 C\rfloor+1+4\cdot3^{a+b}\).
+This follows by taking bounded representatives modulo the
+ternary period and adding just enough periods to clear the
+size threshold. If the resulting total depth bound is \(L\),
+an ancestor of \(z\) has size at most \(2^L z\).
+Checking the chosen progression up to \(2^{L+1}X\) therefore
+implies convergence for all positive inputs up to \(X\).
+Every odd input at most \(X\) reaches a unit at most \(2X\)
+in one shortcut step, and even inputs reduce by halving.
+
 The general arithmetic-progression theorem is due to
 [Kenneth M. Monks](https://monks.scranton.edu/files/pubs/SufficiencyRev4.pdf).
