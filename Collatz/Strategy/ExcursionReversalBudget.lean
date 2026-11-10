@@ -73,7 +73,7 @@ private theorem idealFactor_ge_one {n v W : Nat} (hn : 0 < n) :
   · exact ofRun_factor_ge_one hn Rat.le_refl Rat.le_refl htop
   · exact ofRun_factor_ge_one hn htop htop Rat.le_refl
 
-private theorem ofRun_factor_le_band_ratio {n v W : Nat} (hn : 0 < n) {p q : Rat}
+theorem ofRun_factor_le_band_ratio {n v W : Nat} (hn : 0 < n) {p q : Rat}
     (hp : (n : Rat) ≤ p) (hp' : p ≤ (n : Rat) + 1) (hq : (n : Rat) ≤ q) :
     (Edge.ofRun n v W).factor p q ≤ ((n : Rat) + 1) / n := by
   let e := Edge.ofRun n v W
@@ -360,10 +360,13 @@ theorem OrbitWord.drop_of_reversalBudget {n endpoint elapsed A B word}
   have hc := Rat.mul_le_mul_of_nonneg_left hle (Rat.natCast_nonneg (a := A))
   grind
 
+/-- The run parameters at the first excursion coefficient crossing of 63. -/
+def runParameters63 : List (Nat × Nat) :=
+  [(6, 3), (2, 1), (3, 1), (4, 1), (1, 2), (3, 1), (2, 1), (6, 2),
+    (4, 3), (1, 1), (1, 1), (1, 3)]
+
 private def budgetWord63 : List Edge :=
-  [Edge.ofRun 63 6 3, Edge.ofRun 63 2 1, Edge.ofRun 63 3 1, Edge.ofRun 63 4 1,
-    Edge.ofRun 63 1 2, Edge.ofRun 63 3 1, Edge.ofRun 63 2 1, Edge.ofRun 63 6 2,
-    Edge.ofRun 63 4 3, unitEdge 63, unitEdge 63, Edge.ofRun 63 1 3]
+  runParameters63.map fun (v, W) => Edge.ofRun 63 v W
 
 /-- The threshold budget for 63 crosses strictly, while the binary
 pair budget leaves this crossing unresolved. -/
