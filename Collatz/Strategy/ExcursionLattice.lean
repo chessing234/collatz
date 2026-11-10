@@ -195,14 +195,52 @@ def Stratum.entries (g : Stratum) : List Visit :=
 def Stratum.grid (g : Stratum) (m : Nat) : List Nat :=
   ExcursionLattice.grid (classBase m g.oddSteps) (2 ^ (g.oddSteps + 1)) g.sources.length
 
+def Stratum.factorProduct (g : Stratum) (sources : List Nat) : Nat :=
+  factors (3 ^ g.oddSteps) (3 ^ g.oddSteps - 2 ^ g.oddSteps) sources
+
 def Stratum.gridNumerator (g : Stratum) (m : Nat) : Nat :=
-  factors (3 ^ g.oddSteps) (3 ^ g.oddSteps - 2 ^ g.oddSteps) (g.grid m)
+  g.factorProduct (g.grid m)
 
 def gridDenominator (m : Nat) (groups : List Stratum) : Nat :=
   (groups.map (fun g => (g.grid m).prod)).prod
 
 def gridNumerator (m : Nat) (groups : List Stratum) : Nat :=
   (groups.map (fun g => g.gridNumerator m)).prod
+
+/-- Multiply any collection of certified comparisons, one per stratum. -/
+theorem collect_product_bounds {α : Type} {groups : List α} (actual : α → Stratum)
+    (lower : α → List Nat)
+    (hlocal : ∀ g ∈ groups, (actual g).factorProduct (actual g).sources * (lower g).prod ≤
+      (actual g).sources.prod * (actual g).factorProduct (lower g)) :
+    ((groups.flatMap (fun g => (actual g).entries)).map Visit.numerator).prod *
+      (groups.map (fun g => (lower g).prod)).prod ≤
+    ((groups.flatMap (fun g => (actual g).entries)).map Visit.source).prod *
+      (groups.map (fun g => (actual g).factorProduct (lower g))).prod := by
+  induction groups with
+  | nil => simp
+  | cons g gs ih =>
+    let s := actual g
+    have hden : ((actual g).entries.map Visit.source).prod = (actual g).sources.prod := by
+      simp [Stratum.entries, List.map_map, Function.comp_def]
+    have hnum : ((actual g).entries.map Visit.numerator).prod =
+        (actual g).factorProduct (actual g).sources := by
+      simp [Stratum.entries, List.map_map, Function.comp_def, Visit.numerator,
+        Stratum.factorProduct, factors]
+    have hhead := hlocal g List.mem_cons_self
+    have htail := ih (fun t ht => hlocal t (List.mem_cons_of_mem _ ht))
+    let tailNum := ((gs.flatMap (fun g => (actual g).entries)).map Visit.numerator).prod
+    let tailDen := ((gs.flatMap (fun g => (actual g).entries)).map Visit.source).prod
+    let compNum := (gs.map (fun g => (actual g).factorProduct (lower g))).prod
+    let compDen := (gs.map (fun g => (lower g).prod)).prod
+    simp only [List.flatMap_cons, List.map_append, List.prod_append_nat, hnum, hden,
+      List.map_cons, List.prod_cons]
+    change s.factorProduct s.sources * tailNum * ((lower g).prod * compDen) ≤
+      s.sources.prod * tailDen * (s.factorProduct (lower g) * compNum)
+    calc
+      _ = (s.factorProduct s.sources * (lower g).prod) * (tailNum * compDen) := by ac_rfl
+      _ ≤ (s.sources.prod * s.factorProduct (lower g)) * (tailDen * compNum) :=
+        Nat.mul_le_mul hhead htail
+      _ = s.sources.prod * tailDen * (s.factorProduct (lower g) * compNum) := by ac_rfl
 
 /-- Compare the orbit products with the product of the individual grids. -/
 theorem stratified_product {m : Nat} {groups : List Stratum}
@@ -212,41 +250,13 @@ theorem stratified_product {m : Nat} {groups : List Stratum}
       ∃ u W y, IsExcursion r.source r.oddSteps u W y) :
     ((groups.flatMap Stratum.entries).map Visit.numerator).prod * gridDenominator m groups ≤
       ((groups.flatMap Stratum.entries).map Visit.source).prod * gridNumerator m groups := by
-  induction groups with
-  | nil => simp [gridDenominator, gridNumerator]
-  | cons g gs ih =>
-    have hmem {x : Nat} (hx : x ∈ g.sources) :
-        (⟨g.oddSteps, x⟩ : Visit) ∈ (g :: gs).flatMap Stratum.entries := by
-      apply List.mem_flatMap.mpr
-      exact ⟨g, List.mem_cons_self, List.mem_map_of_mem hx⟩
-    have hhead := run_class_product (hsorted g List.mem_cons_self)
-      (fun _ hx => hfloor _ (hmem hx)) (fun _ hx => hclass _ (hmem hx))
-    have hlift {r : Visit} (hr : r ∈ gs.flatMap Stratum.entries) :
-        r ∈ (g :: gs).flatMap Stratum.entries := by
-      simp only [List.flatMap_cons, List.mem_append]
-      exact Or.inr hr
-    have htail := ih (fun g hg => hsorted g (List.mem_cons_of_mem _ hg))
-      (fun _ hr => hfloor _ (hlift hr)) (fun _ hr => hclass _ (hlift hr))
-    have hden : (g.entries.map Visit.source).prod = g.sources.prod := by
-      simp [Stratum.entries, List.map_map, Function.comp_def]
-    have hnum : (g.entries.map Visit.numerator).prod =
-        factors (3 ^ g.oddSteps) (3 ^ g.oddSteps - 2 ^ g.oddSteps) g.sources := by
-      simp [Stratum.entries, List.map_map, Function.comp_def, Visit.numerator, factors]
-    have hhead' : factors (3 ^ g.oddSteps) (3 ^ g.oddSteps - 2 ^ g.oddSteps) g.sources *
-        (g.grid m).prod ≤ g.sources.prod * g.gridNumerator m := hhead
-    simp only [List.flatMap_cons, List.map_append, List.prod_append_nat, hnum, hden,
-      gridDenominator, gridNumerator, List.map_cons, List.prod_cons]
-    change factors (3 ^ g.oddSteps) (3 ^ g.oddSteps - 2 ^ g.oddSteps) g.sources *
-        ((gs.flatMap Stratum.entries).map Visit.numerator).prod *
-        ((g.grid m).prod * gridDenominator m gs) ≤
-      g.sources.prod * ((gs.flatMap Stratum.entries).map Visit.source).prod *
-        (g.gridNumerator m * gridNumerator m gs)
-    calc
-      _ = (factors (3 ^ g.oddSteps) (3 ^ g.oddSteps - 2 ^ g.oddSteps) g.sources * (g.grid m).prod) *
-          (((gs.flatMap Stratum.entries).map Visit.numerator).prod * gridDenominator m gs) := by ac_rfl
-      _ ≤ _ := Nat.mul_le_mul hhead' htail
-      _ = g.sources.prod * ((gs.flatMap Stratum.entries).map Visit.source).prod *
-          (g.gridNumerator m * gridNumerator m gs) := by ac_rfl
+  apply collect_product_bounds (actual := id) (lower := fun g => g.grid m)
+  intro g hg
+  have hmem {x : Nat} (hx : x ∈ g.sources) :
+      (⟨g.oddSteps, x⟩ : Visit) ∈ groups.flatMap Stratum.entries :=
+    List.mem_flatMap.mpr ⟨g, hg, List.mem_map_of_mem hx⟩
+  exact run_class_product (hsorted g hg) (fun _ hx => hfloor _ (hmem hx))
+    (fun _ hx => hclass _ (hmem hx))
 
 /-- A cross-multiplied upper bound on the visit product also bounds the
 accumulated denominator when the endpoint is at least the source. -/
