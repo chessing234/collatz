@@ -112,7 +112,9 @@ private theorem lower_peak_offset {k A x : Nat} (hlarge : 2 ^ k ≤ A - 1)
   dsimp only [c]
   omega
 
-private theorem odd_count_near_peak {v d x u : Nat} {c : Int} (hu : 0 < u)
+/-- A source below the long-run input needs enough odd steps to
+reach a nearby power-of-three fraction of its peak. -/
+theorem odd_count_near_peak {v d x u : Nat} {c : Int} (hu : 0 < u)
     (hx : x < 2 ^ v * u) (hd : d < v) (hc : c.natAbs ≤ 3 ^ (v - d - 1))
     (hy : (acceleratedOrbit v x : Int) + c = ((3 ^ (v - d) * u : Nat) : Int)) :
     v - d ≤ oddCount x v := by
@@ -359,13 +361,23 @@ private theorem peakOddCountResidue_eq (k v u : Nat) (hu : 0 < u) :
 def requiredRunLength (k v u : Nat) : Nat :=
   adaptiveRigidityCutoff k (peakOddCountResidue k v u)
 
+/-- The finite certificate for one prescribed exponent drop. -/
+def scaledPeakCertificate (k v u d : Nat) : Bool :=
+  let M := 2 ^ k
+  decide (PeakContraction.Certificate k d ((threePowMod M (v - d) * (u % M)) % M))
+
+theorem scaledPeakCertificate_iff {k v d u : Nat} (hv : 2 * k + 2 ≤ v)
+    (hpos : 0 < d) (hd : d ≤ k) (hu : u % 2 = 1) :
+    scaledPeakCertificate k v u d = true ↔
+      acceleratedOrbit k (3 ^ (v - d) * u - 1) = acceleratedOrbit k (3 ^ v * u - 1) := by
+  rw [peak_certificate_iff hv hpos hd hu, scaledPeakCertificate, threePowMod_eq,
+    Nat.mod_mul_mod, Nat.mul_mod_mod]
+  exact ⟨of_decide_eq_true, decide_eq_true⟩
+
 /-- Test the k candidate drops by suffix calculations at bounded
 dyadic residues. -/
 def shorterPeakCheck (k v u : Nat) : Bool :=
-  (List.range k).any (fun i =>
-    let d := i + 1
-    let M := 2 ^ k
-    decide (PeakContraction.Certificate k d ((threePowMod M (v - d) * (u % M)) % M)))
+  (List.range k).any (fun i => scaledPeakCertificate k v u (i + 1))
 
 /-- The finite parity test also works at the smaller adaptive cutoff. -/
 theorem smaller_iff_shorterPeakCheck_adaptive {k v n u : Nat}
@@ -377,14 +389,12 @@ theorem smaller_iff_shorterPeakCheck_adaptive {k v n u : Nat}
   constructor
   · rintro ⟨d, hpos, hd, hmeet⟩
     refine ⟨d - 1, List.mem_range.mpr (by omega), ?_⟩
-    apply decide_eq_true
-    rw [show d - 1 + 1 = d by omega, threePowMod_eq, Nat.mod_mul_mod, Nat.mul_mod_mod]
-    exact (peak_certificate_iff hbase hpos hd hu).mp hmeet
+    rw [show d - 1 + 1 = d by omega]
+    exact (scaledPeakCertificate_iff hbase hpos hd hu).mpr hmeet
   · rintro ⟨i, hi, hcheck⟩
     have hd : i + 1 ≤ k := Nat.succ_le_of_lt (List.mem_range.mp hi)
-    have hc := of_decide_eq_true hcheck
-    rw [threePowMod_eq, Nat.mod_mul_mod, Nat.mul_mod_mod] at hc
-    exact ⟨i + 1, Nat.succ_pos _, hd, (peak_certificate_iff hbase (Nat.succ_pos _) hd hu).mpr hc⟩
+    exact ⟨i + 1, Nat.succ_pos _, hd,
+      (scaledPeakCertificate_iff hbase (Nat.succ_pos _) hd hu).mp hcheck⟩
 
 /-- The fixed linear cutoff is a convenient sufficient bound for the
 finite parity test. -/
