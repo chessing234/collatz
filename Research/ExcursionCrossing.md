@@ -103,6 +103,43 @@ The schedule using `1/3` before the second excursion and zero after it
 makes that transition's affine offset zero. Lean verifies the strict
 comparison with every output entry of the uniform table.
 
+## Exact optimization over rational shifts
+
+A finite excursion word admits an exact search over rational shifts in
+`[0,1]`. Use the normalized coordinates `P=n+s` and `Q=n+t`, and set
+`δ=bn+2^v−a(n+1)`. The shared factor is
+
+- `P/Q` if `bQ ≤ aP+δ`, where the clipped offset is zero.
+- `bP/(aP+δ)` on the positive-offset side if `δ ≥ 0`.
+- `(bQ−δ)/(aQ)` on the positive-offset side if `δ < 0`.
+
+Consecutive zero offsets link coordinates by affine transport. Their
+internal factors telescope. Keeping the neighboring clipping regimes
+fixed, the contribution of a whole linked block is a quotient of two
+affine functions of its first coordinate. Its determinant fixes the
+direction of monotonicity. A feasible endpoint therefore gives a bound
+at least as tight as the original one.
+
+At such an endpoint, a coordinate hits `n` or `n+1`, or an exterior
+offset becomes zero. In the first case the block has an anchor. In the
+second it joins a neighboring block. Either action reduces the number of
+unanchored blocks. This gives a schedule of equal or lower cost in which
+every coordinate is obtained by transporting a band endpoint along a
+consecutive part of the word. A word of length `m` gives at most
+`2(m+2)` candidates per boundary, including duplicate endpoints.
+
+[Lean](../Collatz/Strategy/ExcursionAnchorCertificate.lean) verifies the
+finite reduction, the backward minimum computation, and the descent
+certificate on genuine excursions. For 127 it computes the exact optimum
+`1343488/1331883` and certifies descent by accelerated step 15.
+The [audit](../scripts/audit_excursion_anchor.py) compared the search with
+exhaustive products on small examples and certified 9,999 first crossings.
+
+The remaining universal condition is a strict crossing of the optimal
+rational product by the inverse coefficient for every start greater than
+one congruent to three modulo four. A finite scan supplies evidence for
+this condition on its tested range.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16

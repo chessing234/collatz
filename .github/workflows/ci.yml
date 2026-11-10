@@ -74,6 +74,7 @@ jobs:
           python3 scripts/audit_excursion_crossing.py
           python3 scripts/audit_excursion_switch_floor.py
           python3 scripts/audit_excursion_shift_grid.py
+          python3 scripts/audit_excursion_anchor.py
 
       - name: Check coefficient crossing and interval transfer
         run: python3 scripts/audit_coefficient_descent.py
