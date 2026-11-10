@@ -205,7 +205,8 @@ theorem gap_gt_half_odd_exponent_of_tail (tail : LargeExponentGap)
   · exact gap_gt_half_odd_exponent_of_time_lt ha hb hAB
   · exact tail a b ha (by omega) hAB
 
-private theorem bernoulli_scaled {X Y K : Nat} (hXY : X ≤ Y)
+/-- A scaled one-step bound propagates linearly in the exponent. -/
+theorem bernoulli_scaled {X Y K : Nat} (hXY : X ≤ Y)
     (hscale : (K + 1) * X ≤ K * Y) (a : Nat) :
     (K + a) * X ^ a ≤ K * Y ^ a := by
   induction a with
@@ -239,6 +240,14 @@ private theorem not_between_neighbors {a b p q r s : Nat} (hdet : q * r = s * p 
   have hmin := Nat.add_le_add (Nat.le_mul_of_pos_right s hu) (Nat.le_mul_of_pos_right q hv)
   omega
 
+/-- Below the denominator sum, a contracting exponent ratio is
+at least the upper member of a determinant-one bracket. -/
+theorem exponent_cross_ge_of_bracket {a b p q r s : Nat}
+    (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b) (hbound : a < q + s)
+    (hdet : q * r = s * p + 1) (hleft : 2 ^ p < 3 ^ q) :
+    r * a ≤ b * s :=
+  not_between_neighbors hdet hbound (lower_cross_product ha hAB hleft)
+
 /-- A determinant-one bracket gives a uniform, explicit bound on
 the reciprocal relative gap multiplied by the odd exponent. -/
 theorem odd_weight_le_gap_of_bracket {a b p q r s K : Nat}
@@ -253,7 +262,7 @@ theorem odd_weight_le_gap_of_bracket {a b p q r s K : Nat}
   let B := 2 ^ b
   let D := B - A
   have hpos : 0 < A := Nat.pow_pos (by decide)
-  have hright := not_between_neighbors hdet hbound (lower_cross_product ha hAB hleft)
+  have hright := exponent_cross_ge_of_bracket ha hAB hbound hdet hleft
   have hpow : (K + a) * A ^ s ≤ K * B ^ s := by
     calc
       _ = (K + a) * (3 ^ s) ^ a := by

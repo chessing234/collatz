@@ -353,6 +353,7 @@ import Collatz.Strategy.ExcursionPowerGap
 import Collatz.Strategy.ExcursionCanonicalCrossing
 import Collatz.Strategy.ExcursionCoefficientCoverage
 import Collatz.Strategy.ExcursionFiniteCrossing
+import Collatz.Strategy.ExcursionBoundaryPair
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit

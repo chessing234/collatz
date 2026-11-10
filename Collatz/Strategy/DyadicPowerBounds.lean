@@ -169,4 +169,18 @@ theorem upper_comparison (base exponent precision left right shift : Nat)
   exact Nat.le_trans
     (Nat.mul_le_mul_left _ (power_contains base exponent precision).2) (Nat.le_of_lt hlt)
 
+/-- Compare two power intervals while retaining an extra symbolic
+shift on the right-hand side. -/
+theorem shifted_power_comparison (a i b j shift precision : Nat)
+    (h : (power a i precision).upper.less
+      ((power b j precision).lower.mul ⟨1, shift⟩) = true) :
+    a ^ i < b ^ j * 2 ^ shift := by
+  have hlt := Scaled.less_sound h
+  rw [Scaled.mul_value] at hlt
+  change (power a i precision).upper.value <
+    (power b j precision).lower.value * (1 * 2 ^ shift) at hlt
+  rw [Nat.one_mul] at hlt
+  exact Nat.lt_of_le_of_lt (power_contains a i precision).2
+    (Nat.lt_of_lt_of_le hlt (Nat.mul_le_mul_right _ (power_contains b j precision).1))
+
 end Collatz.DyadicPowerBounds
