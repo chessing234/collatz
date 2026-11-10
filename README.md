@@ -57,6 +57,10 @@ own verification instructions.
 - [Rational band obstruction](Research/RationalBandObstruction.md) — a
   denominator-aware cycle certificate, exact closure classification, and
   why the integer floor bound does not extend to rational floors.
+- [Weighted excursion crossings](Research/ExcursionCrossing.md) prove descent
+  at a first factor-two coefficient crossing when the start pays for the
+  excursions. One extra halving costs one unit instead of two, which
+  certifies the 16-excursion crossing from 27 to 5.
 - Heavy one-step drop — if an excursion satisfies `3^v ≤ 2^W (2^v − 1)`,
   it lands below its start for every positive cofactor. For run length
   `v ≥ 2` at most one extra-halving count can sit between that test and
