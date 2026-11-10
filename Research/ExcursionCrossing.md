@@ -535,6 +535,49 @@ descent theorem and proves the source bound independently.
 [Lean](../Collatz/Strategy/ExcursionFiniteCrossing.lean)
 [Rozier and Terracol, Corollary 5.4](https://arxiv.org/pdf/2502.00948)
 
+## One exceptional exponent pair above the verified range
+
+Write `A=3^a`, `B=2^b`, and `C` for the affine
+offset. A nonterminal unit odd run can spend at most a
+quarter of the normalized offset budget. To leave its
+landing coefficient heavy, its entrance weight has to
+be at most three quarters. Longer runs charge at most
+`5/18` per odd step. A terminal unit run adds at most
+one eighteenth. Hence `18C≤(5a+1)A` at the first crossing.
+
+A sharper bound charges `81/300` per odd step. It keeps
+a credit of `5/300` when the inverse coefficient exceeds
+`9/10`. A two-odd-step run with one halving leaves that
+region, releasing the credit. The other runs can pay for
+any credit they create. A fixed terminal allowance gives
+`300C≤(81a+24)A`.
+
+If a first excursion crossing fails at a source
+`n≥2^71`, the first bound implies
+`F(B−A)≤aA` with `F=7·2^70` once `a≥7`.
+The smaller exponents are covered by the previous
+source bound. The fractions `103768467013/65470613321`
+and `114208327604/72057431991` have determinant one.
+The lower comparison forces `b·72057431991≥a·114208327604`
+for `a<137528045312`. If the inequality is strict,
+the small gap would force
+`2(F^s·2^r)^a≤((3(F+1))^s)^a`, where `r/s`
+is the upper fraction. That inequality would persist
+at exponent `137528045312`. Outward-rounded dyadic
+intervals at 192-bit precision certify the opposite.
+So the only possible pair is
+`(a,b)=(72057431991,114208327604)`.
+
+At that pair, the sharper credit bound and one more
+exact power comparison give `2^71≤n≤e<3·2^70` for
+the source and landing. With Bařina's verified range
+as an explicit premise, a nonconvergent source avoids
+`2 mod 3` and its landing is `1 mod 3`. A value in
+the window that is `2 mod 3` has an odd predecessor
+`(2x−1)/3` below the verified floor.
+[Lean](../Collatz/Strategy/ExcursionBoundaryPair.lean)
+[Bařina's verification](https://pcbarina.fit.vut.cz/)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks

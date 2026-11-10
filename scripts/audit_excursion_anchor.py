@@ -409,6 +409,39 @@ def check_wide_power_bracket():
     print("Checked 500 small interval enclosures and both billion-scale bracket comparisons.")
 
 
+def check_boundary_pair():
+    p, q = 103_768_467_013, 65_470_613_321
+    r, s = 114_208_327_604, 72_057_431_991
+    limit = q + s
+    floor = 7 * 2**70
+    assert q * r - s * p == 1
+    lower, _ = dyadic_interval(3, q, 128)
+    assert dyadic_less((1, p), lower)
+    _, upper = dyadic_interval(3 * (floor + 1), s * limit, 192)
+    lower, _ = dyadic_interval(floor, s * limit, 192)
+    assert dyadic_less(upper, (lower[0], lower[1] + r * limit + 1))
+    cap = 3 * 2**70
+    _, upper = dyadic_interval(3, s, 192)
+    assert dyadic_less(((300 * cap + 81 * s + 25) * upper[0], upper[1]), (300 * cap, r))
+    for start in range(3, 20_000, 2):
+        word, _, _ = first_word(start)
+        a = c = 0
+        A = B = 1
+        for tripling, dyadic, shift in word:
+            c = tripling * c + B * (tripling - shift)
+            a += shift.bit_length() - 1
+            A *= tripling
+            B *= dyadic
+            if B <= A:
+                assert 18 * c <= 5 * a * A
+                credit = 5 if 9 * A < 10 * B else 0
+                assert 300 * c + credit * A <= (81 * a + 5) * A
+        assert B > A
+        assert 18 * c <= (5 * a + 1) * A
+        assert 300 * c <= (81 * a + 24) * A
+    print("Checked the three exceptional-pair comparisons and 9,999 offset budgets.")
+
+
 def scan_coefficient_crossings(limit, check_interior=False):
     exceptions = {}
     for n in range(3, limit, 2):
@@ -501,6 +534,7 @@ def main():
     check_floor_fibres()
     check_power_gap_bracket()
     check_wide_power_bracket()
+    check_boundary_pair()
     assert scan_coefficient_crossings(20_000, check_interior=True) == {
         27: 21, 31: 13, 63: 61, 71: 25
     }
