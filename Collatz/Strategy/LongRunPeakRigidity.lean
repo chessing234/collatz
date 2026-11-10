@@ -281,6 +281,16 @@ theorem smaller_iff_scaled_peak (k : Nat) :
             acceleratedOrbit k (3 ^ v * u - 1)) :=
   ⟨rigidityCutoff k, smaller_iff_scaled_peak_at_cutoff⟩
 
+private theorem odd_peak_residue_pos {k e u : Nat} (hk : 0 < k) (hu : u % 2 = 1) :
+    0 < (3 ^ e * u) % 2 ^ k := by
+  apply Nat.pos_of_ne_zero
+  intro hz
+  have hmod := congrArg (· % 2) hz
+  have hdiv : 2 ∣ 2 ^ k := Nat.pow_dvd_pow 2 (by omega : 1 ≤ k)
+  rw [Nat.mod_mod_of_dvd _ hdiv] at hmod
+  rw [Nat.mul_mod, Arith.three_pow_odd, hu] at hmod
+  contradiction
+
 private theorem peak_certificate_iff {k v d u : Nat} (hv : 2 * k + 2 ≤ v)
     (hpos : 0 < d) (hd : d ≤ k) (hu : u % 2 = 1) :
     acceleratedOrbit k (3 ^ (v - d) * u - 1) = acceleratedOrbit k (3 ^ v * u - 1) ↔
@@ -291,15 +301,7 @@ private theorem peak_certificate_iff {k v d u : Nat} (hv : 2 * k + 2 ≤ v)
       _ ≤ 3 ^ k := Nat.pow_le_pow_left (by decide) _
       _ ≤ 3 ^ (v - d) := Nat.pow_le_pow_right (by decide) (by omega)
       _ ≤ _ := Nat.le_mul_of_pos_right _ (by omega)
-  have hres : 0 < B % 2 ^ k := by
-    apply Nat.pos_of_ne_zero
-    intro hz
-    have hmod := congrArg (· % 2) hz
-    have hdiv : 2 ∣ 2 ^ k := Nat.pow_dvd_pow 2 (by omega : 1 ≤ k)
-    rw [Nat.mod_mod_of_dvd _ hdiv] at hmod
-    dsimp only [B] at hmod
-    rw [Nat.mul_mod, Arith.three_pow_odd, hu] at hmod
-    contradiction
+  have hres : 0 < B % 2 ^ k := odd_peak_residue_pos (by omega) hu
   have hscale : 3 ^ d * B = 3 ^ v * u := by
     dsimp only [B]
     rw [← Nat.mul_assoc, ← Nat.pow_add, Nat.add_sub_cancel' (by omega : d ≤ v)]
@@ -361,6 +363,10 @@ private theorem peakOddCountResidue_eq (k v u : Nat) (hu : 0 < u) :
 def requiredRunLength (k v u : Nat) : Nat :=
   adaptiveRigidityCutoff k (peakOddCountResidue k v u)
 
+theorem requiredRunLength_eq (k v u : Nat) (hu : 0 < u) :
+    requiredRunLength k v u = adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) := by
+  rw [requiredRunLength, peakOddCountResidue_eq k v u hu]
+
 /-- The finite certificate for one prescribed exponent drop. -/
 def scaledPeakCertificate (k v u d : Nat) : Bool :=
   let M := 2 ^ k
@@ -373,6 +379,26 @@ theorem scaledPeakCertificate_iff {k v d u : Nat} (hv : 2 * k + 2 ≤ v)
   rw [peak_certificate_iff hv hpos hd hu, scaledPeakCertificate, threePowMod_eq,
     Nat.mod_mul_mod, Nat.mul_mod_mod]
   exact ⟨of_decide_eq_true, decide_eq_true⟩
+
+/-- A certified drop has equal endpoints and an exact odd-count
+difference, with no size cutoff for the initial run. -/
+theorem scaledPeakCertificate_spec {k v d u : Nat} (hv : d ≤ v)
+    (hk : 0 < k) (hu : u % 2 = 1) (hc : scaledPeakCertificate k v u d = true) :
+    acceleratedOrbit k (3 ^ (v - d) * u - 1) = acceleratedOrbit k (3 ^ v * u - 1) ∧
+      oddCount (3 ^ (v - d) * u - 1) k = oddCount (3 ^ v * u - 1) k + d := by
+  rw [scaledPeakCertificate, threePowMod_eq, Nat.mod_mul_mod, Nat.mul_mod_mod] at hc
+  have hr := odd_peak_residue_pos hk hu (e := v - d)
+  have hmeet := PeakContraction.meet_of_certificate hr rfl (of_decide_eq_true hc)
+  have hcount := PeakContraction.counts_of_certificate hr rfl (of_decide_eq_true hc)
+  rw [← Nat.mul_assoc, ← Nat.pow_add, Nat.add_sub_cancel' hv] at hmeet hcount
+  exact ⟨hmeet.symm, hcount⟩
+
+/-- A positive drop increases the odd count in the suffix by exactly
+the amount removed from the initial odd run. -/
+theorem counts_of_scaledPeakCertificate {k v d u : Nat} (hv : d ≤ v)
+    (hk : 0 < k) (hu : u % 2 = 1) (hc : scaledPeakCertificate k v u d = true) :
+    oddCount (3 ^ (v - d) * u - 1) k = oddCount (3 ^ v * u - 1) k + d :=
+  (scaledPeakCertificate_spec hv hk hu hc).2
 
 /-- Test the k candidate drops by suffix calculations at bounded
 dyadic residues. -/
@@ -408,7 +434,7 @@ without constructing the full shifted peak. -/
 theorem shorterPeakCheck_correct {k v n u : Nat} (hv : requiredRunLength k v u ≤ v)
     (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ v * u) :
     leastAt (v + k) n < n ↔ shorterPeakCheck k v u = true := by
-  rw [requiredRunLength, peakOddCountResidue_eq k v u (by omega)] at hv
+  rw [requiredRunLength_eq k v u (by omega)] at hv
   exact smaller_iff_shorterPeakCheck_adaptive hv hu hfac
 
 end Collatz.LongRunPeakRigidity

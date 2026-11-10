@@ -107,16 +107,17 @@ for the certified drops, keeping the original source as a fallback. -/
 def minimumFromPeaks (k v u : Nat) : Nat :=
   ((2 ^ v * u - 1) :: candidates k v u).min (by simp)
 
-theorem minimumFromPeaks_correct {k v u : Nat} (hv : rigidityCutoff k ≤ v)
+theorem minimumFromPeaks_correct_adaptive {k v u : Nat} (hv : requiredRunLength k v u ≤ v)
     (hu : u % 2 = 1) :
     minimumFromPeaks k v u = leastAt (v + k) (2 ^ v * u - 1) := by
   let n := 2 ^ v * u - 1
   let m := leastAt (v + k) n
   let xs := n :: candidates k v u
   let result := minimumFromPeaks k v u
-  have hV : 6 * k + 2 ≤ v := hv
-  have hbase : 2 * k + 2 ≤ v := by omega
   have huPos : 0 < u := by omega
+  rw [requiredRunLength_eq k v u huPos] at hv
+  have hV : 2 * k + 2 + 4 * (k - oddCount (3 ^ v * u - 1) k) ≤ v := hv
+  have hbase : 2 * k + 2 ≤ v := by omega
   have hn : n + 1 = 2 ^ v * u := Nat.sub_add_cancel (Nat.mul_pos (Nat.two_pow_pos _) huPos)
   have hrep : result ∈ xs := List.min_mem (l := xs) (by simp [xs])
   have hless (x : Nat) (hx : x ∈ xs) : result ≤ x := List.min_le_of_mem hx
@@ -124,7 +125,7 @@ theorem minimumFromPeaks_correct {k v u : Nat} (hv : rigidityCutoff k ≤ v)
   apply Nat.le_antisymm
   · by_cases hm : m < n
     · obtain ⟨d, hpos, hd, hpeak⟩ :=
-        scaled_peak_at_cutoff hv huPos hn hm (leastAt_meets (v + k) n)
+        scaled_peak_at_adaptive_cutoff hv huPos hn hm (leastAt_meets (v + k) n)
       let J := shortPrefixLength d
       let p := paddedStart v u d
       have hJ : J ≤ v := by dsimp [J, shortPrefixLength]; omega
@@ -135,7 +136,7 @@ theorem minimumFromPeaks_correct {k v u : Nat} (hv : rigidityCutoff k ≤ v)
         rw [← hpeak, show 3 ^ v * u - 1 = acceleratedOrbit v n by omega,
           acceleratedOrbit_add, acceleratedOrbit_add, Nat.add_comm k v]
         exact leastAt_meets (v + k) n
-      have hc := (scaledPeakCertificate_iff hbase hpos hd hu).mpr hmeet
+      have hc := (scaledPeakCertificate_iff hbase hpos (by omega) hu).mpr hmeet
       have hmem : leastAt J p ∈ candidates k v u := by
         apply List.mem_filterMap.mpr
         refine ⟨d - 1, List.mem_range.mpr (by omega), ?_⟩
@@ -161,7 +162,9 @@ theorem minimumFromPeaks_correct {k v u : Nat} (hv : rigidityCutoff k ≤ v)
         rw [if_pos hc] at hcase
         have he := Option.some.inj hcase
         rw [← he]
-        have hmeet := (scaledPeakCertificate_iff hbase (Nat.succ_pos _) hd hu).mp hc
+        have ⟨hmeet, hcount⟩ := scaledPeakCertificate_spec (by omega) (by omega) hu hc
+        have hcap := AffineExact.oddCount_le_self (3 ^ (v - (i + 1)) * u - 1) k
+        have hdrop : i + 1 ≤ k - oddCount (3 ^ v * u - 1) k := by omega
         have hshort : shortPrefixLength (i + 1) ≤ v + k := by unfold shortPrefixLength; omega
         have hsync := (equal_later hshort (leastAt_meets _ _)).trans
           (padded_meets huPos (by omega) hmeet)
@@ -169,5 +172,13 @@ theorem minimumFromPeaks_correct {k v u : Nat} (hv : rigidityCutoff k ≤ v)
       · dsimp only at hcase
         rw [if_neg hc] at hcase
         contradiction
+
+theorem minimumFromPeaks_correct {k v u : Nat} (hv : rigidityCutoff k ≤ v)
+    (hu : u % 2 = 1) :
+    minimumFromPeaks k v u = leastAt (v + k) (2 ^ v * u - 1) := by
+  apply minimumFromPeaks_correct_adaptive _ hu
+  rw [requiredRunLength_eq k v u (by omega), adaptiveRigidityCutoff]
+  unfold rigidityCutoff at hv
+  omega
 
 end Collatz.ShortPrefixMinimum
