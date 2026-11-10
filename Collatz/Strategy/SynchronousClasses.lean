@@ -87,7 +87,8 @@ theorem least_positive {x : Nat} (hx : 0 < x) : 0 < least x := by
   rw [hzero, orbit_zero_state] at hk
   exact (Nat.ne_of_gt (acceleratedOrbit_positive hx k)) hk
 
-private theorem shortcut_double (x : Nat) : acceleratedOrbit 1 (2 * x) = x := by
+/-- The even preimage exists for every target. -/
+theorem shortcut_double (x : Nat) : acceleratedOrbit 1 (2 * x) = x := by
   have he : (2 * x) % 2 = 0 := by omega
   simp [acceleratedStep, he]
 

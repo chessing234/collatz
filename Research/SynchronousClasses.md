@@ -40,3 +40,26 @@ arbitrarily large starts without a synchronous descent certificate.
 The Collatz conjecture is equivalent to the existence of a smaller
 equal-time partner for every start above two, with the horizon
 allowed to depend on the start.
+
+## Dynamics of the least representatives
+
+An even least representative $2x$ halves to the least representative
+$x$. In particular $x$ cannot have an odd preimage, so $x\bmod 3\ne2$.
+Applying this twice shows that $4x$ can be least only if $3$ divides
+$x$. In the other direction, an odd preimage of a least representative
+is itself least. A smaller mate of that preimage would have a smaller
+shortcut image in the target class.
+
+For a source $n\ge2^k$, the target fiber gives an exact order test.
+A mate $m$ is smaller if its odd count is larger, or if its count is
+equal and its dyadic residue is smaller. When $n\ge2^{k+1}$, a
+larger-count mate is strictly below $2n/3$. This follows because a
+single extra odd step cuts the target quotient by at least a factor
+of three, and the positive high part controls the residue contribution.
+
+Applied to the shortcut image of an odd $x$, such a mate forces the
+next class minimum below $x$. This yields a sufficient proof target:
+find a larger-count mate at an admissible horizon for the image of
+every odd least representative above two. The formalization proves
+the reduction. Establishing that the required profile exists in
+every case remains open.
