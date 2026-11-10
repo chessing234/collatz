@@ -248,6 +248,72 @@ theorem exponent_cross_ge_of_bracket {a b p q r s : Nat}
     r * a ≤ b * s :=
   not_between_neighbors hdet hbound (lower_cross_product ha hAB hleft)
 
+/-- Below the denominator sum, an inverse contracting exponent ratio
+is at most the lower member of a determinant-one bracket. -/
+theorem inverse_exponent_cross_le_of_bracket {a b p q r s : Nat}
+    (ha : 0 < a) (hs : 0 < s) (hAB : 2 ^ b < 3 ^ a) (hbound : a < q + s)
+    (hdet : q * r = s * p + 1) (hright : 3 ^ s < 2 ^ r) : b * q ≤ p * a := by
+  have hside : b * s < r * a := by
+    apply Nat.lt_of_not_ge
+    intro h
+    have hfirst := Nat.pow_lt_pow_left hright (Nat.ne_of_gt ha)
+    have hlast := Nat.pow_lt_pow_left hAB (Nat.ne_of_gt hs)
+    rw [← Nat.pow_mul, ← Nat.pow_mul, Nat.mul_comm s a] at hfirst
+    rw [← Nat.pow_mul, ← Nat.pow_mul] at hlast
+    have hmid := Nat.pow_le_pow_right (by decide : 0 < 2) h
+    exact Nat.not_lt_of_ge hmid (Nat.lt_trans hlast hfirst)
+  exact Nat.le_of_not_gt fun h =>
+    Nat.not_lt_of_ge (not_between_neighbors hdet hbound h) hside
+
+/-- For a ratio on or below the lower member, the inverse power gap
+is at least that of the lower member. The determinant-one coordinates
+give a positive copy of the lower gap and a nonnegative upper gap. -/
+theorem inverse_scaled_gap_of_cross_le {a b p q r s K L : Nat}
+    (ha : 0 < a) (hside : b * q ≤ p * a) (hdet : q * r = s * p + 1)
+    (hupper : 3 ^ s ≤ 2 ^ r) (hK : 0 < K) (hKL : K ≤ L)
+    (hscale : L * 2 ^ p ≤ K * 3 ^ q) :
+    L * 2 ^ b ≤ K * 3 ^ a := by
+  let u := r * a - s * b
+  let v := p * a - q * b
+  have hbq : q * b ≤ p * a := by simpa only [Nat.mul_comm q b] using hside
+  have hv : v + q * b = p * a := Nat.sub_add_cancel hbq
+  have hside' : s * b < r * a := by
+    have h := Nat.mul_le_mul_left s hbq
+    have hsa : s * (p * a) + a = q * (r * a) := by
+      rw [← Nat.mul_assoc, ← Nat.mul_assoc, hdet, Nat.add_mul, Nat.one_mul]
+    have hlt : q * (s * b) < q * (r * a) := by
+      rw [show q * (s * b) = s * (q * b) by ac_rfl, ← hsa]
+      omega
+    exact Nat.lt_of_mul_lt_mul_left hlt
+  have hu : u + s * b = r * a := Nat.sub_add_cancel (Nat.le_of_lt hside')
+  have hupos : 0 < u := Nat.sub_pos_iff_lt.mpr hside'
+  have hA : q * u = a + s * v := by
+    have h1 := congrArg (q * ·) hu
+    have h2 := congrArg (s * ·) hv
+    rw [Nat.mul_add, ← Nat.mul_assoc q r a, hdet, Nat.add_mul, Nat.one_mul,
+      show q * (s * b) = s * (q * b) by ac_rfl, Nat.mul_assoc] at h1
+    rw [Nat.mul_add] at h2
+    omega
+  have hB : p * u = b + r * v := by
+    have h1 := congrArg (p * ·) hu
+    have h2 := congrArg (r * ·) hv
+    rw [Nat.mul_add, show p * (r * a) = r * (p * a) by ac_rfl] at h1
+    rw [Nat.mul_add, show r * (q * b) = (q * r) * b by ac_rfl,
+      hdet, Nat.add_mul, Nat.one_mul,
+      show s * p * b = p * (s * b) by ac_rfl] at h2
+    omega
+  have hbase : (2 : Nat) ^ p ≤ 3 ^ q := by
+    apply Nat.le_of_mul_le_mul_left _ hK
+    exact Nat.le_trans (Nat.mul_le_mul_right _ hKL) hscale
+  have hpow : L * (2 ^ p) ^ u ≤ K * (3 ^ q) ^ u := by
+    obtain ⟨i, hi⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hupos)
+    rw [hi, Nat.pow_succ', Nat.pow_succ', ← Nat.mul_assoc, ← Nat.mul_assoc]
+    exact Nat.mul_le_mul hscale (Nat.pow_le_pow_left hbase _)
+  rw [← Nat.pow_mul, ← Nat.pow_mul, hA, hB, Nat.pow_add, Nat.pow_add,
+    Nat.pow_mul 3 s v, Nat.pow_mul 2 r v, ← Nat.mul_assoc, ← Nat.mul_assoc] at hpow
+  have hcomp := Nat.mul_le_mul_left (L * 2 ^ b) (Nat.pow_le_pow_left hupper v)
+  exact Nat.le_of_mul_le_mul_right (Nat.le_trans hcomp hpow) (Nat.pow_pos (Nat.pow_pos (by decide)))
+
 /-- A determinant-one bracket gives a uniform, explicit bound on
 the reciprocal relative gap multiplied by the odd exponent. -/
 theorem odd_weight_le_gap_of_bracket {a b p q r s K : Nat}
