@@ -316,6 +316,7 @@ import Collatz.Strategy.ExcursionCofactor
 import Collatz.Strategy.ExcursionCrossing
 import Collatz.Strategy.ExcursionSwitchFloor
 import Collatz.Strategy.ExcursionShiftGrid
+import Collatz.Strategy.ExcursionAnchorCertificate
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit
