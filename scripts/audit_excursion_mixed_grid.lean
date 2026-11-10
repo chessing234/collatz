@@ -1,4 +1,5 @@
 import Collatz.Strategy.ExcursionMixedGrid
+import Collatz.Strategy.ExcursionRays
 
 open Collatz Collatz.ExcursionBudget Collatz.ExcursionLattice Collatz.ExcursionMap
 open Collatz.ExcursionMixedGrid Collatz.LiftExponent
@@ -48,6 +49,13 @@ example : acceleratedOrbit 54 63 < 63 := by
 example {n e : Nat} (h : Trace n e runs63) (hn : 63 ≤ n) :
     ∃ j ≤ 54, acceleratedOrbit j n < n :=
   descent_of_mixed_floors h cert63 (by decide) hn (by decide)
+
+/-- The same excursion landing certifies every source in the dyadic ray. -/
+example (k : Nat) : acceleratedOrbit 54 (63 + 2 ^ 55 * k) < 63 + 2 ^ 55 * k := by
+  have h := Collatz.ExcursionRays.descent_on_ray trace63 (by decide) k
+  have hs : time runs63 = 54 := rfl
+  rw [hs, ← Nat.mul_assoc, ← Nat.pow_succ] at h
+  exact h
 
 #print axioms mixed_floor
 #print axioms Floors.compare
