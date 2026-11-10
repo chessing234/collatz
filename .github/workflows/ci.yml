@@ -82,3 +82,8 @@ jobs:
 
       - name: Check depth-fifteen passage atlas and horizon 2592
         run: python3 scripts/audit_passage_atlas.py
+
+      - name: Check odd-run excursion budgets
+        run: |
+          lake env lean scripts/audit_excursion_budget.lean
+          python3 scripts/audit_excursion_budget.py
