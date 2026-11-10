@@ -181,6 +181,30 @@ def sign_parts(n, word):
     return parts
 
 
+def check_conflicting_pairs():
+    runs = [(3**v, 2**(v + w), 2**v) for v, w in product(range(1, 6), repeat=2)]
+    checked = 0
+    choices = set()
+    for n in (1, 3, 7, 27, 63, 127):
+        for e, f in product(runs, repeat=2):
+            a, b, c = e
+            aa, bb, cc = f
+            drift = b * n + c - a * (n + 1)
+            next_drift = bb * n + cc - aa * (n + 1)
+            if not drift < 0 <= next_drift:
+                continue
+            word = [e, f]
+            zero, one = Fraction(0), Fraction(1)
+            bottom = cost(n, word, [zero, zero, one])
+            top = cost(n, word, [zero, one, one])
+            assert (bottom <= top) == (0 <= b * next_drift + aa * drift)
+            assert optimum(n, word, local_layers(word)) == min(bottom, top)
+            checked += 1
+            choices.add((bottom > top) - (bottom < top))
+    assert {-1, 1} <= choices
+    print(f"Checked both endpoint choices against exact optimization on {checked:,} conflicting pairs.")
+
+
 def main():
     rng = Random(61527)
     sign_cuts = 0
@@ -225,6 +249,7 @@ def main():
     print(f"The sign split preserved the optimum at {sign_cuts:,} boundaries on the audited orbits.")
     check_flat_schedule()
     check_unit_tails()
+    check_conflicting_pairs()
 
 
 if __name__ == "__main__":
