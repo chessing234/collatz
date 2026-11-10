@@ -283,6 +283,28 @@ def check_reversal_budgets():
     print("The two-threshold budget certified all 99,999 first crossings. The binary budget missed 63.")
 
 
+def check_floor_monotonicity():
+    rng = Random(88433)
+    for _ in range(8_192):
+        v, w = rng.randrange(1, 14), rng.randrange(1, 8)
+        edge = (3**v, 2**(v + w), 2**v)
+        low = rng.randrange(1, 50)
+        high = low + rng.randrange(1, 50)
+        source, target = Fraction(rng.randrange(65), 64), Fraction(rng.randrange(65), 64)
+        assert factor(high, edge, source, target) < factor(low, edge, source, target)
+    for n in range(3, 2_000, 2):
+        word, ratio, _ = first_word(n)
+        layers = local_layers(word)
+        low, high = max(1, n // 2), n + 1
+        assert optimum(high, word, layers) < optimum(low, word, layers)
+        cutoff = ratio.numerator * len(word) // (ratio.numerator - ratio.denominator) + 1
+        assert optimum(cutoff, word, layers) < ratio
+    word, ratio, _ = first_word(63)
+    layers = local_layers(word)
+    assert optimum(61, word, layers) < ratio <= optimum(60, word, layers)
+    print("Checked 8,192 translated factors, 999 complete words, and the exact threshold 61 for the word from 63.")
+
+
 def main():
     rng = Random(61527)
     sign_cuts = 0
@@ -330,6 +352,7 @@ def main():
     check_conflicting_pairs()
     check_greedy_blocks()
     check_reversal_budgets()
+    check_floor_monotonicity()
 
 
 if __name__ == "__main__":

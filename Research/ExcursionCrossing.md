@@ -309,6 +309,30 @@ missed 27 and 63, charging the larger ideal factor missed only 63,
 and the two-threshold budget certified all 99,999 tested first
 crossings.
 
+## Certificate thresholds for a fixed word
+
+Keep the run parameters and relative shifts fixed while raising the
+proposed floor. The clipping inequality is independent of that floor.
+On a clipped edge the source shift is larger than the target shift,
+so their coordinate ratio decreases strictly as the floor rises. In
+the unclipped case each affine quotient has a strictly decreasing
+determinant. If the drift changes sign, the new arrival formula is
+at most the departure formula at the same floor.
+
+It follows that the optimal rational product of any nonempty word
+strictly decreases with the floor. Equality with the inverse
+coefficient at a smaller floor is enough to certify a larger
+genuine realization. For a word of length `j` with coefficients
+`A<B`, the explicit condition `B j < (B−A)n` ensures a crossing.
+It follows by bounding each factor by `(n+1)/n` and using
+`((n+1)/n)^j ≤ n/(n−j)` for `j<n`.
+
+The certifying positive floors therefore form an upper interval
+with an effectively bounded first element. [Lean](../Collatz/Strategy/ExcursionFloorMonotonicity.lean)
+checks the threshold exactly for the word of the first crossing from
+63. Its abstract threshold is 61. A floor in this interval certifies
+an actual start when that start follows the word.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
