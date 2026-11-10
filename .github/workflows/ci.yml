@@ -105,3 +105,53 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_greedy_slots.lean
           python3 scripts/audit_excursion_greedy_slots.py
+
+      - name: Check excursion source classes and descent thresholds
+        run: |
+          lake env lean scripts/audit_excursion_rays.lean
+          python3 scripts/audit_excursion_rays.py
+
+      - name: Check bounded excursion alphabets and repeated windows
+        run: |
+          lake env lean scripts/audit_excursion_alphabet.lean
+          python3 scripts/audit_excursion_alphabet.py
+
+      - name: Check reciprocal products for sparse excursions
+        run: |
+          lake env lean scripts/audit_excursion_sparse_product.lean
+          python3 scripts/audit_excursion_sparse_product.py
+
+      - name: Check orbit occupation and affine multiplier bounds
+        run: |
+          lake env lean scripts/audit_orbit_capacity.lean
+          python3 scripts/audit_orbit_capacity.py
+
+      - name: Check the bootstrapped orbit occupation bound
+        run: |
+          lake env lean scripts/audit_orbit_occupation_bootstrap.lean
+          python3 scripts/audit_orbit_occupation_bootstrap.py
+
+      - name: Check translated orbit windows and multiplier occupation
+        run: |
+          lake env lean scripts/audit_orbit_window_bootstrap.lean
+          python3 scripts/audit_orbit_window_bootstrap.py
+
+      - name: Check near-critical orbit windows
+        run: |
+          lake env lean scripts/audit_orbit_near_return.lean
+          python3 scripts/audit_orbit_near_return.py
+
+      - name: Check synchronous Collatz classes and inverse fibers
+        run: |
+          lake env lean scripts/audit_synchronous_classes.lean
+          python3 scripts/audit_synchronous_classes.py
+
+      - name: Check the dynamics of least synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_dynamics.lean
+          python3 scripts/audit_synchronous_dynamics.py
+
+      - name: Check reduced multiplier growth of synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_growth.lean
+          python3 scripts/audit_synchronous_growth.py
