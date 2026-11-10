@@ -207,17 +207,23 @@ private theorem sum_map_le {α : Type} (xs : List α) (f g : α → Nat)
     exact Nat.add_le_add (h x List.mem_cons_self)
       (ih (fun y hy => h y (List.mem_cons_of_mem _ hy)))
 
-private theorem cumulative_weight_le {P q H : Nat} {xs : List Nat}
-    (hP : 0 < P) (hPH : P + q ≤ H)
-    (hcap : ∀ j, (xs.filter (fun x => decide (x < cutoff P j))).length ≤ 2 ^ ((P - 1) * j)) :
-    2 ^ (q + 1) * (xs.map (weight P (P + q) H)).sum ≤ cutoff P H := by
-  let B := P + q
+private theorem sum_map_scale (xs : List Nat) (A : Nat) (f : Nat → Nat) :
+    (xs.map (fun j => A * f j)).sum = A * (xs.map f).sum := by
+  induction xs with
+  | nil => simp
+  | cons j xs ih => simp [ih, Nat.mul_add]
+
+private theorem cumulative_weight_le {P B H A : Nat} {xs : List Nat}
+    (hP : 0 < P) (hBH : B ≤ H)
+    (hcap : ∀ j, (xs.filter (fun x => decide (x < cutoff P j))).length ≤
+      A * 2 ^ ((P - 1) * j)) :
+    (xs.map (weight P B H)).sum ≤ A * 2 ^ (P * (H + 1) - B) := by
   have hlen : B + (H + 1 - B) ≤ P * (H + 1) := by
-    rw [Nat.add_sub_of_le (by dsimp [B]; omega : B ≤ H + 1)]
+    rw [Nat.add_sub_of_le (Nat.le_trans hBH (Nat.le_succ H))]
     exact Nat.le_mul_of_pos_left _ hP
   have hband (j : Nat) (hj : j ∈ bands B H) :
       2 ^ (P * (H - j)) * (xs.filter (fun x => decide (x < cutoff P (j + 1)))).length ≤
-        2 ^ (P * (H + 1) - (j + 1)) := by
+        A * 2 ^ (P * (H + 1) - (j + 1)) := by
     have hj' := (List.mem_range'_1.mp hj).2
     have hjH : j ≤ H := by omega
     have he : P * (H - j) + (P - 1) * (j + 1) = P * (H + 1) - (j + 1) := by
@@ -230,24 +236,41 @@ private theorem cumulative_weight_le {P q H : Nat} {xs : List Nat}
           _ = _ := by rw [← Nat.mul_add, show H - j + (j + 1) = H + 1 by omega]
       omega
     calc
-      _ ≤ 2 ^ (P * (H - j)) * 2 ^ ((P - 1) * (j + 1)) := Nat.mul_le_mul_left _ (hcap (j + 1))
+      _ ≤ 2 ^ (P * (H - j)) * (A * 2 ^ ((P - 1) * (j + 1))) :=
+        Nat.mul_le_mul_left _ (hcap (j + 1))
+      _ = A * (2 ^ (P * (H - j)) * 2 ^ ((P - 1) * (j + 1))) := Nat.mul_left_comm ..
       _ = _ := by rw [← Nat.pow_add, he]
-  have hsum : (xs.map (weight P B H)).sum ≤ 2 ^ (P * (H + 1) - B) := by
-    unfold weight
-    rw [sum_weight_swap]
-    calc
-      _ ≤ ((bands B H).map (fun j => 2 ^ (P * (H + 1) - (j + 1)))).sum :=
-        sum_map_le _ _ _ hband
-      _ ≤ _ := exponent_sum_le _ _ _ hlen
+  unfold weight
+  rw [sum_weight_swap]
   calc
-    _ ≤ 2 ^ (q + 1) * 2 ^ (P * (H + 1) - B) := Nat.mul_le_mul_left _ hsum
-    _ = cutoff P H := by
-      have he : q + 1 + (P * (H + 1) - B) = P * H + 1 := by
-        have hq : q ≤ P * H := Nat.le_trans (by omega) (Nat.le_mul_of_pos_left _ hP)
-        dsimp [B]
-        rw [Nat.mul_succ]
-        omega
-      rw [← Nat.pow_add, he, Nat.pow_succ, cutoff]
+    _ ≤ ((bands B H).map (fun j => A * 2 ^ (P * (H + 1) - (j + 1)))).sum :=
+      sum_map_le _ _ _ hband
+    _ = A * ((bands B H).map (fun j => 2 ^ (P * (H + 1) - (j + 1)))).sum := sum_map_scale ..
+    _ ≤ _ := Nat.mul_le_mul_left _ (exponent_sum_le _ _ _ hlen)
+
+/-- A mass factor up to `2^j` is absorbed by moving the lower cutoff
+up another `j` bands. -/
+theorem sparse_tail_product_with_mass {P j q H A : Nat} {xs : List Nat}
+    (hP : 0 < P) (hA : A ≤ 2 ^ j) (hH : P + j + q ≤ H)
+    (hlo : ∀ x ∈ xs, cutoff P (P + j + q) ≤ x)
+    (hhi : ∀ x ∈ xs, x < cutoff P (H + 1))
+    (hcap : ∀ k, (xs.filter (fun x => decide (x < cutoff P k))).length ≤
+      A * 2 ^ ((P - 1) * k)) :
+    (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod := by
+  let B := P + j + q
+  apply reciprocal_le_ratio (Nat.mul_pos (Nat.two_pow_pos _) (by decide)) (Nat.two_pow_pos _)
+    (weight P B H) xs (fun x hx => point_weight hH (hlo x hx) (hhi x hx))
+  have hsum := cumulative_weight_le hP hH hcap
+  have he : q + 1 + (j + (P * (H + 1) - B)) = P * H + 1 := by
+    have hjq : j + q ≤ P * H := Nat.le_trans (by omega) (Nat.le_mul_of_pos_left _ hP)
+    dsimp [B]
+    rw [Nat.mul_succ]
+    omega
+  calc
+    _ ≤ 2 ^ (q + 1) * (A * 2 ^ (P * (H + 1) - B)) := Nat.mul_le_mul_left _ hsum
+    _ ≤ 2 ^ (q + 1) * (2 ^ j * 2 ^ (P * (H + 1) - B)) :=
+      Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hA)
+    _ = cutoff P H := by rw [← Nat.pow_add, ← Nat.pow_add, he, Nat.pow_succ, cutoff]
 
 /-- Raising the lower cutoff by `q` bands improves the reciprocal
 product bound to `2^(q+1)/(2^(q+1)-1)`. -/
@@ -256,10 +279,9 @@ theorem sparse_tail_product_ratio {P q H : Nat} {xs : List Nat}
     (hlo : ∀ x ∈ xs, cutoff P (P + q) ≤ x)
     (hhi : ∀ x ∈ xs, x < cutoff P (H + 1))
     (hcap : ∀ j, (xs.filter (fun x => decide (x < cutoff P j))).length ≤ 2 ^ ((P - 1) * j)) :
-    (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod :=
-  reciprocal_le_ratio (Nat.mul_pos (Nat.two_pow_pos _) (by decide)) (Nat.two_pow_pos _)
-    (weight P (P + q) H) xs
-    (fun x hx => point_weight hPH (hlo x hx) (hhi x hx)) (cumulative_weight_le hP hPH hcap)
+    (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod := by
+  exact sparse_tail_product_with_mass (j := 0) (A := 1) hP (by decide)
+    (by simpa using hPH) (by simpa using hlo) hhi (by simpa using hcap)
 
 /-- A distinct dyadic tail with geometric capacity has reciprocal
 product at most two, uniformly in its finite upper cutoff. -/
@@ -299,13 +321,14 @@ def DyadicCapacity (states : Nat → Nat) (P : Nat) : Prop :=
 
 /-- A finite selection above the specified cutoff has a correction
 bound independent of how far its upper endpoint lies. -/
-theorem reciprocal_tail_of_capacity {states : Nat → Nat} {P q : Nat}
-    (hP : 0 < P) (hcap : DyadicCapacity states P) {xs : List Nat}
-    (hnd : xs.Nodup) (hmember : ∀ x ∈ xs, ∃ i, states i = x)
-    (hlo : ∀ x ∈ xs, cutoff P (P + q) ≤ x) :
+theorem reciprocal_tail_from_count {P j q A : Nat} {xs : List Nat}
+    (hP : 0 < P) (hA : A ≤ 2 ^ j)
+    (hlo : ∀ x ∈ xs, cutoff P (P + j + q) ≤ x)
+    (hcap : ∀ k, (xs.filter (fun x => decide (x < cutoff P k))).length ≤
+      A * 2 ^ ((P - 1) * k)) :
     (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod := by
-  let H := P + q + xs.sum
-  have hPH : P + q ≤ H := Nat.le_add_right _ _
+  let H := P + j + q + xs.sum
+  have hPH : P + j + q ≤ H := Nat.le_add_right _ _
   have hhi : ∀ x ∈ xs, x < cutoff P (H + 1) := by
     intro x hx
     have hxH : x ≤ H := Nat.le_trans (le_sum_of_mem hx) (Nat.le_add_left _ _)
@@ -313,12 +336,18 @@ theorem reciprocal_tail_of_capacity {states : Nat → Nat} {P q : Nat}
       (Nat.le_trans (Nat.le_succ H) (Nat.le_mul_of_pos_left _ hP))
     exact Nat.lt_of_lt_of_le (Nat.lt_of_le_of_lt hxH Nat.lt_two_pow_self)
       (Nat.le_trans hpow (Nat.le_mul_of_pos_right _ (by decide)))
-  apply sparse_tail_product_ratio hP hPH hlo hhi
+  exact sparse_tail_product_with_mass hP hA hPH hlo hhi hcap
+
+theorem reciprocal_tail_of_capacity {states : Nat → Nat} {P q : Nat}
+    (hP : 0 < P) (hcap : DyadicCapacity states P) {xs : List Nat}
+    (hnd : xs.Nodup) (hmember : ∀ x ∈ xs, ∃ i, states i = x)
+    (hlo : ∀ x ∈ xs, cutoff P (P + q) ≤ x) :
+    (2 ^ (q + 1) - 1) * factors 1 1 xs ≤ 2 ^ (q + 1) * xs.prod := by
+  apply reciprocal_tail_from_count (j := 0) (A := 1) hP (by decide) (by simpa using hlo)
   intro j
-  apply hcap j _ (List.filter_sublist.nodup hnd)
-  intro x hx
-  obtain ⟨hxmem, hxlt⟩ := List.mem_filter.mp hx
-  exact ⟨of_decide_eq_true hxlt, hmember x hxmem⟩
+  simpa only [Nat.one_mul] using hcap j _ (List.filter_sublist.nodup hnd) (fun x hx => by
+    obtain ⟨hxmem, hxlt⟩ := List.mem_filter.mp hx
+    exact ⟨of_decide_eq_true hxlt, hmember x hxmem⟩)
 
 /-- A geometrically sparse sequence has a uniform reciprocal product
 bound on every finite subcollection of distinct values. -/
