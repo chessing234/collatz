@@ -160,3 +160,8 @@ jobs:
         run: |
           lake env lean scripts/audit_synchronous_excursion.lean
           python3 scripts/audit_synchronous_excursion.py
+
+      - name: Check uniform peak meetings and exponent reductions
+        run: |
+          lake env lean scripts/audit_peak_contraction.lean
+          python3 scripts/audit_peak_contraction.py
