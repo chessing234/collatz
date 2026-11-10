@@ -27,11 +27,23 @@ private theorem dyadic_dvd_difference {x b v : Nat}
   rw [← hdiff, hk, ← Nat.mul_assoc, ← Nat.pow_succ]
   exact Nat.dvd_mul_right _ _
 
-private theorem cancel_dyadic {v W z : Nat} (h : 3 ^ v ∣ 2 ^ W * z) :
+/-- A ternary divisor is unaffected by a dyadic factor. -/
+theorem cancel_dyadic {v W z : Nat} (h : 3 ^ v ∣ 2 ^ W * z) :
     3 ^ v ∣ z := by
   have hgcd : Nat.gcd (3 ^ v) (2 ^ W) = 1 := Nat.pow_gcd_pow_of_gcd_eq_one (by decide)
   have hcancel := (Nat.dvd_gcd_mul_iff_dvd_mul).mpr h
   simpa only [hgcd, Nat.one_mul] using hcancel
+
+/-- The common dyadic residue and scaled ternary residue give a joint period. -/
+theorem mixed_period_dvd_difference {x b v p W : Nat}
+    (hx : Val2 (x + 1) v) (hb : Val2 (b + 1) v) (hxb : x ≤ b)
+    (ht : 3 ^ p ∣ 2 ^ W * (b - x)) : 2 ^ (v + 1) * 3 ^ p ∣ b - x := by
+  obtain ⟨k, hk⟩ := dyadic_dvd_difference hx hb hxb
+  have h3 := cancel_dyadic ht
+  rw [hk] at h3
+  obtain ⟨l, hl⟩ := cancel_dyadic h3
+  refine ⟨l, ?_⟩
+  rw [hk, hl, Nat.mul_assoc]
 
 /-- Given a candidate point in both residue classes and less than one mixed
 period above the floor, every admissible actual source is at least that point. -/
@@ -40,16 +52,9 @@ theorem mixed_floor {m x b v p W : Nat} (hfloor : m ≤ x)
     (hxin : 3 ^ p ∣ 2 ^ W * x + 1) (hbin : 3 ^ p ∣ 2 ^ W * b + 1)
     (hwindow : b < m + 2 ^ (v + 1) * 3 ^ p) : b ≤ x := by
   by_cases hxb : x < b
-  · have hd := dyadic_dvd_difference hx hb (Nat.le_of_lt hxb)
-    have ht := Nat.dvd_sub hbin hxin
+  · have ht := Nat.dvd_sub hbin hxin
     rw [Nat.add_sub_add_right, ← Nat.mul_sub_left_distrib] at ht
-    have h3 := cancel_dyadic ht
-    obtain ⟨k, hk⟩ := hd
-    rw [hk] at h3
-    obtain ⟨l, hl⟩ := cancel_dyadic h3
-    have hperiod : 2 ^ (v + 1) * 3 ^ p ∣ b - x := by
-      refine ⟨l, ?_⟩
-      rw [hk, hl, Nat.mul_assoc]
+    have hperiod := mixed_period_dvd_difference hx hb (Nat.le_of_lt hxb) ht
     have hle := Nat.le_of_dvd (by omega : 0 < b - x) hperiod
     omega
   · exact Nat.le_of_not_gt hxb
@@ -71,7 +76,8 @@ inductive Floors (m : Nat) : List Run → List Visit → Prop where
       b < m + 2 ^ (v + 1) * 3 ^ prev.oddSteps →
       Floors m (⟨v, W⟩ :: prev :: rs) (⟨v, b⟩ :: bs)
 
-private theorem compare_cons {v x b : Nat} {vs bs : List Visit} (hb : b ≤ x)
+/-- Lower one source in the cross-multiplied comparison of visit products. -/
+theorem compare_cons {v x b : Nat} {vs bs : List Visit} (hb : b ≤ x)
     (hprev : (vs.map Visit.numerator).prod * (bs.map Visit.source).prod ≤
       (vs.map Visit.source).prod * (bs.map Visit.numerator).prod) :
     ((⟨v, x⟩ :: vs).map Visit.numerator).prod * ((⟨v, b⟩ :: bs).map Visit.source).prod ≤

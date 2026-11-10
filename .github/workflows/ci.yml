@@ -93,3 +93,8 @@ jobs:
           lake env lean scripts/audit_excursion_lattice.lean
           lake env lean scripts/audit_excursion_mixed_grid.lean
           python3 scripts/audit_excursion_lattice.py
+
+      - name: Check full-history excursion residues
+        run: |
+          lake env lean scripts/audit_excursion_history_grid.lean
+          python3 scripts/audit_excursion_history_grid.py
