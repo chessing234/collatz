@@ -323,6 +323,8 @@ import Collatz.Strategy.ExcursionCrossingEquivalence
 import Collatz.Strategy.ExcursionSignSplit
 import Collatz.Strategy.ExcursionPairMinimum
 import Collatz.Strategy.ExcursionGreedyShifts
+import Collatz.Strategy.ExcursionConflictThresholds
+import Collatz.Strategy.ExcursionReversalBudget
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit
