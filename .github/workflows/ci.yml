@@ -70,7 +70,9 @@ jobs:
           python3 scripts/audit_descent_intervals.py
 
       - name: Check weighted excursion crossings
-        run: python3 scripts/audit_excursion_crossing.py
+        run: |
+          python3 scripts/audit_excursion_crossing.py
+          python3 scripts/audit_excursion_switch_floor.py
 
       - name: Check coefficient crossing and interval transfer
         run: python3 scripts/audit_coefficient_descent.py
