@@ -210,6 +210,18 @@ private theorem Permitted.coordinate_member {word layers p rest} (h : Permitted 
     · obtain ⟨layer, hl, hm⟩ := ih r hr
       exact ⟨layer, List.mem_cons_of_mem _ hl, hm⟩
 
+/-- The minimum is attained by a schedule wholly inside the shift band. -/
+theorem anchorMinimum_attained_in_band {n : Rat} {word : List Edge} {r : Rat}
+    (h : anchorMinimum n word = some r) :
+    ∃ p rest, rest.length = word.length ∧
+      (∀ q ∈ p :: rest, n ≤ q ∧ q ≤ n + 1) ∧ costOn word (p :: rest) = r := by
+  obtain ⟨p, rest, hperm, hcost⟩ := anchorMinimum_attained h
+  refine ⟨p, rest, hperm.word_length, ?_, hcost⟩
+  intro q hq
+  obtain ⟨layer, hl, hm⟩ := hperm.coordinate_member q hq
+  obtain ⟨i, _, rfl⟩ := List.mem_map.mp hl
+  exact (mem_anchorCandidates_iff.mp hm).1
+
 /-- The exact rational minimum certifies descent if it is strictly below
 the inverse homogeneous coefficient of the genuine excursion word. -/
 theorem OrbitWord.drop_of_anchorMinimum {n endpoint elapsed A B word result}
@@ -222,12 +234,9 @@ theorem OrbitWord.drop_of_anchorMinimum {n endpoint elapsed A B word result}
     apply Nat.le_of_not_gt
     intro hdrop
     exact hnone ⟨k, hk, hdrop⟩
-  obtain ⟨p, rest, hperm, hcost⟩ := anchorMinimum_attained hbest
-  have hcoords (q : Rat) (hq : q ∈ p :: rest) : (n : Rat) ≤ q := by
-    obtain ⟨layer, hl, hm⟩ := hperm.coordinate_member q hq
-    obtain ⟨i, _, rfl⟩ := List.mem_map.mp hl
-    exact (mem_anchorCandidates_iff.mp hm).1.1
-  have hproduct := h.floor_product hn p rest hperm.word_length hcoords hfloor
+  obtain ⟨p, rest, hlen, hband, hcost⟩ := anchorMinimum_attained_in_band hbest
+  have hcoords (q : Rat) (hq : q ∈ p :: rest) : (n : Rat) ≤ q := (hband q hq).1
+  have hproduct := h.floor_product hn p rest hlen hcoords hfloor
   rw [hcost] at hproduct
   have hnrat : (0 : Rat) < n := Rat.natCast_pos.mpr hn
   have hp : 0 < p := by
