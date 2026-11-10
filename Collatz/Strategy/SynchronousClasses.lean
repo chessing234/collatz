@@ -92,6 +92,13 @@ theorem shortcut_double (x : Nat) : acceleratedOrbit 1 (2 * x) = x := by
   have he : (2 * x) % 2 = 0 := by omega
   simp [acceleratedStep, he]
 
+/-- A power-of-two multiple returns to its cofactor by leading halvings. -/
+theorem orbit_halvings (k x : Nat) : acceleratedOrbit k (2 ^ k * x) = x := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [Nat.pow_succ', Nat.mul_assoc, ← acceleratedOrbit_add k 1, shortcut_double, ih]
+
 theorem SameTime.double {x y : Nat} (h : SameTime x y) : SameTime (2 * x) (2 * y) := by
   apply SameTime.unshift (j := 1)
   simpa only [shortcut_double] using h
