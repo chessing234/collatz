@@ -188,7 +188,7 @@ private theorem OrbitWord.floor_product {floor x endpoint elapsed A B word}
           Rat.mul_le_mul_of_nonneg_left hlocal (Rat.mul_nonneg ha hC)
         _ = _ := by unfold e Edge.ofRun; grind
 
-private theorem Permitted.word_length {word layers p rest} (h : Permitted word layers p rest) :
+theorem Permitted.word_length {word layers p rest} (h : Permitted word layers p rest) :
     rest.length = word.length := by
   induction h with
   | last _ => rfl
@@ -210,17 +210,52 @@ private theorem Permitted.coordinate_member {word layers p rest} (h : Permitted 
     · obtain ⟨layer, hl, hm⟩ := ih r hr
       exact ⟨layer, List.mem_cons_of_mem _ hl, hm⟩
 
+theorem Permitted.anchor_band {n : Rat} {word : List Edge} {p : Rat} {rest : List Rat}
+    (h : Permitted word (anchorLayers n word) p rest) :
+    ∀ q ∈ p :: rest, n ≤ q ∧ q ≤ n + 1 := by
+  intro q hq
+  obtain ⟨layer, hl, hm⟩ := h.coordinate_member q hq
+  obtain ⟨i, _, rfl⟩ := List.mem_map.mp hl
+  exact (mem_anchorCandidates_iff.mp hm).1
+
+private theorem Permitted.layer_at {word layers p rest} (h : Permitted word layers p rest)
+    {i : Nat} {q : Rat} (hcoord : (p :: rest)[i]? = some q) :
+    ∃ layer, layers[i]? = some layer ∧ q ∈ layer := by
+  induction h generalizing i with
+  | @last choices p hp =>
+    cases i with
+    | zero =>
+      have he : p = q := Option.some.inj hcoord
+      exact ⟨choices, rfl, he ▸ hp⟩
+    | succ i => simp at hcoord
+  | @more e word choices later p first rest hp _ ih =>
+    cases i with
+    | zero =>
+      have he : p = q := Option.some.inj hcoord
+      exact ⟨choices, rfl, he ▸ hp⟩
+    | succ i =>
+      obtain ⟨layer, hidx, hmem⟩ := ih hcoord
+      exact ⟨layer, hidx, hmem⟩
+
+/-- A permitted schedule uses an anchor from the correct layer at
+each boundary. -/
+theorem Permitted.anchor_coordinate {n : Rat} {word : List Edge} {p q : Rat}
+    {rest : List Rat} {i : Nat} (h : Permitted word (anchorLayers n word) p rest)
+    (hcoord : (p :: rest)[i]? = some q) : q ∈ anchorCandidates n word i := by
+  obtain ⟨layer, hidx, hmem⟩ := h.layer_at hcoord
+  have hlt := (List.getElem?_eq_some_iff.mp hcoord).1
+  rw [List.length_cons, h.word_length] at hlt
+  rw [anchorLayers, List.getElem?_map, List.getElem?_range hlt] at hidx
+  have he : anchorCandidates n word i = layer := Option.some.inj hidx
+  rwa [← he] at hmem
+
 /-- The minimum is attained by a schedule wholly inside the shift band. -/
 theorem anchorMinimum_attained_in_band {n : Rat} {word : List Edge} {r : Rat}
     (h : anchorMinimum n word = some r) :
     ∃ p rest, rest.length = word.length ∧
       (∀ q ∈ p :: rest, n ≤ q ∧ q ≤ n + 1) ∧ costOn word (p :: rest) = r := by
   obtain ⟨p, rest, hperm, hcost⟩ := anchorMinimum_attained h
-  refine ⟨p, rest, hperm.word_length, ?_, hcost⟩
-  intro q hq
-  obtain ⟨layer, hl, hm⟩ := hperm.coordinate_member q hq
-  obtain ⟨i, _, rfl⟩ := List.mem_map.mp hl
-  exact (mem_anchorCandidates_iff.mp hm).1
+  exact ⟨p, rest, hperm.word_length, hperm.anchor_band, hcost⟩
 
 /-- The exact rational minimum certifies descent if it is strictly below
 the inverse homogeneous coefficient of the genuine excursion word. -/
