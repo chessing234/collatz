@@ -17,8 +17,18 @@ example : leastAt 6 7 = 7 :=
   leastAt_after_single_halving_mod_eight (v := 3) (u := 1)
     (by decide) (by decide) (by decide) (by decide)
 
+example : leastAt 8 7 = 7 :=
+  leastAt_five_after_mod_eight (j := 2) (u := 1)
+    (by decide) (by decide) (by decide) (by decide)
+
+example : leastAt 7 11 = 11 :=
+  leastAt_five_after_mod_eight (j := 1) (u := 3)
+    (by decide) (by decide) (by decide) (by decide)
+
 #print axioms leastAt_succ_of_non_two
 #print axioms leastAt_first_halving
 #print axioms leastAt_second_halving
 #print axioms leastAt_after_single_halving
 #print axioms leastAt_after_single_halving_mod_eight
+#print axioms leastAt_four_after_mod_eight
+#print axioms leastAt_five_after_mod_eight

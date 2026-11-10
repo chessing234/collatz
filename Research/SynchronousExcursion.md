@@ -35,6 +35,16 @@ alternative even predecessor would force a \(v\)-step image above the
 all-odd cap. Thus \(L_{v+2}(n)=n\). If \(A\equiv3\pmod8\), the next
 state has a unique predecessor and \(L_{v+3}(n)=n\).
 
+For \(v\ge2\) and \(A\equiv3\pmod8\), the same minimum holds through
+\(v+5\). At the fourth step, tracing the alternative branch back
+to time \(v\) either forces a value at least \(A\) or requires the
+value \(A-3\). The first value exceeds the cap for smaller starts.
+The second requires an all-odd prefix, whose shifted image would
+have to be divisible by three. Its shifted image \(A-2\) fails
+that test. At the fifth step, a halving gives a unique predecessor.
+If the step is odd, tracing the alternative branch back to time
+\(v\) again puts it above the cap.
+
 The proofs are in the Lean module `Collatz.Strategy.SynchronousExcursion`.
 The independent Python audit enumerates backward fibers for run lengths
 up to 12 and odd cofactors below 1024.
