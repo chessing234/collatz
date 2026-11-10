@@ -351,4 +351,116 @@ theorem seven_product_drop : ∃ k, k ≤ 7 ∧ Collatz.acceleratedOrbit k 7 < 7
     (by decide)
   exact t2.drop_by_of_floor_crossing (by decide) (by decide)
 
+/-- The inverse coefficient rounded upwards to the grid with denominator
+`scale`. Its numerator is all the certificate needs to retain. -/
+def roundedRatio (scale B A : Nat) : Nat :=
+  (scale * B + (A - 1)) / A
+
+/-- The grid upper bound overshoots by strictly less than one grid unit. -/
+theorem roundedRatio_bounds (scale B : Nat) {A : Nat} (hA : 0 < A) :
+    scale * B ≤ A * roundedRatio scale B A ∧
+      A * roundedRatio scale B A < scale * B + A := by
+  unfold roundedRatio
+  have hdiv := Nat.div_add_mod (scale * B + (A - 1)) A
+  have hmod := Nat.mod_lt (scale * B + (A - 1)) hA
+  omega
+
+/-- A budget for the offset of a shifted affine excursion prefix. Each new
+term can use a different upper bound for its inverse coefficient. -/
+structure RoundedPrefix (n scale : Nat) where
+  landing : Nat
+  A : Nat
+  B : Nat
+  debt : Nat
+  positive : 0 < A
+  certified : ∃ error,
+    B * (landing + 1) = A * (n + 1) + error ∧ 2 * scale * error ≤ A * debt
+
+/-- Empty prefix. -/
+def RoundedPrefix.start (n scale : Nat) : RoundedPrefix n scale :=
+  ⟨n, 1, 1, 0, by decide, ⟨0, by simp, by simp⟩⟩
+
+private theorem RoundedPrefix.extend_error {n scale error : Nat} (r : RoundedPrefix n scale)
+    (herr : 2 * scale * error ≤ r.A * r.debt) (v W : Nat) :
+    2 * scale * (error * 3 ^ v + offset r.B v W) ≤
+      (r.A * 3 ^ v) * r.debt + scale * (r.B * 2 ^ (v + W)) * charge W := by
+  have hprev := Nat.mul_le_mul_right (3 ^ v) herr
+  have hnext := Nat.mul_le_mul_left scale (offset_bound r.B v W)
+  rw [Nat.mul_add]
+  apply Nat.add_le_add
+  · simpa only [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using hprev
+  · simpa only [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using hnext
+
+/-- Add one excursion using only its own rounded coefficient to charge the
+increment to the budget. A prefix with a small inverse coefficient therefore
+adds little debt even when the last run has many extra halvings. -/
+def RoundedPrefix.step {n scale v u W y : Nat} (r : RoundedPrefix n scale)
+    (hstep : IsExcursion r.landing v u W y) : RoundedPrefix n scale where
+  landing := y
+  A := r.A * 3 ^ v
+  B := r.B * 2 ^ (v + W)
+  debt := r.debt + roundedRatio scale (r.B * 2 ^ (v + W)) (r.A * 3 ^ v) * charge W
+  positive := Nat.mul_pos r.positive (Nat.pow_pos (by decide))
+  certified := by
+    obtain ⟨error, haffine, herr⟩ := r.certified
+    refine ⟨error * 3 ^ v + offset r.B v W, extend_affine haffine hstep, ?_⟩
+    let A' := r.A * 3 ^ v
+    let B' := r.B * 2 ^ (v + W)
+    let rounded := roundedRatio scale B' A'
+    have hA : 0 < A' := Nat.mul_pos r.positive (Nat.pow_pos (by decide))
+    have hround : scale * B' ≤ A' * rounded := (roundedRatio_bounds scale B' hA).1
+    change 2 * scale * (error * 3 ^ v + offset r.B v W) ≤ A' * (r.debt + rounded * charge W)
+    calc
+      _ ≤ A' * r.debt + scale * B' * charge W := r.extend_error herr v W
+      _ ≤ A' * r.debt + (A' * rounded) * charge W :=
+        Nat.add_le_add_left (Nat.mul_le_mul_right _ hround) _
+      _ = _ := by rw [Nat.mul_add, Nat.mul_assoc A' rounded]
+
+/-- A terminal slope gap can pay for the rounded prefix debt and the last
+excursion's correction. The terminal coefficient itself is used without
+rounding it into the budget. -/
+theorem RoundedPrefix.drop_of_margin {n scale v u W y : Nat} (r : RoundedPrefix n scale)
+    (hstep : IsExcursion r.landing v u W y)
+    (hmargin : (r.A * 3 ^ v) * (2 * scale * (n + 1) + r.debt) +
+        scale * (r.B * 2 ^ (v + W)) * charge W <
+        2 * scale * (r.B * 2 ^ (v + W)) * (n + 1)) :
+    y < n := by
+  obtain ⟨error, hprefix, herr⟩ := r.certified
+  let A' := r.A * 3 ^ v
+  let B' := r.B * 2 ^ (v + W)
+  let C' := error * 3 ^ v + offset r.B v W
+  have haffine : B' * (y + 1) = A' * (n + 1) + C' := extend_affine hprefix hstep
+  have hdrop : (2 * scale * B') * (y + 1) < (2 * scale * B') * (n + 1) := calc
+    _ = 2 * scale * (B' * (y + 1)) := Nat.mul_assoc ..
+    _ = A' * (2 * scale * (n + 1)) + 2 * scale * C' := by
+      rw [haffine, Nat.mul_add]
+      congr 1
+      ac_rfl
+    _ ≤ A' * (2 * scale * (n + 1)) + (A' * r.debt + scale * B' * charge W) :=
+      Nat.add_le_add_left (r.extend_error herr v W) _
+    _ = A' * (2 * scale * (n + 1) + r.debt) + scale * B' * charge W := by
+      rw [Nat.mul_add A', Nat.add_assoc]
+    _ < _ := hmargin
+  exact Nat.le_of_succ_le_succ (Nat.lt_of_mul_lt_mul_left hdrop)
+
+/-- Quarter-unit rounding certifies the first coefficient crossing of 63,
+which is below the factor-two threshold. -/
+theorem sixty_three_rounded_drop :
+    ∃ r : RoundedPrefix 63 4, r.landing = 325 ∧ r.debt = 24 ∧
+      IsExcursion r.landing 1 163 3 61 ∧ 61 < 63 := by
+  let r0 := RoundedPrefix.start 63 4
+  let r1 := r0.step (show IsExcursion 63 6 1 3 91 by unfold IsExcursion; decide)
+  let r2 := r1.step (show IsExcursion 91 2 23 1 103 by unfold IsExcursion; decide)
+  let r3 := r2.step (show IsExcursion 103 3 13 1 175 by unfold IsExcursion; decide)
+  let r4 := r3.step (show IsExcursion 175 4 11 1 445 by unfold IsExcursion; decide)
+  let r5 := r4.step (show IsExcursion 445 1 223 2 167 by unfold IsExcursion; decide)
+  let r6 := r5.step (show IsExcursion 167 3 21 1 283 by unfold IsExcursion; decide)
+  let r7 := r6.step (show IsExcursion 283 2 71 1 319 by unfold IsExcursion; decide)
+  let r8 := r7.step (show IsExcursion 319 6 5 2 911 by unfold IsExcursion; decide)
+  let r9 := r8.step (show IsExcursion 911 4 57 3 577 by unfold IsExcursion; decide)
+  let r10 := r9.step (show IsExcursion 577 1 289 1 433 by unfold IsExcursion; decide)
+  let r11 := r10.step (show IsExcursion 433 1 217 1 325 by unfold IsExcursion; decide)
+  have last : IsExcursion r11.landing 1 163 3 61 := by unfold IsExcursion; decide
+  exact ⟨r11, rfl, by decide, last, r11.drop_of_margin last (by decide)⟩
+
 end Collatz.ExcursionCrossing
