@@ -1,5 +1,7 @@
+import Collatz.Exploration.HalvingBlocks
 import Collatz.Strategy.ExcursionCanonicalCrossing
 import Collatz.Strategy.ExcursionCrossingEquivalence
+import Collatz.Strategy.FirstLightBasics
 import Collatz.Strategy.OrbitCapacity
 import Collatz.Strategy.TwoRunOrder
 
@@ -92,6 +94,62 @@ theorem Trace.shortcut_heavy_of_boundary_heavy {n y : Nat} {rs : List Run}
       rw [← hsplit, Nat.pow_add, AccumulatorArith.oddCount_add, hpre.landing,
         hpre.shortcut_odd_count, Nat.pow_add]
       exact hlocal
+
+/-- The first shortcut crossing of a first-crossing excursion word
+occurs during its terminal halving run. It has the same odd count
+as the whole word, and its value is at least the final landing. -/
+theorem Trace.first_light_of_first_crossing {n e : Nat} {rs : List Run}
+    (h : Trace n e rs) (hproper : ProperPrefixBound 1 1 rs)
+    (hcross : 3 ^ oddCount rs < 2 ^ time rs) :
+    ∃ k, k ≤ time rs ∧ FirstLightDescent.FirstLight n k ∧
+      Collatz.oddCount n k = oddCount rs ∧ e ≤ acceleratedOrbit k n := by
+  have hl : 3 ^ Collatz.oddCount n (time rs) < 2 ^ time rs := by
+    rwa [h.shortcut_odd_count]
+  obtain ⟨k, hk, hfirst⟩ := FirstLightDescent.least_light_prefix n (time rs) hl
+  refine ⟨k, hk, hfirst, ?_⟩
+  cases h with
+  | nil => simp [time, oddCount] at hcross
+  | @step x _ v u W rs hpre hrun =>
+    have hfull : 2 ^ time rs ≤ 3 ^ oddCount rs := by
+      simpa only [Nat.one_mul] using hproper.1
+    have hbefore : time rs < k := by
+      apply Nat.lt_of_not_ge
+      intro hle
+      exact Nat.not_le_of_gt hfirst.1
+        (hpre.shortcut_heavy_of_boundary_heavy hfull hproper.2 k hle)
+    let j := k - time rs
+    have hj : time rs + j = k := Nat.add_sub_of_le (Nat.le_of_lt hbefore)
+    have hcount : Collatz.oddCount n k =
+        oddCount rs + Collatz.oddCount x j := by
+      rw [← hj, AccumulatorArith.oddCount_add, hpre.landing, hpre.shortcut_odd_count]
+    have hpeak_before : v < j := by
+      apply Nat.lt_of_not_ge
+      intro hle
+      have hheavy : 2 ^ k ≤ 3 ^ Collatz.oddCount n k := by
+        calc
+          _ = 2 ^ time rs * 2 ^ j := by rw [← hj, Nat.pow_add]
+          _ ≤ 3 ^ oddCount rs * 3 ^ j :=
+            Nat.mul_le_mul hfull (Collatz.Arith.two_pow_le_three_pow j)
+          _ = _ := by rw [hcount, excursion_count_before hrun hle, Nat.pow_add]
+      exact Nat.not_le_of_gt hfirst.1 hheavy
+    let r := j - v
+    have hr : r ≤ W := by
+      simp only [time] at hk
+      dsimp [r, j]
+      omega
+    have hpart : v + r = j := Nat.add_sub_of_le (Nat.le_of_lt hpeak_before)
+    constructor
+    · rw [hcount, ← hpart, excursion_count_after hrun hr]
+      simp only [oddCount, Nat.add_comm]
+    · have hpeak : acceleratedOrbit v x = 2 ^ W * e := by
+        rw [peak_eq hrun, hrun.2.2.2.2.2.2, Nat.add_sub_cancel]
+      have hland : acceleratedOrbit k n = acceleratedOrbit r (2 ^ W * e) := by
+        rw [← hj, Nat.add_comm (time rs), ← acceleratedOrbit_add, hpre.landing,
+          ← hpart, Nat.add_comm v, ← acceleratedOrbit_add, hpeak]
+      have hsplit : 2 ^ W * e = 2 ^ r * (2 ^ (W - r) * e) := by
+        rw [← Nat.mul_assoc, ← Nat.pow_add, Nat.add_sub_of_le hr]
+      rw [hland, hsplit, Collatz.Exploration.HalvingBlocks.accelerated_halving]
+      exact Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _)
 
 private theorem trace_reaches_time (n : Nat) (hn : n % 2 = 1) (k : Nat) :
     ∃ y rs, Trace n y rs ∧ k ≤ time rs ∧ y % 2 = 1 := by

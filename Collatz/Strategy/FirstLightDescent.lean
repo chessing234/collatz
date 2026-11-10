@@ -1,15 +1,10 @@
 import Collatz.Strategy.HeavyResidue
+import Collatz.Strategy.FirstLightBasics
 
 /-! A finite-horizon, all-starting-values coefficient-descent theorem.
 No assertion that every starting value has a first light prefix is made. -/
 namespace Collatz.FirstLightDescent
 open AffineExact
-
-def FirstLight (n k : Nat) : Prop :=
-  3^oddCount n k < 2^k ∧ ∀ i, i<k → 2^i ≤ 3^oddCount n i
-
-instance (n k : Nat) : Decidable (FirstLight n k) :=
-  inferInstanceAs (Decidable (_ ∧ ∀ i, i<k → _))
 
 theorem first_light_accumulator {n k : Nat} (h : FirstLight n k) :
     3*affineC k n ≤ oddCount n k * 3^oddCount n k := by
