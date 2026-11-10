@@ -148,3 +148,8 @@ jobs:
         run: |
           lake env lean scripts/audit_synchronous_dynamics.lean
           python3 scripts/audit_synchronous_dynamics.py
+
+      - name: Check reduced multiplier growth of synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_growth.lean
+          python3 scripts/audit_synchronous_growth.py
