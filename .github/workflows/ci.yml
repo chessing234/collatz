@@ -93,3 +93,8 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_history_grid.lean
           python3 scripts/audit_excursion_history_grid.py
+
+      - name: Check distinct excursion source assignments
+        run: |
+          lake env lean scripts/audit_excursion_greedy_slots.lean
+          python3 scripts/audit_excursion_greedy_slots.py
