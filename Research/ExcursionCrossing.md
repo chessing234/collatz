@@ -209,6 +209,27 @@ excludes 13. The actual next excursion lands at 5 with `(1,2)`.
 [Lean](../Collatz/Strategy/ExcursionContractionTail.lean) checks the
 exact unit optimum, the residue criterion, and the example.
 
+## Independent optimization at a drift sign boundary
+
+A nonnegative-drift edge prefers the arrival expression, and its
+transport of any source in the band is at most `n+1/2`. A
+negative-drift edge prefers the departure expression. Its odd run
+has length at least two, so the inverse transport of any target in
+the band is at least `n+5/9`.
+
+At a boundary from nonnegative drift to negative drift, setting the
+shared coordinate to `n+1/2` leaves both edges unclipped. With the
+other coordinates fixed, each then attains its best factor. Hence
+one can optimize both parts independently and join them at the
+midpoint. Conversely, any full schedule restricts to a feasible
+schedule on each part. The exact full minimum is therefore the
+product of the separate minima. This applies at every such boundary.
+
+[Lean](../Collatz/Strategy/ExcursionSignSplit.lean) checks the
+factorization and the five-excursion prefix from 27, which splits
+after the third excursion. The two products are `875008/841995`
+and `12224/11907`.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
