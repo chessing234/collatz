@@ -36,14 +36,16 @@ theorem minimum_after (states : Nat → Nat) (H : Nat) :
         exact Nat.le_of_not_gt (fun h => hsmaller ⟨j, hj, h⟩)
   exact hmin (states H) ⟨H, Nat.le_refl _, rfl⟩
 
-private theorem chain_of_small_gaps {states : Nat → Nat}
-    (hinj : ∀ i j, states i = states j → i = j) {H upper D : Nat}
+/-- If every eligible minimum has a small future gap, take a chain
+of such minima within the available value window. The indices are
+distinct even when the coordinates at those indices coincide. -/
+theorem minima_indices_of_small_gaps {states : Nat → Nat} {H upper D : Nat}
     (hsmall : ∀ i, H ≤ i → FutureMinimum states i → states i ≤ upper →
       ∃ j, i < j ∧ states j < states i + D)
     (count : Nat) {i : Nat} (hi : H ≤ i) (hmin : FutureMinimum states i)
     (hroom : states i + count * D ≤ upper) :
-    ∃ xs : List Nat, xs.Nodup ∧ xs.length = count ∧
-      ∀ x ∈ xs, states i ≤ x ∧ x ≤ upper ∧ ∃ j, H ≤ j ∧ states j = x := by
+    ∃ indices : List Nat, indices.Nodup ∧ indices.length = count ∧
+      ∀ j ∈ indices, i ≤ j ∧ states i ≤ states j ∧ states j ≤ upper := by
   induction count generalizing i with
   | zero => exact ⟨[], List.nodup_nil, rfl, by simp⟩
   | succ count ih =>
@@ -51,21 +53,21 @@ private theorem chain_of_small_gaps {states : Nat → Nat}
     obtain ⟨j, hij, hj⟩ := hsmall i hi hmin hlo
     obtain ⟨k, hik, hk⟩ := minimum_after states (i + 1)
     have hkmin : FutureMinimum states k := fun l hl => hk l (by omega)
-    have hlt : states i < states k := Nat.lt_of_le_of_ne (hmin k (by omega))
-      (fun heq => Nat.ne_of_lt (by omega : i < k) (hinj i k heq))
     have hnext : states k + count * D ≤ upper := by
       have hkj := hk j (by omega)
       rw [Nat.succ_mul] at hroom
       omega
-    obtain ⟨xs, hnd, hlen, hmembers⟩ := ih (by omega : H ≤ k) hkmin hnext
-    refine ⟨states i :: xs, List.nodup_cons.mpr ⟨?_, hnd⟩, by simp [hlen], ?_⟩
+    obtain ⟨indices, hnd, hlen, hmembers⟩ := ih (by omega : H ≤ k) hkmin hnext
+    refine ⟨i :: indices, List.nodup_cons.mpr ⟨?_, hnd⟩, by simp [hlen], ?_⟩
     · intro hm
-      exact Nat.not_le_of_gt hlt (hmembers _ hm).1
-    · intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact ⟨Nat.le_refl _, hlo, i, hi, rfl⟩
-      · obtain ⟨hlo', hhi, hj⟩ := hmembers x hx
-        exact ⟨Nat.le_trans (Nat.le_of_lt hlt) hlo', hhi, hj⟩
+      have := (hmembers i hm).1
+      omega
+    · intro l hl
+      rcases List.mem_cons.mp hl with rfl | hl
+      · exact ⟨Nat.le_refl _, Nat.le_refl _, hlo⟩
+      · obtain ⟨hkl, hklo, hhi⟩ := hmembers l hl
+        have hik' : i ≤ k := by omega
+        exact ⟨Nat.le_trans hik' hkl, Nat.le_trans (hmin k hik') hklo, hhi⟩
 
 /-- From any future minimum, a value window of order `D^20`
 contains another future minimum separated by `D` from every
@@ -93,16 +95,21 @@ theorem isolated_minimum_in_window :
     refine ⟨i, hi, hlocal, hupper, ?_⟩
     intro j hj
     exact Nat.le_of_not_gt (fun hlt => h ⟨j, hj, hlt⟩)
-  obtain ⟨xs, hnd, hlen, hmembers⟩ :=
-    chain_of_small_gaps hinj hsmall count (Nat.le_refl start) hmin (Nat.le_refl upper)
+  obtain ⟨indices, hnd, hlen, hmembers⟩ :=
+    minima_indices_of_small_gaps hsmall count (Nat.le_refl start) hmin (Nat.le_refl upper)
+  let xs := indices.map states
+  have hxs : xs.Nodup := List.pairwise_map.mpr
+    (hnd.imp (fun hne heq => hne (hinj _ _ heq)))
   let width := count * D + 1
   have hcount : count ^ 20 ≤ C * width ^ 19 := by
-    rw [← hlen]
+    have hlen' : xs.length = count := by simp [xs, hlen]
+    rw [← hlen']
     apply hC (a := states start) (X := width) (Nat.succ_pos _)
-      (no_merging_of_injective hinj) xs hnd
+      (no_merging_of_injective hinj) xs hxs
     intro x hx
-    obtain ⟨hlo, hhi, j, _, hj⟩ := hmembers x hx
-    exact ⟨hlo, by dsimp [upper, width] at *; omega, j, hj⟩
+    obtain ⟨j, hj, rfl⟩ := List.mem_map.mp hx
+    obtain ⟨_, hlo, hhi⟩ := hmembers j hj
+    exact ⟨hlo, by dsimp [upper, width] at *; omega, j, rfl⟩
   have hcount_pos : 0 < count := Nat.succ_pos _
   have hwidth : width ≤ count * (D + 1) := by
     rw [Nat.mul_add, Nat.mul_one]

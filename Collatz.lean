@@ -314,6 +314,7 @@ import Collatz.Strategy.OrbitCapacity
 import Collatz.Strategy.OrbitOccupationBootstrap
 import Collatz.Strategy.OrbitWindowBootstrap
 import Collatz.Strategy.OrbitMinimumSpacing
+import Collatz.Strategy.OrbitCoefficientSpacing
 import Collatz.Strategy.OrbitNearReturn
 import Collatz.Strategy.SynchronousClasses
 import Collatz.Strategy.SynchronousDynamics
