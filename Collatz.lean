@@ -315,6 +315,7 @@ import Collatz.Strategy.OrbitOccupationBootstrap
 import Collatz.Strategy.OrbitWindowBootstrap
 import Collatz.Strategy.OrbitNearReturn
 import Collatz.Strategy.SynchronousClasses
+import Collatz.Strategy.SynchronousDynamics
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32

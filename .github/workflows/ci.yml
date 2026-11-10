@@ -143,3 +143,8 @@ jobs:
         run: |
           lake env lean scripts/audit_synchronous_classes.lean
           python3 scripts/audit_synchronous_classes.py
+
+      - name: Check the dynamics of least synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_dynamics.lean
+          python3 scripts/audit_synchronous_dynamics.py
