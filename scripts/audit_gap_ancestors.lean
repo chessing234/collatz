@@ -17,6 +17,9 @@ example : ∃ q L, 8 < q ∧ acceleratedOrbit L (12 * q + 9) = 7 :=
 #print axioms leastAt_single_gap
 #print axioms delay_progression
 #print axioms ancestor_with_prefix
+#print axioms ancestor_with_prefix_bound
 #print axioms ancestor_in_progression
+#print axioms ancestor_in_progression_bound
+#print axioms finite_verification_transfer
 #print axioms collatz_iff_progression
 #print axioms ancestor_with_delay

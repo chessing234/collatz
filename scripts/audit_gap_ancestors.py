@@ -50,11 +50,14 @@ def ancestor(k, s, residue, target, cutoff):
         remainder = 2 * remainder % modulus
     while (target << exponent) <= modulus * cutoff + offset:
         exponent += period
+    threshold = modulus * cutoff + offset
+    assert exponent <= threshold.bit_length() + 2 * period
     q = 2 * (((target << exponent) - offset) // modulus) + parity
     source = dyadic * 3**s * q + residue
     assert q > cutoff and source > 0
     assert parity_run(source, k + 1)[0] == target << exponent
     assert parity_run(source, k + 1 + exponent)[0] == target
+    assert source <= target << (k + 1 + exponent)
     return source
 
 
