@@ -167,8 +167,23 @@ def check_unit_tails():
     print("Checked 35 exact unit-block optima, four complete residue ranges, and the synthetic tail from 7.")
 
 
+def sign_parts(n, word):
+    parts = []
+    first = 0
+    previous_positive = False
+    for i, (a, b, c) in enumerate(word):
+        positive = b * n + c >= a * (n + 1)
+        if previous_positive and not positive:
+            parts.append(word[first:i])
+            first = i
+        previous_positive = positive
+    parts.append(word[first:])
+    return parts
+
+
 def main():
     rng = Random(61527)
+    sign_cuts = 0
     for n in range(3, 20_000, 2):
         word, ratio, descended = first_word(n)
         layers = candidate_layers(word)
@@ -176,6 +191,10 @@ def main():
         assert layers == short
         bound = optimum(n, word, short)
         assert bound < ratio and descended
+        parts = sign_parts(n, word)
+        if len(parts) > 1:
+            sign_cuts += len(parts) - 1
+            assert bound == prod(optimum(n, part, local_layers(part)) for part in parts)
         _, _, _, reference = first_crossing(n, uniform(1, 2))
         assert bound <= reference[2]
         if n < 1_000:
@@ -187,6 +206,10 @@ def main():
     for _ in range(20):
         word = [rng.choice(small_runs) for _ in range(32)]
         assert local_layers(word) == candidate_layers(word)
+        n = rng.randrange(1, 200)
+        assert optimum(n, word, local_layers(word)) == prod(
+            optimum(n, part, local_layers(part)) for part in sign_parts(n, word)
+        )
     for n in (7, 9, 127, 255):
         word, _, _ = first_word(n)
         layers = candidate_layers(word)
@@ -199,6 +222,7 @@ def main():
     print("Checked 4,096 triples of small runs by exact affine interval intersection.")
     print("The exact rational optimizer certified all 9,999 first crossings.")
     print("For 127 the exact product is 1343488/1331883, below the sixteenth-grid ceiling.")
+    print(f"The sign split preserved the optimum at {sign_cuts:,} boundaries on the audited orbits.")
     check_flat_schedule()
     check_unit_tails()
 

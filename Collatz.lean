@@ -334,6 +334,7 @@ import Collatz.Strategy.ExcursionAnchorCertificate
 import Collatz.Strategy.ExcursionLocalAnchors
 import Collatz.Strategy.ExcursionContractionTail
 import Collatz.Strategy.ExcursionCrossingEquivalence
+import Collatz.Strategy.ExcursionSignSplit
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit

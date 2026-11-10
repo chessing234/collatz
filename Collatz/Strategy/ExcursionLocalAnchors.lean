@@ -81,7 +81,7 @@ private theorem input_ge_third {n v W : Nat} (hv : 0 < v) {p : Rat}
   apply Rat.le_of_mul_le_mul_left _ ha
   grind
 
-private theorem input_ge_five_ninths {n v W : Nat} (hv : 2 ≤ v) {p : Rat}
+theorem input_ge_five_ninths {n v W : Nat} (hv : 2 ≤ v) {p : Rat}
     (hq : (n : Rat) ≤ (Edge.ofRun n v W).transport p) :
     (n : Rat) + 5 / 9 ≤ p := by
   let a : Rat := ((3 : Nat) ^ v : Nat)
@@ -136,7 +136,7 @@ private theorem output_le {n v W k : Nat} {p : Rat}
   rw [hright]
   grind
 
-private theorem output_half {n v W : Nat} {p : Rat} (hW : 0 < W)
+theorem output_half {n v W : Nat} {p : Rat} (hW : 0 < W)
     (hp : p ≤ (n : Rat) + 1) :
     (Edge.ofRun n v W).transport p ≤ (n : Rat) + 1 / 2 := by
   simpa using output_le (k := 1) hW hp

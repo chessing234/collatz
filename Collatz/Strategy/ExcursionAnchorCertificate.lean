@@ -123,7 +123,7 @@ theorem OrbitWord.landing {floor x endpoint elapsed A B word}
   | cons hstep _ ih =>
     rw [← Collatz.acceleratedOrbit_add, landing_eq hstep, ih]
 
-private theorem costOn_nonneg (word : List Edge) (coords : List Rat)
+theorem costOn_nonneg (word : List Edge) (coords : List Rat)
     (h : ∀ p ∈ coords, 0 < p) : 0 ≤ costOn word coords := by
   induction word generalizing coords with
   | nil => exact (by decide : (0 : Rat) ≤ 1)
