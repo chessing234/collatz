@@ -57,6 +57,26 @@ The Lean proof gives a strict one-grid-unit bound on each ratio's
 rounding error. The first excursion coefficient crossing of 63 lands
 at 61 with a proper-prefix debt of 24 at scale four.
 
+## Switching the shifted coordinate
+
+The product bound can switch between `x/n` and `(x+1)/(n+1)` at each
+excursion boundary. For a switch from `s` to `t`, let
+`a=3^v`, `b=2^(v+W)`, and
+`E=max(0, a(1−s)+bt−2^v)`. A prefix staying at or above `n` has two
+valid local upper factors:
+
+- Departure bound `[a(n+s)+E]/[a(n+t)]`.
+- Arrival bound `b(n+s)/[b(n+t)−E]` when the denominator is positive.
+
+The normalized state ratios telescope even when the coordinate changes.
+Keeping the better factor at each transition gives a two-state dynamic
+program. The [Lean proof](../Collatz/Strategy/ExcursionSwitchFloor.lean)
+checks the computed factor products and certifies descent from 63 by
+accelerated time 54. The [audit](../scripts/audit_excursion_switch_floor.py) computes
+the minimum over schedules with exact rational arithmetic. In 9,999 odd
+starts below 20,000, switching certified every first excursion coefficient
+crossing. Each fixed coordinate missed the crossings from 27 and 63.
+
 ## Checks
 
 Lean certifies the first factor-two crossing from 27 to 5. It uses 16
