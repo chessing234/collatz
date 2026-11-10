@@ -41,7 +41,7 @@ theorem image_lt {k x c : Nat} (hx : x < c * 2 ^ k) :
         omega
       simpa only [ho, Nat.pow_one, Nat.mul_assoc] using ih hstep
 
-private theorem length_filter_range (p : Nat → Bool) (n : Nat) :
+theorem length_filter_range (p : Nat → Bool) (n : Nat) :
     ((List.range n).filter p).length = countRange n p := by
   induction n with
   | zero => simp
