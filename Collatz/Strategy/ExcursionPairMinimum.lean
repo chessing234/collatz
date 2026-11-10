@@ -64,7 +64,7 @@ theorem Edge.factor_antitone_target (e : Edge) {p q Q : Rat} (hp : 0 < p)
     · rename_i hd
       exact e.factor_ge_departure_at hp hq h ((Rat.not_le).mp hd)
 
-private theorem ofRun_unclipped_at_floor {n v W : Nat} {q : Rat} (hq : (n : Rat) ≤ q) :
+theorem ofRun_unclipped_at_floor {n v W : Nat} {q : Rat} (hq : (n : Rat) ≤ q) :
     (Edge.ofRun n v W).a * (n : Rat) + (Edge.ofRun n v W).drift ≤
       (Edge.ofRun n v W).b * q := by
   let e := Edge.ofRun n v W
@@ -76,7 +76,7 @@ private theorem ofRun_unclipped_at_floor {n v W : Nat} {q : Rat} (hq : (n : Rat)
   rw [hd]
   grind
 
-private theorem ofRun_unclipped_at_ceiling {n v W : Nat} {p : Rat} (hp : p ≤ (n : Rat) + 1) :
+theorem ofRun_unclipped_at_ceiling {n v W : Nat} {p : Rat} (hp : p ≤ (n : Rat) + 1) :
     (Edge.ofRun n v W).a * p + (Edge.ofRun n v W).drift ≤
       (Edge.ofRun n v W).b * ((n : Rat) + 1) := by
   let e := Edge.ofRun n v W
