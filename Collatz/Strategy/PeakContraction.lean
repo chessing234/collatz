@@ -150,13 +150,9 @@ theorem synchronized_drop {k d e u : Nat} (hu : 0 < u)
     odd_run_peak e u hu]
   exact h
 
-/-- A positive exponent drop yields a strictly smaller equal-time
-representative, including the cost of the leading halvings. -/
-theorem leastAt_lt_of_peak_meet {k d e u : Nat} (hu : 0 < u) (hd : 0 < d)
-    (h : acceleratedOrbit k (3 ^ (e + d) * u - 1) =
-      acceleratedOrbit k (3 ^ e * u - 1)) :
-    leastAt (k + (e + d)) (2 ^ (e + d) * u - 1) < 2 ^ (e + d) * u - 1 := by
-  have hrep := leastAt_le (synchronized_drop hu h)
+/-- Padding the shorter odd run still gives a strictly smaller start. -/
+theorem padded_start_lt {d e u : Nat} (hu : 0 < u) (hd : 0 < d) :
+    2 ^ d * (2 ^ e * u - 1) < 2 ^ (e + d) * u - 1 := by
   have hshift : 2 ^ d * (2 ^ e * u - 1) + 2 ^ d = 2 ^ (e + d) * u := by
     calc
       _ = 2 ^ d * ((2 ^ e * u - 1) + 1) := by rw [Nat.mul_add, Nat.mul_one]
@@ -166,6 +162,14 @@ theorem leastAt_lt_of_peak_meet {k d e u : Nat} (hu : 0 < u) (hd : 0 < d)
   have hpow : 2 ≤ 2 ^ d := by
     simpa using Nat.pow_le_pow_right (by decide : 0 < 2) (show 1 ≤ d by omega)
   omega
+
+/-- A positive exponent drop yields a strictly smaller equal-time
+representative, including the cost of the leading halvings. -/
+theorem leastAt_lt_of_peak_meet {k d e u : Nat} (hu : 0 < u) (hd : 0 < d)
+    (h : acceleratedOrbit k (3 ^ (e + d) * u - 1) =
+      acceleratedOrbit k (3 ^ e * u - 1)) :
+    leastAt (k + (e + d)) (2 ^ (e + d) * u - 1) < 2 ^ (e + d) * u - 1 :=
+  Nat.lt_of_le_of_lt (leastAt_le (synchronized_drop hu h)) (padded_start_lt hu hd)
 
 /-- For positive starts, a certified peak meeting transfers reachability
 to the shorter odd-run length. -/

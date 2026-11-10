@@ -13,22 +13,36 @@ namespace Collatz.BoundedEvenDefect
 
 open Collatz.RunAlgebra
 
+private theorem last_even_with_parity (x j : Nat) :
+    (oddCount x j = j ∧ runA j x = 0) ∨
+      ∃ i t, j = i + 1 + t ∧ oddCount x j = oddCount x i + t ∧
+        runA j x = 3 ^ t * (runA i x + 2 ^ i) ∧ acceleratedOrbit i x % 2 = 0 := by
+  induction j with
+  | zero => exact Or.inl ⟨rfl, rfl⟩
+  | succ j ih =>
+    have hcount := Density.oddCount_succ_last x j
+    rcases Arith.mod_two_eq_zero_or_one (acceleratedOrbit j x) with he | ho
+    · exact Or.inr ⟨j, 0, by omega, by omega, by rw [runA_even he]; simp, he⟩
+    · rcases ih with ⟨ha, hzero⟩ | ⟨i, t, hlen, ha, hA, he'⟩
+      · exact Or.inl ⟨by omega, by rw [runA_odd ho, hzero, Nat.mul_zero]⟩
+      · refine Or.inr ⟨i, t + 1, by omega, by omega, ?_, he'⟩
+        rw [runA_odd ho, hA, Nat.pow_succ', Nat.mul_assoc]
+
 /-- The shifted defect is zero for an all-odd word. Otherwise its
 last even step separates the previous defect from the trailing odds. -/
 theorem last_even (x j : Nat) :
     (oddCount x j = j ∧ runA j x = 0) ∨
       ∃ i t, j = i + 1 + t ∧ oddCount x j = oddCount x i + t ∧
         runA j x = 3 ^ t * (runA i x + 2 ^ i) := by
-  induction j with
-  | zero => exact Or.inl ⟨rfl, rfl⟩
-  | succ j ih =>
-    have hcount := Density.oddCount_succ_last x j
-    rcases Arith.mod_two_eq_zero_or_one (acceleratedOrbit j x) with he | ho
-    · exact Or.inr ⟨j, 0, by omega, by omega, by rw [runA_even he]; simp⟩
-    · rcases ih with ⟨ha, hzero⟩ | ⟨i, t, hlen, ha, hA⟩
-      · exact Or.inl ⟨by omega, by rw [runA_odd ho, hzero, Nat.mul_zero]⟩
-      · refine Or.inr ⟨i, t + 1, by omega, by omega, ?_⟩
-        rw [runA_odd ho, hA, Nat.pow_succ', Nat.mul_assoc]
+  rcases last_even_with_parity x j with h | ⟨i, t, hj, ha, hA, _⟩
+  · exact Or.inl h
+  · exact Or.inr ⟨i, t, hj, ha, hA⟩
+
+theorem runA_zero_of_full_oddCount {x j : Nat} (h : oddCount x j = j) : runA j x = 0 := by
+  rcases last_even x j with ⟨_, hA⟩ | ⟨i, t, hj, hc, _⟩
+  · exact hA
+  · have hcap := AffineExact.oddCount_le_self x i
+    omega
 
 private theorem three_pow_dvd {a b : Nat} (h : a ≤ b) : (3 : Int) ^ a ∣ 3 ^ b := by
   simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
@@ -254,5 +268,51 @@ theorem excludes_displacement (d : Nat) (c : Int) (hc : c ≠ 1) :
   have hsize : (1 - c).natAbs < 2 ^ B :=
     (Nat.log2_lt (by omega)).mp (Nat.lt_succ_self _)
   exact ⟨2 * B + 3 * d, excludes_displacement_at_precision d B c hc hsize⟩
+
+private theorem minus_one_precision (d : Nat) :
+    2 ^ (3 * d + 1) * (3 ^ d * (-1 : Int).natAbs) < 3 ^ (3 * d + 1) := by
+  change 2 ^ (3 * d + 1) * (3 ^ d * 1) < 3 ^ (3 * d + 1)
+  rw [Nat.mul_one, Nat.pow_add 2, Nat.pow_add 3, Nat.pow_mul 2, Nat.pow_mul 3]
+  change (8 ^ d * 2) * 3 ^ d < 27 ^ d * 3
+  calc
+    _ = 24 ^ d * 2 := by rw [Nat.mul_right_comm, ← Nat.mul_pow]
+    _ < 24 ^ d * 3 := Nat.mul_lt_mul_of_pos_left (by decide) (Nat.pow_pos (by decide))
+    _ ≤ _ := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left (by decide) _)
+
+/-- If the shifted defect is divisible by the full required ternary
+power, all even steps occur in a short initial segment. -/
+theorem trailing_odds_of_divisible_defect {d j x : Nat} (hd : 0 < d)
+    (hbudget : j - d ≤ oddCount x j) (hdiv : 3 ^ (j - d) ∣ runA j x) :
+    ∃ s, s ≤ j ∧ s ≤ 4 * d - 3 ∧ oddCount (acceleratedOrbit s x) (j - s) = j - s := by
+  rcases last_even_with_parity x j with ⟨hodd, _⟩ | ⟨i, t, hlen, hcount, hA, he⟩
+  · exact ⟨0, Nat.zero_le _, Nat.zero_le _, by simpa using hodd⟩
+  · have hshort : i + 1 ≤ 4 * d - 3 := by
+      apply Nat.le_of_not_gt
+      intro hbad
+      let P := 3 * (d - 1) + 1
+      have hP : t + P ≤ j - d := by dsimp only [P]; omega
+      have htarget := Nat.dvd_trans (Nat.pow_dvd_pow 3 hP) hdiv
+      rw [hA, Nat.pow_add] at htarget
+      have hn : 3 ^ P ∣ runA i x + 2 ^ i :=
+        Nat.dvd_of_mul_dvd_mul_left (Nat.pow_pos (by decide : 0 < 3)) htarget
+      have hint : (3 : Int) ^ P ∣ (runA i x : Int) + 2 ^ i := by
+        simpa only [Int.natCast_pow, Int.natCast_add,
+          show ((3 : Nat) : Int) = 3 by rfl, show ((2 : Nat) : Int) = 2 by rfl] using
+          (Int.ofNat_dvd.mpr hn)
+      have hneg := Int.dvd_neg.mpr hint
+      have hpre : i - (d - 1) ≤ oddCount x i := by omega
+      apply avoids_at_precision (d - 1) P (C := -1) (by decide) (minus_one_precision _)
+        x i hpre
+      have heq : (2 : Int) ^ i * (-1) - (runA i x : Int) = -((runA i x : Int) + 2 ^ i) := by
+        rw [Int.mul_neg, Int.mul_one]
+        omega
+      rwa [heq]
+    refine ⟨i + 1, by omega, hshort, ?_⟩
+    have hpre : oddCount x (i + 1) = oddCount x i := by
+      rw [Density.oddCount_succ_last, he, Nat.add_zero]
+    have htail := AccumulatorArith.oddCount_add x (i + 1) t
+    rw [← hlen, hpre, hcount] at htail
+    rw [show j - (i + 1) = t by omega]
+    exact (Nat.add_left_cancel htail).symm
 
 end Collatz.BoundedEvenDefect
