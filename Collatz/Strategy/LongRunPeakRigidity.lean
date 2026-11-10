@@ -15,105 +15,102 @@ namespace Collatz.LongRunPeakRigidity
 open Collatz.InverseFiberTransport Collatz.PeakSuffixTable
   Collatz.SynchronousClasses Collatz.BoundedEvenDefect Collatz.OrbitCapacity
 
-private def offsetFor (k B w : Nat) : Nat × Int :=
-  let d := oddCount w k - oddCount (B - 1) k
-  (d, ((B / 3 ^ d : Nat) : Int) - (w : Int))
-
-private def offsets (k : Nat) : List (Nat × Int) :=
-  (List.range (2 ^ k)).flatMap (fun r =>
-    let B := 3 ^ k * (r + 1)
-    (fiber k (acceleratedOrbit k (B - 1))).map (offsetFor k B))
-
-private theorem lower_peak_offset {k A x : Nat} (hlarge : 2 ^ k * 3 ^ k < A)
-    (hdiv : 3 ^ k ∣ A) (hlt : x < A - 1)
-    (hmeet : acceleratedOrbit k x = acceleratedOrbit k (A - 1)) :
-    ∃ d c, (d, c) ∈ offsets k ∧ d ≤ k ∧
+private theorem lower_peak_offset {k A x : Nat} (hlarge : 2 ^ k ≤ A - 1)
+    (hlt : x < A - 1) (hmeet : acceleratedOrbit k x = acceleratedOrbit k (A - 1)) :
+    ∃ (d : Nat) (c : Int), d ≤ k - oddCount (A - 1) k ∧ c.natAbs ≤ 2 ^ k ∧
       (x : Int) + c = ((A / 3 ^ d : Nat) : Int) := by
-  obtain ⟨r, q, w, hA, hw, hx⟩ := inverse_peak_transport
-    (Nat.lt_of_le_of_lt (Nat.zero_le _) hlarge) hdiv hmeet
   let D := 2 ^ k
-  let M := 3 ^ k
-  let B := M * (r.val + 1)
-  let a := oddCount (B - 1) k
-  let b := oddCount w k
-  let I := D * (3 ^ (k - b) * (3 ^ a * q))
-  have hAx : A = D * (M * q) + B := hA
-  have hx' : x = w + I := hx
-  have hB : B ≤ D * M := by
-    rw [Nat.mul_comm D M]
-    exact Nat.mul_le_mul_left M (Nat.succ_le_of_lt r.isLt)
-  have hq : 0 < q := by
-    apply Nat.pos_of_ne_zero
-    intro he
-    rw [he, Nat.mul_zero, Nat.mul_zero, Nat.zero_add] at hAx
-    exact Nat.not_le_of_gt hlarge (hAx ▸ hB)
-  have hb : b ≤ k := AffineExact.oddCount_le_self w k
+  let Q := (A - 1) / D
+  let R := (A - 1) % D
+  let P := x / D
+  let S := x % D
+  let a := oddCount (A - 1) k
+  let b := oddCount x k
+  have hD : 0 < D := Nat.two_pow_pos _
+  have hR : R < D := Nat.mod_lt _ hD
+  have hS : S < D := Nat.mod_lt _ hD
+  have hA : D * Q + R = A - 1 := Nat.div_add_mod _ _
+  have hx : D * P + S = x := Nat.div_add_mod _ _
+  have ha : oddCount R k = a := (Density.oddCount_mod (A - 1) k).symm
+  have hb : oddCount S k = b := (Density.oddCount_mod x k).symm
   have hab : a ≤ b := by
-    apply Nat.le_of_not_gt
-    intro hbad
-    have hpow : 3 ^ (k + 1) ≤ 3 ^ (k - b) * 3 ^ a := by
-      rw [← Nat.pow_add]
-      exact Nat.pow_le_pow_right (by decide : 0 < 3) (by omega)
-    have hinc : D * (M * (3 * q)) ≤ I := by
-      dsimp only [I, M]
-      rw [← Nat.mul_assoc (3 ^ (k - b)) (3 ^ a) q,
-        ← Nat.mul_assoc (3 ^ k) 3 q, ← Nat.pow_succ]
-      exact Nat.mul_le_mul_left D (Nat.mul_le_mul_right q hpow)
-    have hM : M * q + M ≤ M * (3 * q) := by
-      rw [← Nat.mul_succ]
-      exact Nat.mul_le_mul_left M (by omega)
-    have hbound : A ≤ D * (M * (3 * q)) := by
-      rw [hAx]
-      refine Nat.le_trans (Nat.add_le_add_left hB _) ?_
-      rw [← Nat.mul_add]
-      exact Nat.mul_le_mul_left D hM
-    omega
+    rcases (SynchronousDynamics.smaller_mate_iff hlarge hmeet.symm).mp hlt with h | ⟨h, _⟩
+    · exact Nat.le_of_lt h
+    · exact Nat.le_of_eq h
   let d := b - a
-  let c : Int := ((B / 3 ^ d : Nat) : Int) - (w : Int)
-  have hd : d ≤ k := by dsimp only [d]; omega
-  have hmem : (d, c) ∈ offsets k := by
-    apply List.mem_flatMap.mpr
-    exact ⟨r.val, List.mem_range.mpr r.isLt, List.mem_map.mpr ⟨w, hw, rfl⟩⟩
-  refine ⟨d, c, hmem, hd, ?_⟩
-  have hexp : d + (k - b) + a = k := by dsimp only [d]; omega
-  have hscale : 3 ^ d * I = D * (M * q) := by
+  have hbd : b = a + d := (Nat.add_sub_of_le hab).symm
+  have hcap := AffineExact.oddCount_le_self x k
+  have hd : d ≤ k - a := by dsimp [d]; omega
+  have hcapR : acceleratedOrbit k R < 3 ^ a := by
+    rw [← ha]
+    exact by simpa only [Nat.one_mul] using
+      (image_lt (k := k) (c := 1) (x := R) (by simpa only [Nat.one_mul] using hR))
+  have hcapS : acceleratedOrbit k S < 3 ^ b := by
+    rw [← hb]
+    exact by simpa only [Nat.one_mul] using
+      (image_lt (k := k) (c := 1) (x := S) (by simpa only [Nat.one_mul] using hS))
+  have himA := Congruence.accOrbit_pow_two_mul_add k Q R
+  have himx := Congruence.accOrbit_pow_two_mul_add k P S
+  change acceleratedOrbit k (D * Q + R) = _ at himA
+  change acceleratedOrbit k (D * P + S) = _ at himx
+  rw [hA, ha] at himA
+  rw [hx, hb] at himx
+  have hAffine : 3 ^ b * P + acceleratedOrbit k S = 3 ^ a * Q + acceleratedOrbit k R :=
+    himx.symm.trans (hmeet.trans himA)
+  let U := 3 ^ a
+  let t := acceleratedOrbit k S / U
+  have hU : 0 < U := Nat.pow_pos (by decide)
+  have ht : t < 3 ^ d := by
+    apply (Nat.div_lt_iff_lt_mul hU).mpr
+    rw [Nat.mul_comm]
+    change acceleratedOrbit k S < 3 ^ a * 3 ^ d
+    rw [← Nat.pow_add, ← hbd]
+    exact hcapS
+  have hquot : Q = 3 ^ d * P + t := by
+    have hl : (3 ^ b * P + acceleratedOrbit k S) / U = 3 ^ d * P + t := by
+      rw [hbd, Nat.pow_add, Nat.mul_assoc]
+      change (U * (3 ^ d * P) + acceleratedOrbit k S) / U = _
+      rw [Nat.add_comm, Nat.add_mul_div_left _ _ hU, Nat.add_comm]
+    have hr : (3 ^ a * Q + acceleratedOrbit k R) / U = Q := by
+      change (U * Q + acceleratedOrbit k R) / U = Q
+      rw [Nat.add_comm, Nat.add_mul_div_left _ _ hU, Nat.div_eq_of_lt hcapR, Nat.zero_add]
+    have he := congrArg (· / U) hAffine
+    rw [hl, hr] at he
+    exact he.symm
+  let B := D * t + R + 1
+  let C := B / 3 ^ d
+  have hB : B ≤ D * 3 ^ d := by
+    have hT := Nat.mul_le_mul_left D (Nat.succ_le_of_lt ht)
+    rw [Nat.mul_succ] at hT
+    dsimp [B]
+    omega
+  have hpow : 0 < (3 : Nat) ^ d := Nat.pow_pos (by decide)
+  have hC : C ≤ D := by
+    have h := Nat.div_le_div_right (c := 3 ^ d) hB
+    rwa [Nat.mul_div_left _ hpow] at h
+  let c : Int := (C : Int) - (S : Int)
+  have hsmall : c.natAbs ≤ D := by
+    by_cases hle : S ≤ C
+    · have hnon : 0 ≤ c := by dsimp only [c]; omega
+      have hcast := Int.natAbs_of_nonneg hnon
+      change (c.natAbs : Int) = (C : Int) - (S : Int) at hcast
+      omega
+    · have hnon : c ≤ 0 := by dsimp only [c]; omega
+      have hcast := Int.ofNat_natAbs_of_nonpos hnon
+      change (c.natAbs : Int) = -((C : Int) - (S : Int)) at hcast
+      have hnonC : (0 : Int) ≤ (C : Int) := Int.natCast_nonneg _
+      omega
+  have hApos : 0 < A := by change D ≤ A - 1 at hlarge; omega
+  have hA' : A = 3 ^ d * (D * P) + B := by
     calc
-      _ = D * ((3 ^ d * 3 ^ (k - b) * 3 ^ a) * q) := by dsimp only [I]; ac_rfl
-      _ = _ := by rw [← Nat.pow_add, ← Nat.pow_add, hexp]
-  have hBdiv : 3 ^ d ∣ B := Nat.dvd_mul_right_of_dvd (Nat.pow_dvd_pow 3 hd) _
-  have hA' : A = 3 ^ d * (I + B / 3 ^ d) := by
-    rw [Nat.mul_add, hscale, Nat.mul_div_cancel' hBdiv, hAx]
-  have hquot : A / 3 ^ d = I + B / 3 ^ d := by
-    rw [hA', Nat.mul_div_cancel_left _ (Nat.pow_pos (by decide))]
-  rw [hx', hquot, Int.natCast_add, Int.natCast_add]
+      _ = D * Q + R + 1 := by omega
+      _ = _ := by rw [hquot, Nat.mul_add]; dsimp only [B]; ac_rfl
+  have hAquot : A / 3 ^ d = D * P + C := by
+    rw [hA', Nat.add_comm, Nat.add_mul_div_left _ _ hpow, Nat.add_comm]
+  refine ⟨d, c, hd, hsmall, ?_⟩
+  rw [← hx, hAquot, Int.natCast_add, Int.natCast_add]
   dsimp only [c]
   omega
-
-private theorem uniform_offset_precision (xs : List (Nat × Int)) :
-    ∃ N, ∀ d c, (d, c) ∈ xs → c ≠ 1 → c.natAbs ≤ N ∧
-      ∃ p ≤ N, ∀ x j, j - d ≤ oddCount x j → p ≤ oddCount x j →
-        ¬ (3 : Int) ^ p ∣ (acceleratedOrbit j x : Int) + c := by
-  induction xs with
-  | nil => exact ⟨0, by simp⟩
-  | cons dc xs ih =>
-    obtain ⟨N, hN⟩ := ih
-    obtain ⟨d, c⟩ := dc
-    by_cases hc : c = 1
-    · refine ⟨N, fun b z hz hn => ?_⟩
-      rcases List.mem_cons.mp hz with he | hmem
-      · exact (hn ((congrArg Prod.snd he).trans hc)).elim
-      · exact hN b z hmem hn
-    · obtain ⟨p, hp⟩ := excludes_displacement d c hc
-      let bound := max N (max c.natAbs p)
-      have hprev : N ≤ bound := Nat.le_max_left _ _
-      have hcur : max c.natAbs p ≤ bound := Nat.le_max_right _ _
-      refine ⟨bound, fun b z hz hn => ?_⟩
-      rcases List.mem_cons.mp hz with he | hmem
-      · cases he
-        exact ⟨Nat.le_trans (Nat.le_max_left _ _) hcur, p,
-          Nat.le_trans (Nat.le_max_right _ _) hcur, hp⟩
-      · obtain ⟨habs, q, hq, htest⟩ := hN b z hmem hn
-        exact ⟨Nat.le_trans habs hprev, q, Nat.le_trans hq hprev, htest⟩
 
 private theorem odd_count_near_peak {v d x u : Nat} {c : Int} (hu : 0 < u)
     (hx : x < 2 ^ v * u) (hd : d < v) (hc : c.natAbs ≤ 3 ^ (v - d - 1))
@@ -135,22 +132,24 @@ private theorem odd_count_near_peak {v d x u : Nat} {c : Int} (hu : 0 < u)
   rw [htriple, Int.natCast_mul, show ((3 : Nat) : Int) = 3 by rfl] at hy
   omega
 
-/-- Every smaller equal-time partner of a sufficiently long odd run
-has an exact scaled peak at the end of the prefix. -/
-theorem scaled_peak_of_smaller_mate (k : Nat) :
-    ∃ V, ∀ {v n m u : Nat}, V ≤ v → 0 < u → n + 1 = 2 ^ v * u →
-      m < n → acceleratedOrbit (v + k) m = acceleratedOrbit (v + k) n →
-        ∃ d, 0 < d ∧ d ≤ k ∧ acceleratedOrbit v m = 3 ^ (v - d) * u - 1 := by
-  obtain ⟨N, hN⟩ := uniform_offset_precision (offsets k)
-  let L := 2 ^ k * 3 ^ k
-  let V := 2 * k + N + 2
-  refine ⟨V, ?_⟩
-  intro v n m u hv hu hfac hsmall hfinal
+def rigidityCutoff (k : Nat) : Nat := 6 * k + 2
+
+def adaptiveRigidityCutoff (k a : Nat) : Nat := 2 * k + 2 + 4 * (k - a)
+
+/-- The odd count of the original suffix lowers the cutoff for
+exact scaled peaks. -/
+theorem scaled_peak_at_adaptive_cutoff {k v n m u : Nat}
+    (hv : adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) ≤ v)
+    (hu : 0 < u) (hfac : n + 1 = 2 ^ v * u) (hsmall : m < n)
+    (hfinal : acceleratedOrbit (v + k) m = acceleratedOrbit (v + k) n) :
+    ∃ d, 0 < d ∧ d ≤ k - oddCount (3 ^ v * u - 1) k ∧
+      acceleratedOrbit v m = 3 ^ (v - d) * u - 1 := by
   let A := 3 ^ v * u
+  let a := oddCount (A - 1) k
   have hpeak : acceleratedOrbit v n + 1 = A := DeviceSwap.run_climb v u n hu hfac
-  have hV : 2 * k + N + 2 ≤ v := hv
+  have hV : 2 * k + 2 + 4 * (k - a) ≤ v := hv
   let y := acceleratedOrbit v m
-  change ∃ d, 0 < d ∧ d ≤ k ∧ y = 3 ^ (v - d) * u - 1
+  change ∃ d, 0 < d ∧ d ≤ k - a ∧ y = 3 ^ (v - d) * u - 1
   have hm : m < 2 ^ v * u := by omega
   have hy : y < A - 1 := prefix_image_lt hu hfac hsmall
   have hmeet : acceleratedOrbit k y = acceleratedOrbit k (A - 1) := by
@@ -158,18 +157,22 @@ theorem scaled_peak_of_smaller_mate (k : Nat) :
     change acceleratedOrbit k (acceleratedOrbit v m) = _
     rw [hpn, acceleratedOrbit_add, acceleratedOrbit_add, Nat.add_comm k]
     exact hfinal
-  have hlarge : L < A := by
-    have hL : L ≤ 3 ^ (2 * k) := by
+  have hk : 0 < k := by
+    apply Nat.pos_of_ne_zero
+    intro hz
+    rw [hz, acceleratedOrbit_zero, acceleratedOrbit_zero] at hmeet
+    exact Nat.ne_of_lt hy hmeet
+  have hlarge : 2 ^ k ≤ A - 1 := by
+    have hbig : 2 ^ (k + 1) ≤ A := by
       calc
-        L = (2 * 3) ^ k := by rw [Nat.mul_pow]
-        _ ≤ (3 * 3) ^ k := Nat.pow_le_pow_left (by decide) _
-        _ = _ := by rw [show 3 * 3 = (3 : Nat) ^ 2 by decide, ← Nat.pow_mul]
-    have hpow := (Nat.pow_lt_pow_iff_right (by decide : 1 < 3)).mpr
-      (show 2 * k < v by omega)
-    exact Nat.lt_of_le_of_lt hL (Nat.lt_of_lt_of_le hpow (Nat.le_mul_of_pos_right _ hu))
-  have hdiv : 3 ^ k ∣ A := Nat.dvd_mul_right_of_dvd
-    (Nat.pow_dvd_pow 3 (by omega : k ≤ v)) _
-  obtain ⟨d, c, hdc, hd, hval⟩ := lower_peak_offset hlarge hdiv hy hmeet
+        _ ≤ 3 ^ (k + 1) := Nat.pow_le_pow_left (by decide) _
+        _ ≤ 3 ^ v := Nat.pow_le_pow_right (by decide) (by omega)
+        _ ≤ _ := Nat.le_mul_of_pos_right _ hu
+    rw [Nat.pow_succ'] at hbig
+    have hD := Nat.two_pow_pos k
+    omega
+  obtain ⟨d, c, hd, habs, hval⟩ := lower_peak_offset hlarge hy hmeet
+  change d ≤ k - a at hd
   have hAquot : A / 3 ^ d = 3 ^ (v - d) * u := by
     have hs : 3 ^ v = 3 ^ d * 3 ^ (v - d) := by
       rw [← Nat.pow_add, Nat.add_sub_cancel' (by omega : d ≤ v)]
@@ -180,10 +183,19 @@ theorem scaled_peak_of_smaller_mate (k : Nat) :
     by_cases hc : c = 1
     · exact hc
     exfalso
-    obtain ⟨habs, p, hp, htest⟩ := hN d c hdc hc
+    let p := 2 * (k + 1) + 3 * d
+    have hp : p ≤ v - d := by dsimp only [p]; omega
+    have hsizeC : (1 - c).natAbs < 2 ^ (k + 1) := by
+      have ha : (1 - c).natAbs ≤ 1 + c.natAbs := Int.natAbs_sub_le 1 c
+      have hD : 2 ≤ 2 ^ k := by
+        simpa using Nat.pow_le_pow_right (by decide : 0 < 2) hk
+      rw [Nat.pow_succ']
+      omega
     have hsize : c.natAbs ≤ 3 ^ (v - d - 1) :=
-      Nat.le_trans habs (Nat.le_trans (by omega)
-        (Nat.le_of_lt (Nat.lt_pow_self (by decide : 1 < 3))))
+      Nat.le_trans habs (by
+        calc
+          _ ≤ 3 ^ k := Nat.pow_le_pow_left (by decide) _
+          _ ≤ _ := Nat.pow_le_pow_right (by decide) (by omega))
     have hcount := odd_count_near_peak hu hm (by omega) hsize hval
     have hpow : 3 ^ p ∣ 3 ^ (v - d) * u :=
       Nat.dvd_mul_right_of_dvd (Nat.pow_dvd_pow 3 (by omega)) _
@@ -191,7 +203,8 @@ theorem scaled_peak_of_smaller_mate (k : Nat) :
       rw [hval]
       simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
         (Int.ofNat_dvd.mpr hpow)
-    exact htest m v hcount (by omega) hdvd
+    exact excludes_displacement_at_precision d (k + 1) c hc hsizeC
+      m v hcount (Nat.le_trans hp hcount) hdvd
   have hresult : y = 3 ^ (v - d) * u - 1 := by omega
   have hpos : 0 < d := by
     apply Nat.pos_of_ne_zero
@@ -200,26 +213,43 @@ theorem scaled_peak_of_smaller_mate (k : Nat) :
     exact Nat.not_le_of_gt hy (by omega)
   exact ⟨d, hpos, hd, hresult⟩
 
-/-- A smaller equal-time partner exists exactly when the original peak
-meets a scaled peak in the prescribed suffix. A scaled peak meeting
-constructs a smaller partner by adding leading halvings to the shorter run. -/
-theorem smaller_iff_scaled_peak (k : Nat) :
-    ∃ V, ∀ {v n u : Nat}, V ≤ v → 0 < u → n + 1 = 2 ^ v * u →
-      (leastAt (v + k) n < n ↔
-        ∃ d, 0 < d ∧ d ≤ k ∧
-          acceleratedOrbit k (3 ^ (v - d) * u - 1) =
-            acceleratedOrbit k (3 ^ v * u - 1)) := by
-  obtain ⟨V, hV⟩ := scaled_peak_of_smaller_mate k
-  refine ⟨max V k, ?_⟩
-  intro v n u hv hu hfac
-  have hVk := Nat.le_trans (Nat.le_max_left V k) hv
-  have hk := Nat.le_trans (Nat.le_max_right V k) hv
+private theorem adaptive_le_fixed (k a : Nat) : adaptiveRigidityCutoff k a ≤ rigidityCutoff k := by
+  unfold adaptiveRigidityCutoff rigidityCutoff
+  omega
+
+theorem scaled_peak_at_cutoff {k v n m u : Nat} (hv : rigidityCutoff k ≤ v)
+    (hu : 0 < u) (hfac : n + 1 = 2 ^ v * u) (hsmall : m < n)
+    (hfinal : acceleratedOrbit (v + k) m = acceleratedOrbit (v + k) n) :
+    ∃ d, 0 < d ∧ d ≤ k ∧ acceleratedOrbit v m = 3 ^ (v - d) * u - 1 := by
+  obtain ⟨d, hpos, hd, hpeak⟩ :=
+    scaled_peak_at_adaptive_cutoff (Nat.le_trans (adaptive_le_fixed _ _) hv) hu hfac hsmall hfinal
+  exact ⟨d, hpos, by omega, hpeak⟩
+
+/-- Every smaller equal-time partner of a sufficiently long odd run
+has an exact scaled peak at the end of the prefix. -/
+theorem scaled_peak_of_smaller_mate (k : Nat) :
+    ∃ V, ∀ {v n m u : Nat}, V ≤ v → 0 < u → n + 1 = 2 ^ v * u →
+      m < n → acceleratedOrbit (v + k) m = acceleratedOrbit (v + k) n →
+        ∃ d, 0 < d ∧ d ≤ k ∧ acceleratedOrbit v m = 3 ^ (v - d) * u - 1 :=
+  ⟨rigidityCutoff k, scaled_peak_at_cutoff⟩
+
+/-- Above the adaptive cutoff, a smaller equal-time partner exists
+exactly when the original peak meets a scaled peak in the suffix. -/
+theorem smaller_iff_scaled_peak_at_adaptive_cutoff {k v n u : Nat}
+    (hv : adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) ≤ v)
+    (hu : 0 < u) (hfac : n + 1 = 2 ^ v * u) :
+    leastAt (v + k) n < n ↔
+      ∃ d, 0 < d ∧ d ≤ k ∧
+        acceleratedOrbit k (3 ^ (v - d) * u - 1) =
+          acceleratedOrbit k (3 ^ v * u - 1) := by
+  have hbase : 2 * k + 2 ≤ v := by unfold adaptiveRigidityCutoff at hv; omega
   constructor
   · intro hsmall
-    obtain ⟨d, hpos, hd, hpeak⟩ := hV hVk hu hfac hsmall (leastAt_meets (v + k) n)
+    obtain ⟨d, hpos, hd, hpeak⟩ :=
+      scaled_peak_at_adaptive_cutoff hv hu hfac hsmall (leastAt_meets (v + k) n)
     have hrun := DeviceSwap.run_climb v u n hu hfac
     have htrue : 3 ^ v * u - 1 = acceleratedOrbit v n := by omega
-    refine ⟨d, hpos, hd, ?_⟩
+    refine ⟨d, hpos, by omega, ?_⟩
     rw [← hpeak, htrue, acceleratedOrbit_add, acceleratedOrbit_add, Nat.add_comm k]
     exact leastAt_meets (v + k) n
   · rintro ⟨d, hpos, hd, hmeet⟩
@@ -230,5 +260,145 @@ theorem smaller_iff_scaled_peak (k : Nat) :
     have hn : 2 ^ v * u - 1 = n := by omega
     rw [hsplit, hn, Nat.add_comm k] at hlt
     exact hlt
+
+theorem smaller_iff_scaled_peak_at_cutoff {k v n u : Nat} (hv : rigidityCutoff k ≤ v)
+    (hu : 0 < u) (hfac : n + 1 = 2 ^ v * u) :
+    leastAt (v + k) n < n ↔
+      ∃ d, 0 < d ∧ d ≤ k ∧
+        acceleratedOrbit k (3 ^ (v - d) * u - 1) =
+          acceleratedOrbit k (3 ^ v * u - 1) :=
+  smaller_iff_scaled_peak_at_adaptive_cutoff (Nat.le_trans (adaptive_le_fixed _ _) hv) hu hfac
+
+/-- A fixed suffix length has a uniform threshold for the scaled-peak
+characterization. -/
+theorem smaller_iff_scaled_peak (k : Nat) :
+    ∃ V, ∀ {v n u : Nat}, V ≤ v → 0 < u → n + 1 = 2 ^ v * u →
+      (leastAt (v + k) n < n ↔
+        ∃ d, 0 < d ∧ d ≤ k ∧
+          acceleratedOrbit k (3 ^ (v - d) * u - 1) =
+            acceleratedOrbit k (3 ^ v * u - 1)) :=
+  ⟨rigidityCutoff k, smaller_iff_scaled_peak_at_cutoff⟩
+
+private theorem peak_certificate_iff {k v d u : Nat} (hv : 2 * k + 2 ≤ v)
+    (hpos : 0 < d) (hd : d ≤ k) (hu : u % 2 = 1) :
+    acceleratedOrbit k (3 ^ (v - d) * u - 1) = acceleratedOrbit k (3 ^ v * u - 1) ↔
+      PeakContraction.Certificate k d ((3 ^ (v - d) * u) % 2 ^ k) := by
+  let B := 3 ^ (v - d) * u
+  have hsize : 2 ^ k ≤ B := by
+    calc
+      _ ≤ 3 ^ k := Nat.pow_le_pow_left (by decide) _
+      _ ≤ 3 ^ (v - d) := Nat.pow_le_pow_right (by decide) (by omega)
+      _ ≤ _ := Nat.le_mul_of_pos_right _ (by omega)
+  have hres : 0 < B % 2 ^ k := by
+    apply Nat.pos_of_ne_zero
+    intro hz
+    have hmod := congrArg (· % 2) hz
+    have hdiv : 2 ∣ 2 ^ k := Nat.pow_dvd_pow 2 (by omega : 1 ≤ k)
+    rw [Nat.mod_mod_of_dvd _ hdiv] at hmod
+    dsimp only [B] at hmod
+    rw [Nat.mul_mod, Arith.three_pow_odd, hu] at hmod
+    contradiction
+  have hscale : 3 ^ d * B = 3 ^ v * u := by
+    dsimp only [B]
+    rw [← Nat.mul_assoc, ← Nat.pow_add, Nat.add_sub_cancel' (by omega : d ≤ v)]
+  change acceleratedOrbit k (B - 1) = acceleratedOrbit k (3 ^ v * u - 1) ↔ _
+  rw [← hscale]
+  exact ⟨fun h => PeakContraction.certificate_of_large_meeting hsize hres h.symm,
+    fun h => (PeakContraction.meet_of_certificate hres rfl h).symm⟩
+
+/-- Binary modular exponentiation avoids constructing the full shifted
+peak just to test its dyadic residue. -/
+def threePowMod (m e : Nat) : Nat :=
+  if h : e = 0 then 1 % m else
+    let r := threePowMod m (e / 2)
+    (r * r * 3 ^ (e % 2)) % m
+termination_by e
+decreasing_by exact Nat.div_lt_self (Nat.pos_of_ne_zero h) (by decide)
+
+theorem threePowMod_eq (m e : Nat) : threePowMod m e = 3 ^ e % m := by
+  induction e using Nat.strongRecOn with
+  | ind e ih =>
+    by_cases he : e = 0
+    · subst e
+      rw [threePowMod, dif_pos rfl, Nat.pow_zero]
+    · rw [threePowMod, dif_neg he, ih (e / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero he) (by decide))]
+      let A := 3 ^ (e / 2)
+      have hp : 3 ^ e = A * A * 3 ^ (e % 2) := by
+        conv => lhs; rw [show e = e / 2 + e / 2 + e % 2 by omega, Nat.pow_add, Nat.pow_add]
+      rw [hp]
+      have hs : ((A % m) * (A % m)) % m = (A * A) % m := by
+        rw [Nat.mod_mul_mod, Nat.mul_mod_mod]
+      calc
+        _ = ((((A % m) * (A % m)) % m) * 3 ^ (e % 2)) % m :=
+          (Nat.mod_mul_mod _ _ _).symm
+        _ = (((A * A) % m) * 3 ^ (e % 2)) % m := by rw [hs]
+        _ = _ := Nat.mod_mul_mod _ _ _
+
+private def peakOddCountResidue (k v u : Nat) : Nat :=
+  let M := 2 ^ k
+  let A := (threePowMod M v * (u % M)) % M
+  oddCount ((A + M - 1) % M) k
+
+private theorem peakOddCountResidue_eq (k v u : Nat) (hu : 0 < u) :
+    peakOddCountResidue k v u = oddCount (3 ^ v * u - 1) k := by
+  simp only [peakOddCountResidue, threePowMod_eq, Nat.mod_mul_mod, Nat.mul_mod_mod]
+  let M := 2 ^ k
+  let A := 3 ^ v * u
+  change oddCount ((A % M + M - 1) % M) k = oddCount (A - 1) k
+  have hM : 0 < M := Nat.two_pow_pos _
+  have hA : 0 < A := Nat.mul_pos (Nat.pow_pos (by decide)) hu
+  have he : (A % M + M - 1) % M = (A - 1) % M := by
+    calc
+      _ = (A % M + (M - 1)) % M := by congr 1; omega
+      _ = (A + (M - 1)) % M := Nat.mod_add_mod _ _ _
+      _ = (A - 1 + M) % M := by congr 1; omega
+      _ = _ := Nat.add_mod_right _ _
+  rw [he, ← Density.oddCount_mod]
+
+/-- Compute the adaptive cutoff using only the dyadic peak residue. -/
+def requiredRunLength (k v u : Nat) : Nat :=
+  adaptiveRigidityCutoff k (peakOddCountResidue k v u)
+
+/-- Test the k candidate drops by suffix calculations at bounded
+dyadic residues. -/
+def shorterPeakCheck (k v u : Nat) : Bool :=
+  (List.range k).any (fun i =>
+    let d := i + 1
+    let M := 2 ^ k
+    decide (PeakContraction.Certificate k d ((threePowMod M (v - d) * (u % M)) % M)))
+
+/-- The finite parity test also works at the smaller adaptive cutoff. -/
+theorem smaller_iff_shorterPeakCheck_adaptive {k v n u : Nat}
+    (hv : adaptiveRigidityCutoff k (oddCount (3 ^ v * u - 1) k) ≤ v)
+    (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ v * u) :
+    leastAt (v + k) n < n ↔ shorterPeakCheck k v u = true := by
+  have hbase : 2 * k + 2 ≤ v := by unfold adaptiveRigidityCutoff at hv; omega
+  rw [smaller_iff_scaled_peak_at_adaptive_cutoff hv (by omega) hfac, shorterPeakCheck, List.any_eq_true]
+  constructor
+  · rintro ⟨d, hpos, hd, hmeet⟩
+    refine ⟨d - 1, List.mem_range.mpr (by omega), ?_⟩
+    apply decide_eq_true
+    rw [show d - 1 + 1 = d by omega, threePowMod_eq, Nat.mod_mul_mod, Nat.mul_mod_mod]
+    exact (peak_certificate_iff hbase hpos hd hu).mp hmeet
+  · rintro ⟨i, hi, hcheck⟩
+    have hd : i + 1 ≤ k := Nat.succ_le_of_lt (List.mem_range.mp hi)
+    have hc := of_decide_eq_true hcheck
+    rw [threePowMod_eq, Nat.mod_mul_mod, Nat.mul_mod_mod] at hc
+    exact ⟨i + 1, Nat.succ_pos _, hd, (peak_certificate_iff hbase (Nat.succ_pos _) hd hu).mpr hc⟩
+
+/-- The fixed linear cutoff is a convenient sufficient bound for the
+finite parity test. -/
+theorem smaller_iff_shorterPeakCheck {k v n u : Nat} (hv : rigidityCutoff k ≤ v)
+    (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ v * u) :
+    leastAt (v + k) n < n ↔ shorterPeakCheck k v u = true :=
+  smaller_iff_shorterPeakCheck_adaptive (Nat.le_trans (adaptive_le_fixed _ _) hv) hu hfac
+
+/-- Both the applicability test and the decision can be evaluated
+without constructing the full shifted peak. -/
+theorem shorterPeakCheck_correct {k v n u : Nat} (hv : requiredRunLength k v u ≤ v)
+    (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ v * u) :
+    leastAt (v + k) n < n ↔ shorterPeakCheck k v u = true := by
+  rw [requiredRunLength, peakOddCountResidue_eq k v u (by omega)] at hv
+  exact smaller_iff_shorterPeakCheck_adaptive hv hu hfac
 
 end Collatz.LongRunPeakRigidity
