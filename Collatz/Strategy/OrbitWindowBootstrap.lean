@@ -443,6 +443,39 @@ theorem standard_window_power :
     _ ≤ 2 ^ 20 * (C * X ^ 19) := Nat.mul_le_mul_left _ hm
     _ = _ := by rw [Nat.mul_assoc]
 
+/-- An affine envelope transfers a spatial count bound to a count of
+times with bounded multiplier. -/
+theorem multiplier_occupation_of_count {values den gain : Nat → Nat} {B C : Nat}
+    (hden : ∀ i, 0 < den i) (hinj : ∀ i j, values i = values j → i = j)
+    (hB : ∀ i, den i * values i ≤ B * values 0 * gain i)
+    (hC : ∀ X, 0 < X → ∀ xs : List Nat, xs.Nodup →
+      (∀ x ∈ xs, x < X ∧ ∃ i, values i = x) → xs.length ^ 20 ≤ C * X ^ 19) :
+    ∀ R (times : List Nat), times.Nodup →
+      (∀ i ∈ times, gain i ≤ R * den i) →
+      times.length ^ 20 ≤ (C * (B * values 0 + 1) ^ 19) * (R + 1) ^ 19 := by
+  intro R times hnd hsmall
+  let xs := times.map values
+  let X := (B * values 0 + 1) * (R + 1)
+  have hX : 0 < X := Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)
+  have hxs : xs.Nodup := List.pairwise_map.mpr
+    (hnd.imp (fun hne heq => hne (hinj _ _ heq)))
+  have hsubset : ∀ x ∈ xs, x < X ∧ ∃ i, values i = x := by
+    intro x hx
+    obtain ⟨i, him, rfl⟩ := List.mem_map.mp hx
+    have hs := hsmall i him
+    have hle : den i * values i ≤ den i * (B * values 0 * R) := by
+      calc
+        _ ≤ B * values 0 * gain i := hB i
+        _ ≤ B * values 0 * (R * den i) := Nat.mul_le_mul_left _ hs
+        _ = _ := by ac_rfl
+    have hval := Nat.le_of_mul_le_mul_left hle (hden i)
+    refine ⟨?_, i, rfl⟩
+    dsimp [X]
+    rw [Nat.mul_add, Nat.add_mul (B * values 0) 1 R, Nat.mul_one, Nat.one_mul]
+    omega
+  have hb := hC X hX xs hxs hsubset
+  simpa only [xs, List.length_map, X, Nat.mul_pow, ← Nat.mul_assoc] using hb
+
 /-- On a positive injective orbit, the number of times the multiplier
 is at most `R` is bounded by a constant times `(R+1)^(19/20)`. -/
 theorem multiplier_occupation {n : Nat} (hn : 0 < n)
@@ -452,39 +485,24 @@ theorem multiplier_occupation {n : Nat} (hn : 0 < n)
       times.length ^ 20 ≤ C * (R + 1) ^ 19 := by
   obtain ⟨B, hB⟩ := orbit_envelope hn hinj
   obtain ⟨C, hC⟩ := orbit_window_power
-  refine ⟨C * (B * n + 1) ^ 19, ?_⟩
-  intro R times hnd hsmall
-  let xs := times.map (fun i => acceleratedOrbit i n)
-  let X := (B * n + 1) * (R + 1)
-  have hX : 0 < X := Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)
-  have hxs : xs.Nodup := List.pairwise_map.mpr
-    (hnd.imp (fun hne heq => hne (hinj _ _ heq)))
-  have hsubset : ∀ x ∈ xs, 0 ≤ x ∧ x < 0 + X ∧ ∃ i, acceleratedOrbit i n = x := by
-    intro x hx
-    obtain ⟨i, him, rfl⟩ := List.mem_map.mp hx
-    have hs := hsmall i him
-    have hle : 2 ^ i * acceleratedOrbit i n ≤ 2 ^ i * (B * n * R) := by
-      calc
-        _ ≤ B * n * 3 ^ oddCount n i := hB i
-        _ ≤ B * n * (R * 2 ^ i) := Nat.mul_le_mul_left _ hs
-        _ = _ := by ac_rfl
-    have hval := Nat.le_of_mul_le_mul_left hle (Nat.two_pow_pos i)
-    refine ⟨Nat.zero_le _, ?_, i, rfl⟩
-    dsimp [X]
-    rw [Nat.zero_add, Nat.mul_add, Nat.add_mul (B * n) 1 R, Nat.mul_one, Nat.one_mul]
-    omega
-  have hb := hC hX (no_merging_of_injective hinj) xs hxs hsubset
-  simpa only [xs, List.length_map, X, Nat.mul_pow, ← Nat.mul_assoc] using hb
+  refine ⟨C * (B * n + 1) ^ 19, multiplier_occupation_of_count
+    (values := fun i => acceleratedOrbit i n) (den := fun i => 2 ^ i)
+    (gain := fun i => 3 ^ oddCount n i) (B := B) (C := C)
+    (fun i => Nat.two_pow_pos i) hinj hB ?_⟩
+  intro X hX xs hnd hx
+  exact hC hX (no_merging_of_injective hinj) xs hnd (a := 0) (fun x hxmem => by
+    obtain ⟨hlt, him⟩ := hx x hxmem
+    exact ⟨Nat.zero_le _, by simpa using hlt, him⟩)
 
-/-- A divergent orbit exceeds every power-law multiplier ceiling
-with exponent below `20/19` at arbitrarily late times. -/
-theorem exceeds_polynomial_multiplier {n : Nat} (hn : 0 < n)
-    (hinj : ∀ i j, acceleratedOrbit i n = acceleratedOrbit j n → i = j)
+/-- Sparse multiplier sublevel sets rule out low power-law ceilings. -/
+theorem exceeds_polynomial_of_occupation {den gain : Nat → Nat} {C : Nat}
+    (hC : ∀ R (times : List Nat), times.Nodup →
+      (∀ i ∈ times, gain i ≤ R * den i) →
+      times.length ^ 20 ≤ C * (R + 1) ^ 19)
     {p q : Nat} (hrate : 19 * p < 20 * q) (D H : Nat) :
-    ∃ i, H ≤ i ∧ D * (i + 1) ^ p * (2 ^ i) ^ q < (3 ^ oddCount n i) ^ q := by
+    ∃ i, H ≤ i ∧ D * (i + 1) ^ p * (den i) ^ q < (gain i) ^ q := by
   classical
   have hq : 0 < q := by omega
-  obtain ⟨C, hC⟩ := multiplier_occupation hn hinj
   let B := D * (H + 1) ^ p + 1
   let r := C * (B + 1) ^ 19 + 1
   let k := r ^ q
@@ -494,10 +512,10 @@ theorem exceeds_polynomial_multiplier {n : Nat} (hn : 0 < n)
   apply Classical.byContradiction
   intro hbad
   let times := List.range' H k
-  have hall : ∀ i ∈ times, 3 ^ oddCount n i ≤ R * 2 ^ i := by
+  have hall : ∀ i ∈ times, gain i ≤ R * den i := by
     intro i hi
     obtain ⟨hlo, hhi⟩ := List.mem_range'_1.mp hi
-    have hle : (3 ^ oddCount n i) ^ q ≤ D * (i + 1) ^ p * (2 ^ i) ^ q :=
+    have hle : (gain i) ^ q ≤ D * (i + 1) ^ p * (den i) ^ q :=
       Nat.le_of_not_gt (fun h => hbad ⟨i, hlo, h⟩)
     have ht : i + 1 ≤ (H + 1) * k := by
       rw [Nat.add_mul, Nat.one_mul]
@@ -510,15 +528,15 @@ theorem exceeds_polynomial_multiplier {n : Nat} (hn : 0 < n)
       rw [← Nat.pow_mul, ← Nat.pow_mul, Nat.mul_comm q p]
     apply (Nat.pow_le_pow_iff_left (Nat.ne_of_gt hq)).mp
     calc
-      _ ≤ D * (i + 1) ^ p * (2 ^ i) ^ q := hle
-      _ ≤ D * ((H + 1) * k) ^ p * (2 ^ i) ^ q :=
+      _ ≤ D * (i + 1) ^ p * (den i) ^ q := hle
+      _ ≤ D * ((H + 1) * k) ^ p * (den i) ^ q :=
         Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ht p))
-      _ = (D * (H + 1) ^ p) * (r ^ p) ^ q * (2 ^ i) ^ q := by
+      _ = (D * (H + 1) ^ p) * (r ^ p) ^ q * (den i) ^ q := by
         rw [Nat.mul_pow, hkp]
         ac_rfl
-      _ ≤ B ^ q * (r ^ p) ^ q * (2 ^ i) ^ q :=
+      _ ≤ B ^ q * (r ^ p) ^ q * (den i) ^ q :=
         Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hB)
-      _ = (R * 2 ^ i) ^ q := by dsimp [R]; rw [Nat.mul_pow, Nat.mul_pow B]
+      _ = (R * den i) ^ q := by dsimp [R]; rw [Nat.mul_pow, Nat.mul_pow B]
   have hlen : k ^ 20 ≤ C * (R + 1) ^ 19 := by
     simpa only [times, List.length_range'] using hC R times List.nodup_range' hall
   have hR : R + 1 ≤ (B + 1) * r ^ p := by
@@ -537,5 +555,15 @@ theorem exceeds_polynomial_multiplier {n : Nat} (hn : 0 < n)
     exact hpow
   have hsmall := Nat.le_trans (Nat.le_pow (a := r) (by omega : 0 < 20 * q - 19 * p)) hfactor
   exact (Nat.not_le_of_gt (Nat.lt_succ_self (C * (B + 1) ^ 19))) hsmall
+
+/-- A divergent orbit exceeds every power-law multiplier ceiling
+with exponent below `20/19` at arbitrarily late times. -/
+theorem exceeds_polynomial_multiplier {n : Nat} (hn : 0 < n)
+    (hinj : ∀ i j, acceleratedOrbit i n = acceleratedOrbit j n → i = j)
+    {p q : Nat} (hrate : 19 * p < 20 * q) (D H : Nat) :
+    ∃ i, H ≤ i ∧ D * (i + 1) ^ p * (2 ^ i) ^ q < (3 ^ oddCount n i) ^ q := by
+  obtain ⟨_, hC⟩ := multiplier_occupation hn hinj
+  exact exceeds_polynomial_of_occupation (den := fun i => 2 ^ i)
+    (gain := fun i => 3 ^ oddCount n i) hC hrate D H
 
 end Collatz.OrbitWindowBootstrap

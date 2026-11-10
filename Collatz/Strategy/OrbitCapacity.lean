@@ -191,44 +191,52 @@ theorem capacity {n : Nat} (hn : 0 < n)
   obtain ⟨P, hP, hcap⟩ := uniform_capacity
   exact ⟨P, hP, hcap _ (acceleratedOrbit_positive hn) (no_merging_of_injective hinj)⟩
 
-private theorem step_bound (x : Nat) :
+/-- The one-step affine upper bound with a reciprocal correction. -/
+theorem shortcut_step_bound (x : Nat) :
     2 * acceleratedStep x ≤ 3 ^ (x % 2) * (x + 1) := by
   have hb : x % 2 = 0 ∨ x % 2 = 1 := by omega
   rcases hb with hb | hb <;> simp [acceleratedStep, hb] <;> omega
 
-private def orbitPrefix (n k : Nat) : List Nat :=
-  (List.range k).map (fun i => acceleratedOrbit i n)
+/-- The first `k` values of a sequence. -/
+def sequencePrefix (values : Nat → Nat) (k : Nat) : List Nat :=
+  (List.range k).map values
 
-private theorem prefix_succ (n k : Nat) :
-    orbitPrefix n (k + 1) = orbitPrefix n k ++ [acceleratedOrbit k n] := by
-  simp [orbitPrefix, List.range_succ]
+private theorem prefix_succ (values : Nat → Nat) (k : Nat) :
+    sequencePrefix values (k + 1) = sequencePrefix values k ++ [values k] := by
+  simp [sequencePrefix, List.range_succ]
 
-private theorem correction_bound (n k : Nat) :
-    2 ^ k * acceleratedOrbit k n * (orbitPrefix n k).prod ≤
-      n * 3 ^ oddCount n k * factors 1 1 (orbitPrefix n k) := by
+private theorem correction_bound (values den gain denStep gainStep : Nat → Nat)
+    (hdenZero : den 0 = 1) (hgainZero : gain 0 = 1)
+    (hden : ∀ i, den (i + 1) = den i * denStep i)
+    (hgain : ∀ i, gain (i + 1) = gain i * gainStep i)
+    (hstep : ∀ i, denStep i * values (i + 1) ≤ gainStep i * (values i + 1)) (k : Nat) :
+    den k * values k * (sequencePrefix values k).prod ≤
+      values 0 * gain k * factors 1 1 (sequencePrefix values k) := by
   induction k with
-  | zero => simp [orbitPrefix, factors, oddCount, parityVector]
+  | zero => simp [sequencePrefix, factors, hdenZero, hgainZero]
   | succ k ih =>
-    let x := acceleratedOrbit k n
-    let bit := x % 2
-    let xs := orbitPrefix n k
-    rw [prefix_succ, acceleratedOrbit_succ_step, Density.oddCount_succ_last,
-      Nat.pow_add 3, Nat.pow_succ 2 k]
-    have hden : (xs ++ [x]).prod = xs.prod * x := by simp
-    have hnum : factors 1 1 (xs ++ [x]) = factors 1 1 xs * (x + 1) := by
+    let x := values k
+    let xs := sequencePrefix values k
+    rw [prefix_succ, hgain, hden]
+    have hdenProd : (xs ++ [x]).prod = xs.prod * x := by simp
+    have hnumProd : factors 1 1 (xs ++ [x]) = factors 1 1 xs * (x + 1) := by
       simp [factors]
-    change (2 ^ k * 2) * acceleratedStep x * (xs ++ [x]).prod ≤
-      n * (3 ^ oddCount n k * 3 ^ bit) * factors 1 1 (xs ++ [x])
-    rw [hden, hnum]
+    change (den k * denStep k) * values (k + 1) * (xs ++ [x]).prod ≤
+      values 0 * (gain k * gainStep k) * factors 1 1 (xs ++ [x])
+    rw [hdenProd, hnumProd]
     calc
-      _ = 2 ^ k * (xs.prod * x) * (2 * acceleratedStep x) := by ac_rfl
-      _ ≤ 2 ^ k * (xs.prod * x) * (3 ^ bit * (x + 1)) := Nat.mul_le_mul_left _ (step_bound x)
-      _ = (2 ^ k * x * xs.prod) * (3 ^ bit * (x + 1)) := by ac_rfl
-      _ ≤ (n * 3 ^ oddCount n k * factors 1 1 xs) * (3 ^ bit * (x + 1)) :=
+      _ = den k * (xs.prod * x) * (denStep k * values (k + 1)) := by ac_rfl
+      _ ≤ den k * (xs.prod * x) * (gainStep k * (x + 1)) := Nat.mul_le_mul_left _ (hstep k)
+      _ = (den k * x * xs.prod) * (gainStep k * (x + 1)) := by ac_rfl
+      _ ≤ (values 0 * gain k * factors 1 1 xs) * (gainStep k * (x + 1)) :=
         Nat.mul_le_mul_right _ ih
       _ = _ := by ac_rfl
 
-private theorem orbitPrefix_nodup {n k : Nat}
+/-- The first `k` shortcut sources in chronological order. -/
+def orbitPrefix (n k : Nat) : List Nat :=
+  sequencePrefix (fun i => acceleratedOrbit i n) k
+
+theorem orbitPrefix_nodup {n k : Nat}
     (hinj : ∀ i j, i < k → j < k → acceleratedOrbit i n = acceleratedOrbit j n → i = j) :
     (orbitPrefix n k).Nodup := by
   apply List.pairwise_map.mpr
@@ -236,28 +244,52 @@ private theorem orbitPrefix_nodup {n k : Nat}
   intro i j hi hj hne heq
   exact hne (hinj i j (List.mem_range.mp hi) (List.mem_range.mp hj) heq)
 
-private theorem orbitPrefix_member {n k x : Nat} (hx : x ∈ orbitPrefix n k) :
+theorem orbitPrefix_member {n k x : Nat} (hx : x ∈ orbitPrefix n k) :
     ∃ i, i < k ∧ acceleratedOrbit i n = x := by
   obtain ⟨i, hi, heq⟩ := List.mem_map.mp hx
   exact ⟨i, List.mem_range.mp hi, heq⟩
 
-private theorem scaled_envelope {n k C A : Nat} (hn : 0 < n)
-    (hC : A * factors 1 1 (orbitPrefix n k) ≤ C * (orbitPrefix n k).prod) :
-    A * (2 ^ k * acceleratedOrbit k n) ≤ C * (n * 3 ^ oddCount n k) := by
-  let xs := orbitPrefix n k
-  have hpos : 0 < xs.prod := by
+/-- The reciprocal correction controls any positive sequence with
+the same affine upper bound at each step. -/
+theorem sequence_scaled_envelope {values den gain denStep gainStep : Nat → Nat} {k C A : Nat}
+    (hpos : ∀ i, 0 < values i)
+    (hdenZero : den 0 = 1) (hgainZero : gain 0 = 1)
+    (hden : ∀ i, den (i + 1) = den i * denStep i)
+    (hgain : ∀ i, gain (i + 1) = gain i * gainStep i)
+    (hstep : ∀ i, denStep i * values (i + 1) ≤ gainStep i * (values i + 1))
+    (hC : A * factors 1 1 (sequencePrefix values k) ≤ C * (sequencePrefix values k).prod) :
+    A * (den k * values k) ≤ C * (values 0 * gain k) := by
+  let xs := sequencePrefix values k
+  have hprodPos : 0 < xs.prod := by
     apply List.prod_pos_iff_forall_pos_nat.mpr
     intro x hx
-    obtain ⟨i, _, rfl⟩ := orbitPrefix_member hx
-    exact acceleratedOrbit_positive hn i
-  apply Nat.le_of_mul_le_mul_right _ hpos
+    obtain ⟨i, _, rfl⟩ := List.mem_map.mp hx
+    exact hpos i
+  apply Nat.le_of_mul_le_mul_right _ hprodPos
   calc
-    _ = A * (2 ^ k * acceleratedOrbit k n * xs.prod) := Nat.mul_assoc ..
-    _ ≤ A * (n * 3 ^ oddCount n k * factors 1 1 xs) :=
-      Nat.mul_le_mul_left _ (correction_bound n k)
-    _ = (n * 3 ^ oddCount n k) * (A * factors 1 1 xs) := by ac_rfl
-    _ ≤ (n * 3 ^ oddCount n k) * (C * xs.prod) := Nat.mul_le_mul_left _ hC
+    _ = A * (den k * values k * xs.prod) := Nat.mul_assoc ..
+    _ ≤ A * (values 0 * gain k * factors 1 1 xs) :=
+      Nat.mul_le_mul_left _
+        (correction_bound values den gain denStep gainStep hdenZero hgainZero hden hgain hstep k)
+    _ = (values 0 * gain k) * (A * factors 1 1 xs) := by ac_rfl
+    _ ≤ (values 0 * gain k) * (C * xs.prod) := Nat.mul_le_mul_left _ hC
     _ = _ := by ac_rfl
+
+/-- Convert a rational upper bound for the reciprocal product into
+an affine bound for the endpoint. -/
+theorem scaled_envelope {n k C A : Nat} (hn : 0 < n)
+    (hC : A * factors 1 1 (orbitPrefix n k) ≤ C * (orbitPrefix n k).prod) :
+    A * (2 ^ k * acceleratedOrbit k n) ≤ C * (n * 3 ^ oddCount n k) := by
+  apply sequence_scaled_envelope (values := fun i => acceleratedOrbit i n)
+    (den := fun i => 2 ^ i) (gain := fun i => 3 ^ oddCount n i)
+    (denStep := fun _ => 2) (gainStep := fun i => 3 ^ (acceleratedOrbit i n % 2))
+    (acceleratedOrbit_positive hn) rfl ?_ (fun i => Nat.pow_succ 2 i) ?_ ?_ hC
+  · simp [oddCount, parityVector]
+  · intro i
+    rw [Density.oddCount_succ_last, Nat.pow_add]
+  · intro i
+    rw [acceleratedOrbit_succ_step]
+    exact shortcut_step_bound _
 
 /-- With sparse dyadic occupation, an injective orbit stays below a
 fixed multiple of its affine multiplier. -/

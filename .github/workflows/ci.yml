@@ -135,3 +135,23 @@ jobs:
         run: |
           lake env lean scripts/audit_orbit_window_bootstrap.lean
           python3 scripts/audit_orbit_window_bootstrap.py
+
+      - name: Check near-critical orbit windows
+        run: |
+          lake env lean scripts/audit_orbit_near_return.lean
+          python3 scripts/audit_orbit_near_return.py
+
+      - name: Check synchronous Collatz classes and inverse fibers
+        run: |
+          lake env lean scripts/audit_synchronous_classes.lean
+          python3 scripts/audit_synchronous_classes.py
+
+      - name: Check the dynamics of least synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_dynamics.lean
+          python3 scripts/audit_synchronous_dynamics.py
+
+      - name: Check reduced multiplier growth of synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_growth.lean
+          python3 scripts/audit_synchronous_growth.py

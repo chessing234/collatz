@@ -14,18 +14,17 @@ def weighted_samples():
         def cutoff(level):
             return 2 ** (stride * level + 1)
 
-        def capacity(level):
-            return 2 ** ((stride - 1) * level)
-
         for offset in range(5):
-            lower = stride + offset
             scale = 2 ** (offset + 1)
             for sample in range(120):
+                mass = 1 + sample % 16
+                lower = stride + (mass - 1).bit_length() + offset
                 upper = lower + sample % 5
                 denominator = cutoff(upper)
                 points = []
                 for level in range(lower, upper + 1):
-                    room = min(capacity(level + 1) - len(points), 160 - len(points))
+                    capacity = mass * 2 ** ((stride - 1) * (level + 1))
+                    room = min(capacity - len(points), 160 - len(points))
                     base = cutoff(level)
                     size = (cutoff(level + 1) - base) // 2
                     limit = min(room, size)

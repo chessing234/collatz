@@ -97,21 +97,23 @@ private theorem light_image {t : Tilt} {h x : Nat}
       hpow
   simpa only [Nat.mul_comm 2] using Nat.lt_of_lt_of_le hval (Nat.mul_le_mul_left 2 hsmall)
 
-/-- A forward-closed, nonmerging collection inherits the growth rate of
-the exceptional residue count on a sequence of aligned dyadic cutoffs. -/
-theorem bound (t : Tilt) :
-    ∃ C, ∀ (states : Nat → Nat), NoMerging states →
-      (∀ k i, ∃ j, states j = acceleratedOrbit k (states i)) →
+/-- The recursive occupation proof also works when an image is
+replaced by a smaller member of the same collection, provided the
+replacement map stays injective. -/
+theorem bound_of_compression (t : Tilt) :
+    ∃ C, ∀ (keep : Nat → Prop) (compress : Nat → Nat → Nat),
+      (∀ k x, keep x → keep (compress k x) ∧ compress k x ≤ acceleratedOrbit k x) →
+      (∀ k x y, keep x → keep y → compress k x = compress k y → x = y) →
       ∀ h (xs : List Nat), xs.Nodup →
-        (∀ x ∈ xs, x < 2 ^ (t.steps * h) * 2 ∧ ∃ i, states i = x) →
+        (∀ x ∈ xs, x < 2 ^ (t.steps * h) * 2 ∧ keep x) →
         xs.length ≤ C * t.cover ^ h := by
   obtain ⟨H, hscale⟩ := power_threshold t
   let C := 2 ^ (t.steps * H) * 2 + 4
   have hC : 4 ≤ C := Nat.le_add_left _ _
   refine ⟨C, ?_⟩
-  intro states hmerge hclosed h
+  intro keep compress hcompress hinjective h
   have hbase (h : Nat) (hh : h ≤ H) (xs : List Nat) (hnd : xs.Nodup)
-      (hsmall : ∀ x ∈ xs, x < 2 ^ (t.steps * h) * 2 ∧ ∃ i, states i = x) :
+      (hsmall : ∀ x ∈ xs, x < 2 ^ (t.steps * h) * 2 ∧ keep x) :
       xs.length ≤ C * t.cover ^ h := by
     have hs : xs ⊆ List.range (2 ^ (t.steps * h) * 2) :=
       fun x hx => List.mem_range.mpr (hsmall x hx).1
@@ -138,21 +140,21 @@ theorem bound (t : Tilt) :
         exact Nat.le_trans ((List.filter_sublist.nodup hnd).length_le_of_subset hs)
           (heavy_count t (h + 1))
       let k := t.steps * (h + 1)
-      let images := low.map (acceleratedOrbit k)
+      let images := low.map (compress k)
       have hi : images.Nodup := by
         apply List.pairwise_map.mpr
         apply List.Pairwise.imp_of_mem _ (List.filter_sublist.nodup hnd)
         intro x y hx hy hne heq
-        obtain ⟨_, i, rfl⟩ := hsmall x (List.mem_filter.mp hx).1
-        obtain ⟨_, j, rfl⟩ := hsmall y (List.mem_filter.mp hy).1
-        exact hne (hmerge k i j heq)
-      have hs : ∀ y ∈ images, y < 2 ^ (t.steps * h) * 2 ∧ ∃ j, states j = y := by
+        exact hne (hinjective k x y (hsmall x (List.mem_filter.mp hx).1).2
+          (hsmall y (List.mem_filter.mp hy).1).2 heq)
+      have hs : ∀ y ∈ images, y < 2 ^ (t.steps * h) * 2 ∧ keep y := by
         intro y hy
         obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hy
         obtain ⟨hx, hl⟩ := List.mem_filter.mp hx
-        obtain ⟨hlt, i, rfl⟩ := hsmall x hx
-        have hl' : exceptional t (h + 1) (states i) = false := by simpa using hl
-        exact ⟨light_image hlt hl' (hscale _ hthreshold), hclosed k i⟩
+        obtain ⟨hlt, hkeep⟩ := hsmall x hx
+        have hl' : exceptional t (h + 1) x = false := by simpa using hl
+        obtain ⟨hkeep', hle⟩ := hcompress k x hkeep
+        exact ⟨Nat.lt_of_le_of_lt hle (light_image hlt hl' (hscale _ hthreshold)), hkeep'⟩
       have hlow : low.length ≤ C * t.cover ^ h := by
         simpa only [images, List.length_map] using ih images hi hs
       have hsplit : high.length + low.length = xs.length := by
@@ -170,6 +172,25 @@ theorem bound (t : Tilt) :
           Nat.add_le_add hhigh hlow'
         _ = _ := by rw [← Nat.add_mul, Nat.add_sub_of_le (by omega : 2 ≤ C)]
     · exact hbase _ (by omega) xs hnd hsmall
+
+/-- A forward-closed, nonmerging collection inherits the exceptional rate. -/
+theorem bound (t : Tilt) :
+    ∃ C, ∀ (states : Nat → Nat), NoMerging states →
+      (∀ k i, ∃ j, states j = acceleratedOrbit k (states i)) →
+      ∀ h (xs : List Nat), xs.Nodup →
+        (∀ x ∈ xs, x < 2 ^ (t.steps * h) * 2 ∧ ∃ i, states i = x) →
+        xs.length ≤ C * t.cover ^ h := by
+  obtain ⟨C, hC⟩ := bound_of_compression t
+  refine ⟨C, ?_⟩
+  intro states hmerge hclosed
+  apply hC (fun x => ∃ i, states i = x) acceleratedOrbit
+  · intro k x hx
+    obtain ⟨i, rfl⟩ := hx
+    exact ⟨hclosed k i, Nat.le_refl _⟩
+  · intro k x y hx hy heq
+    obtain ⟨i, rfl⟩ := hx
+    obtain ⟨j, rfl⟩ := hy
+    exact hmerge k i j heq
 
 set_option exponentiation.threshold 4000 in
 /-- The chosen threshold is `94/149`, immediately below `log₃ 2`
