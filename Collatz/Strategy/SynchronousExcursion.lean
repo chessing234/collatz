@@ -334,19 +334,226 @@ theorem leastAt_after_single_halving {n u v : Nat} (hv : 0 < v) (hu : u % 2 = 1)
     rw [leastAt_first_halving hv hu hfac] at hle
     exact Nat.not_le_of_gt hsmall hle
 
+private theorem third_after_mod_eight {n u v : Nat} (hu : 0 < u)
+    (hfac : n + 1 = 2 ^ v * u) (hmod : (3 ^ v * u) % 8 = 3) :
+    8 * acceleratedOrbit (v + 3) n + 1 = 3 * (3 ^ v * u) := by
+  let A := 3 ^ v * u
+  change A % 8 = 3 at hmod
+  have hA4 : A % 4 = 3 := by omega
+  have hpeak := DeviceSwap.run_climb v u n hu hfac
+  have hsecond := (half_then_odd_values hA4 hpeak).2
+  change 8 * acceleratedOrbit (v + 3) n + 1 = 3 * A
+  rw [acceleratedOrbit_succ_step, hsecond, acceleratedStep, if_pos (by omega)]
+  omega
+
 /-- The next halving also preserves the least source when the first
 peak is three modulo eight in the shifted coordinate. -/
 theorem leastAt_after_single_halving_mod_eight {n u v : Nat} (hv : 0 < v)
     (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ v * u)
     (hmod : (3 ^ v * u) % 8 = 3) : leastAt (v + 3) n = n := by
-  let A := 3 ^ v * u
-  have hA4 : A % 4 = 3 := by omega
-  have hpeak := DeviceSwap.run_climb v u n (by omega : 0 < u) hfac
-  have hsecond := (half_then_odd_values hA4 hpeak).2
-  have hthird : acceleratedOrbit (v + 3) n = (3 * A - 1) / 8 := by
-    rw [acceleratedOrbit_succ_step, hsecond, acceleratedStep, if_pos (by omega)]
+  have hthird := third_after_mod_eight (by omega : 0 < u) hfac hmod
+  have hnon : acceleratedOrbit (v + 3) n % 3 ≠ 2 := by omega
+  rw [leastAt_succ_of_non_two hnon, leastAt_after_single_halving hv hu hfac (by omega)]
+
+private theorem step_upper (x : Nat) : 2 * acceleratedStep x ≤ 3 * x + 1 := by
+  by_cases he : x % 2 = 0
+  · rw [acceleratedStep, if_pos he]
     omega
-  have hnon : acceleratedOrbit (v + 3) n % 3 ≠ 2 := by rw [hthird]; omega
-  rw [leastAt_succ_of_non_two hnon, leastAt_after_single_halving hv hu hfac hA4]
+  · rw [acceleratedStep, if_neg he]
+    omega
+
+private theorem two_step_upper (x : Nat) : 4 * acceleratedOrbit 2 x ≤ 9 * x + 5 := by
+  have h₁ := step_upper x
+  have h₂ := step_upper (acceleratedStep x)
+  change 4 * acceleratedStep (acceleratedStep x) ≤ 9 * x + 5
+  omega
+
+private theorem step_eq_of_same_parity {x y : Nat} (hp : x % 2 = y % 2)
+    (h : acceleratedStep x = acceleratedStep y) : x = y := by
+  by_cases he : x % 2 = 0
+  · rw [acceleratedStep, if_pos he, acceleratedStep, if_pos (by omega)] at h
+    omega
+  · rw [acceleratedStep, if_neg he, acceleratedStep, if_neg (by omega)] at h
+    omega
+
+private theorem image_below_peak {v m u : Nat} (hm : m < 2 ^ v * u) :
+    acceleratedOrbit v m < 3 ^ v * u := by
+  have himage := image_lt (k := v) (c := u) (x := m) (by simpa only [Nat.mul_comm] using hm)
+  have hcount := AffineExact.oddCount_le_self m v
+  have hpow := Nat.pow_le_pow_right (by decide : 0 < 3) hcount
+  rw [Nat.mul_comm (3 ^ v) u]
+  exact Nat.lt_of_lt_of_le himage (Nat.mul_le_mul_left _ hpow)
+
+private theorem image_ne_peak_sub_three {j m u : Nat} (hj : 0 < j) (hu : 0 < u)
+    (hm : m < 2 ^ (j + 1) * u) : acceleratedOrbit (j + 1) m ≠ 3 ^ (j + 1) * u - 3 := by
+  intro heq
+  let B := 3 ^ j * u
+  have hB : 3 ≤ B := by
+    have hpow : 3 ≤ 3 ^ j := by
+      simpa using Nat.pow_le_pow_right (by decide : 0 < 3) (show 1 ≤ j by omega)
+    exact Nat.le_trans hpow (Nat.le_mul_of_pos_right _ hu)
+  have hfull : oddCount m (j + 1) = j + 1 := by
+    have hcap := AffineExact.oddCount_le_self m (j + 1)
+    apply Nat.le_antisymm hcap
+    apply Nat.le_of_not_gt
+    intro hshort
+    have himage := image_lt (k := j + 1) (c := u) (x := m) (by simpa only [Nat.mul_comm] using hm)
+    have hpow := Nat.pow_le_pow_right (by decide : 0 < 3) (show oddCount m (j + 1) ≤ j by omega)
+    have hle := Nat.mul_le_mul_right u hpow
+    rw [heq, power_mul_succ] at himage
+    change 3 ^ oddCount m (j + 1) * u ≤ B at hle
+    have himage' : 3 * B - 3 < 3 ^ oddCount m (j + 1) * u := by
+      simpa only [Nat.mul_comm u] using himage
+    omega
+  have hshift := shifted_affine_exact m (j + 1)
+  rw [hfull, runA_all_odd hfull, Nat.add_zero, heq, power_mul_succ] at hshift
+  have hdvd : 3 ∣ 2 ^ (j + 1) * ((3 * B - 3) + 1) := by
+    rw [hshift]
+    simpa only [Nat.add_zero] using
+      Nat.dvd_mul_right_of_dvd (three_dvd_positive_pow (by omega : 0 < j + 1)) (m + 1)
+  have hc : Nat.Coprime 3 (2 ^ (j + 1)) := Nat.Coprime.pow_right _ (by decide : Nat.Coprime 3 2)
+  have hd := Nat.mod_eq_zero_of_dvd (hc.dvd_of_dvd_mul_left hdvd)
+  omega
+
+/-- A shifted peak that is three modulo eight keeps its initial
+least representative through four steps after the run. At the fourth
+step the alternative inverse branch is present, but its possible
+prefix images lie above the cap or fail a ternary divisibility test. -/
+theorem leastAt_four_after_mod_eight {n u j : Nat} (hj : 0 < j)
+    (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ (j + 1) * u)
+    (hmod : (3 ^ (j + 1) * u) % 8 = 3) :
+    leastAt ((j + 1) + 4) n = n := by
+  let v := j + 1
+  let A := 3 ^ v * u
+  let m := leastAt (v + 4) n
+  let y := acceleratedOrbit (v + 3) n
+  let z := acceleratedOrbit (v + 3) m
+  change n + 1 = 2 ^ v * u at hfac
+  change A % 8 = 3 at hmod
+  have huPos : 0 < u := by omega
+  have hA3 : A % 3 = 0 :=
+    Nat.mod_eq_zero_of_dvd (Nat.dvd_mul_right_of_dvd (three_dvd_positive_pow (by omega)) _)
+  have hy8 : 8 * y + 1 = 3 * A := third_after_mod_eight huPos hfac hmod
+  have heq : acceleratedStep z = acceleratedStep y := by
+    rw [← acceleratedOrbit_succ_step, ← acceleratedOrbit_succ_step]
+    exact leastAt_meets (v + 4) n
+  apply Nat.le_antisymm (leastAt_le rfl)
+  apply Nat.le_of_not_gt
+  intro hsmall
+  change m < n at hsmall
+  have hm : m < 2 ^ v * u := by omega
+  have hdiff : z % 2 ≠ y % 2 := by
+    intro hsame
+    have hle := leastAt_le (step_eq_of_same_parity hsame heq).symm
+    rw [leastAt_after_single_halving_mod_eight (by omega : 0 < v) hu hfac hmod] at hle
+    exact Nat.not_le_of_gt hsmall hle
+  have previous (i : Nat) : acceleratedStep (acceleratedOrbit i m) = acceleratedOrbit (i + 1) m :=
+    (acceleratedOrbit_succ_step i m).symm
+  rcases Arith.mod_two_eq_zero_or_one y with hey | hoy
+  · have hzo : z % 2 ≠ 0 := by omega
+    simp only [acceleratedStep, if_neg hzo, if_pos hey] at heq
+    have hz : 8 * z + 3 = A := by omega
+    have hz3 : z % 3 ≠ 2 := by omega
+    have h₂ := even_preimage_only hz3 (previous (v + 2))
+    change acceleratedOrbit (v + 2) m = 2 * z at h₂
+    have h₂mod : acceleratedOrbit (v + 2) m % 3 ≠ 2 := by omega
+    have h₁ := even_preimage_only h₂mod (previous (v + 1))
+    have h₁mod : acceleratedOrbit (v + 1) m % 3 ≠ 2 := by omega
+    have h₀ := even_preimage_only h₁mod (previous v)
+    apply image_ne_peak_sub_three hj huPos hm
+    change acceleratedOrbit v m = A - 3
+    omega
+  · have hze : z % 2 = 0 := by omega
+    have hyo : y % 2 ≠ 0 := by omega
+    simp only [acceleratedStep, if_pos hze, if_neg hyo] at heq
+    have hz : 8 * z = 9 * A + 5 := by omega
+    have hz3 : z % 3 ≠ 2 := by omega
+    have h₂ := even_preimage_only hz3 (previous (v + 2))
+    change acceleratedOrbit (v + 2) m = 2 * z at h₂
+    have htwo := two_step_upper (acceleratedOrbit v m)
+    rw [acceleratedOrbit_add, Nat.add_comm 2 v] at htwo
+    have hcap := image_below_peak hm
+    omega
+
+private theorem fourth_after_mod_eight {n u v : Nat} (hu : 0 < u)
+    (hfac : n + 1 = 2 ^ v * u) (hmod : (3 ^ v * u) % 8 = 3) :
+    16 * acceleratedOrbit (v + 4) n + 1 = 3 * (3 ^ v * u) ∨
+      16 * acceleratedOrbit (v + 4) n = 9 * (3 ^ v * u) + 5 := by
+  have hthird := third_after_mod_eight hu hfac hmod
+  rw [acceleratedOrbit_succ_step]
+  rcases Arith.mod_two_eq_zero_or_one (acceleratedOrbit (v + 3) n) with he | ho
+  · rw [acceleratedStep, if_pos he]
+    exact Or.inl (by omega)
+  · rw [acceleratedStep, if_neg (by omega)]
+    exact Or.inr (by omega)
+
+/-- Five suffix steps still give no smaller source for shifted peaks
+congruent to three modulo eight. -/
+theorem leastAt_five_after_mod_eight {n u j : Nat} (hj : 0 < j)
+    (hu : u % 2 = 1) (hfac : n + 1 = 2 ^ (j + 1) * u)
+    (hmod : (3 ^ (j + 1) * u) % 8 = 3) :
+    leastAt ((j + 1) + 5) n = n := by
+  let v := j + 1
+  let A := 3 ^ v * u
+  let y := acceleratedOrbit (v + 4) n
+  let m := leastAt (v + 5) n
+  let z := acceleratedOrbit (v + 4) m
+  change n + 1 = 2 ^ v * u at hfac
+  change A % 8 = 3 at hmod
+  have hA3 : A % 3 = 0 :=
+    Nat.mod_eq_zero_of_dvd (Nat.dvd_mul_right_of_dvd (three_dvd_positive_pow (by omega)) _)
+  have hval : 16 * y + 1 = 3 * A ∨ 16 * y = 9 * A + 5 :=
+    fourth_after_mod_eight (by omega : 0 < u) hfac hmod
+  have hmod_y : y % 3 = 2 := by rcases hval with hl | hr <;> omega
+  have hprev := leastAt_four_after_mod_eight hj hu hfac hmod
+  rcases Arith.mod_two_eq_zero_or_one y with he | ho
+  · have hnon : acceleratedOrbit (v + 5) n % 3 ≠ 2 := by
+      rw [acceleratedOrbit_succ_step]
+      change acceleratedStep y % 3 ≠ 2
+      rw [acceleratedStep, if_pos he]
+      omega
+    rw [leastAt_succ_of_non_two hnon, hprev]
+  · apply Nat.le_antisymm (leastAt_le rfl)
+    apply Nat.le_of_not_gt
+    intro hsmall
+    change m < n at hsmall
+    have hm : m < 2 ^ v * u := by omega
+    have heq : acceleratedStep z = acceleratedStep y := by
+      rw [← acceleratedOrbit_succ_step, ← acceleratedOrbit_succ_step]
+      exact leastAt_meets (v + 5) n
+    have hz : z % 2 = 0 := by
+      by_cases hz : z % 2 = 0
+      · exact hz
+      exfalso
+      have hsame : z % 2 = y % 2 := by omega
+      have hle := leastAt_le (step_eq_of_same_parity hsame heq).symm
+      rw [hprev] at hle
+      exact Nat.not_le_of_gt hsmall hle
+    have hyo : y % 2 ≠ 0 := by omega
+    simp only [acceleratedStep, if_pos hz, if_neg hyo] at heq
+    have hzval : z = 3 * y + 1 := by omega
+    have previous (i : Nat) : acceleratedStep (acceleratedOrbit i m) = acceleratedOrbit (i + 1) m :=
+      (acceleratedOrbit_succ_step i m).symm
+    have hz3 : z % 3 ≠ 2 := by omega
+    have h₃ := even_preimage_only hz3 (previous (v + 3))
+    change acceleratedOrbit (v + 3) m = 2 * z at h₃
+    let w := acceleratedOrbit (v + 2) m
+    have hw : acceleratedStep w = 2 * z := (previous (v + 2)).trans h₃
+    have hcap := image_below_peak hm
+    have htwo := two_step_upper (acceleratedOrbit v m)
+    rw [acceleratedOrbit_add, Nat.add_comm 2 v] at htwo
+    change 4 * w ≤ 9 * acceleratedOrbit v m + 5 at htwo
+    rcases Arith.mod_two_eq_zero_or_one w with hwe | hwo
+    · rw [acceleratedStep, if_pos hwe] at hw
+      rcases hval with hl | hr <;> omega
+    · rw [acceleratedStep, if_neg (by omega)] at hw
+      rcases hval with hl | hr
+      · have hw3 : w % 3 ≠ 2 := by omega
+        have h₁ := even_preimage_only hw3 (previous (v + 1))
+        change acceleratedOrbit (v + 1) m = 2 * w at h₁
+        have h₁mod : acceleratedOrbit (v + 1) m % 3 ≠ 2 := by omega
+        have h₀ := even_preimage_only h₁mod (previous v)
+        omega
+      · omega
 
 end Collatz.SynchronousExcursion

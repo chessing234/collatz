@@ -47,5 +47,18 @@ def exponent_checks():
     return checks
 
 
+def separation_checks():
+    checks = 0
+    for depth in range(3, 13):
+        for lift in range(1, 13):
+            exponent = 1 + 2 ** (depth - 2) * lift
+            peaks = [3 ** (exponent - drop) - 1 for drop in range(3)]
+            longest, middle, shortest = (parity_run(peak, depth)[0] for peak in peaks)
+            assert shortest == middle < longest
+            checks += 1
+    return checks
+
+
 if __name__ == "__main__":
     print(f"{certificate_checks():,} lifted peak checks and {exponent_checks():,} exponent checks.")
+    print(f"{separation_checks():,} separated exponent checks.")

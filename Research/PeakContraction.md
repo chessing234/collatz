@@ -34,3 +34,15 @@ at depth 14 while the two-exponent drop in the same progression
 lacks one. The table gives equivalences to smaller exponents. A
 proof of convergence for all Mersenne numbers would need to handle
 the exponents left outside such reductions.
+
+There is a matching delay phenomenon for drops of one or two.
+Suppose \(3B=2^k q+1\) with \(k\ge2\). The peak \(3B-1\) takes
+\(k\) halvings to \(q\). The peak \(B-1\) starts with a halving
+and an odd step, giving \(2^{k-2}q\), and then also reaches \(q\).
+The larger peak is \(9B-1=2^k(3q)+2\). Its \(k\)-step image is
+strictly greater than \(q\), since the image of 2 is positive.
+
+For \(k\ge3\), take a longer Mersenne exponent \(v>1\) with
+\(v\equiv1\pmod{2^{k-2}}\), so \(B=3^{v-2}\) meets this hypothesis.
+The longer peak cannot meet either of the two shorter peaks in the
+first \(k\) suffix steps. Such odd \(v\) exist above any cutoff.
