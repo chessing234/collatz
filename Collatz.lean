@@ -305,6 +305,7 @@ import Collatz.Strategy.ExcursionLattice
 import Collatz.Strategy.ExcursionMixedGrid
 import Collatz.Strategy.ExcursionHistoryGrid
 import Collatz.Strategy.ExcursionGreedySlots
+import Collatz.Strategy.ExcursionRays
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32

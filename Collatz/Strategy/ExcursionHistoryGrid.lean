@@ -65,7 +65,8 @@ theorem incoming_floor_le_history {m x b v p W : Nat} {rs : List Run}
     b ≤ x :=
   mixed_floor hm hx hb (history_implies_incoming hc) hin hwindow
 
-private theorem dvd_sub_of_residue {a b d : Nat} (h : a % d = b % d) :
+/-- Matching residues give a divisor of the difference in either order. -/
+theorem dvd_sub_of_residue {a b d : Nat} (h : a % d = b % d) :
     d ∣ b - a := by
   refine ⟨b / d - a / d, ?_⟩
   have ha := Nat.mod_add_div a d
