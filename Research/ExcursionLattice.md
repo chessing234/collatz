@@ -39,3 +39,21 @@ run length. The test measures the effect relative to the common-floor
 excursion product. Priority for this formulation remains unverified.
 [Simons and de Weger (2005)](https://doi.org/10.4064/aa117-1-3),
 [Hercher (2023)](https://cs.uwaterloo.ca/journals/JIS/VOL26/Hercher/hercher5.html)
+
+## Adding the incoming residue
+
+If the preceding excursion had odd-run length $p$ and $W$ extra halvings,
+its landing $x$ satisfies $3^p\mid (2^W x+1)$. The current excursion
+still forces the dyadic residue from its own run length $v$. Two
+points satisfying both conditions differ by a multiple of
+$2^{v+1}3^p$. A candidate satisfying the two congruences in the first
+mixed period above the floor is consequently a lower bound on $x$.
+
+Using one such lower bound per visit needs neither sorted groups nor
+distinct sources. The audit recomputes the mixed residues with modular
+inverses and certifies all 32,767 first descending excursion endpoints
+in the tested range. Lean checks $63\to61$ at excursion 12, shortcut
+time 54. The product certificate depends only on the run and halving
+profile and the common floor. For any source at least 63 realizing
+this profile, Lean proves a descent by time 54. A source that falls
+below the floor before that time has already descended.
