@@ -158,16 +158,33 @@ theorem lower_comparison (base exponent precision shift : Nat)
   rw [Nat.one_mul] at hlt
   exact Nat.lt_of_lt_of_le hlt (power_contains base exponent precision).1
 
-/-- An interval comparison also certifies a scaled upper bound. -/
-theorem upper_comparison (base exponent precision left right shift : Nat)
+/-- A strict comparison against a scaled dyadic upper bound. -/
+theorem strict_upper_comparison (base exponent precision left right shift : Nat)
     (h : ((power base exponent precision).upper.mul ⟨left, 0⟩).less ⟨right, shift⟩ = true) :
-    left * base ^ exponent ≤ right * 2 ^ shift := by
+    left * base ^ exponent < right * 2 ^ shift := by
   have hlt := Scaled.less_sound h
   rw [Scaled.mul_value] at hlt
   change (power base exponent precision).upper.value * (left * 2 ^ 0) < right * 2 ^ shift at hlt
   rw [Nat.pow_zero, Nat.mul_one, Nat.mul_comm _ left] at hlt
-  exact Nat.le_trans
-    (Nat.mul_le_mul_left _ (power_contains base exponent precision).2) (Nat.le_of_lt hlt)
+  exact Nat.lt_of_le_of_lt
+    (Nat.mul_le_mul_left _ (power_contains base exponent precision).2) hlt
+
+/-- An interval comparison also certifies a weak scaled upper bound. -/
+theorem upper_comparison (base exponent precision left right shift : Nat)
+    (h : ((power base exponent precision).upper.mul ⟨left, 0⟩).less ⟨right, shift⟩ = true) :
+    left * base ^ exponent ≤ right * 2 ^ shift :=
+  Nat.le_of_lt (strict_upper_comparison base exponent precision left right shift h)
+
+/-- Compare a scaled dyadic value to a scaled lower power bound. -/
+theorem scaled_lower_comparison (base exponent precision left right shift : Nat)
+    (h : (⟨left, shift⟩ : Scaled).less ((power base exponent precision).lower.mul ⟨right, 0⟩) = true) :
+    left * 2 ^ shift < right * base ^ exponent := by
+  have hlt := Scaled.less_sound h
+  rw [Scaled.mul_value] at hlt
+  change left * 2 ^ shift < (power base exponent precision).lower.value * (right * 2 ^ 0) at hlt
+  rw [Nat.pow_zero, Nat.mul_one, Nat.mul_comm _ right] at hlt
+  exact Nat.lt_of_lt_of_le hlt
+    (Nat.mul_le_mul_left _ (power_contains base exponent precision).1)
 
 /-- Compare two power intervals while retaining an extra symbolic
 shift on the right-hand side. -/

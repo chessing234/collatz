@@ -578,6 +578,30 @@ the window that is `2 mod 3` has an odd predecessor
 [Lean](../Collatz/Strategy/ExcursionBoundaryPair.lean)
 [Bařina's verification](https://pcbarina.fit.vut.cz/)
 
+### A balanced word exposes the remaining role of residues
+
+Keep the inverse coefficient `B/A` in `(2/3,1])
+by taking a one-odd-step excursion when `4B≤3A`
+and a two-odd-step excursion otherwise. Both use one
+extra halving. The normalized offset of every prefix
+is at least `5/24` per odd step. The balance rule can
+be terminated at the exceptional pair, with proper
+prefixes still heavy and offset above
+`2^71(2^b−3^a)`.
+
+The first 26 excursions of that word fix a source
+residue modulo `2^72`. The least representative is
+`4697939311072332635131`, above the entire candidate
+window. More generally, any genuine word with at least
+53 odd steps from a source in the window must either
+use a different excursion type or have a proper
+prefix whose inverse coefficient is at most two thirds.
+The [Lean proof](../Collatz/Strategy/ExcursionBalancedBarrier.lean)
+uses the affine identity and odd landing to verify the
+residue. The [audit](../scripts/audit_excursion_anchor.py)
+checked 500 balanced prefixes, 355 terminal crossings,
+and the exact 26-excursion source residue.
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks

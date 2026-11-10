@@ -442,6 +442,41 @@ def check_boundary_pair():
     print("Checked the three exceptional-pair comparisons and 9,999 offset budgets.")
 
 
+def check_balanced_word_barrier():
+    A = B = 1
+    a = c = 0
+    runs = []
+    terminations = 0
+    for length in range(1, 501):
+        if 3 * A < 4 * B:
+            terminal_A, terminal_B, terminal_c = 3 * A, 4 * B, 3 * c + B
+            assert terminal_A < terminal_B
+            assert 5 * (a + 1) * terminal_A <= 24 * terminal_c
+            terminations += 1
+        v = 1 if 4 * B <= 3 * A else 2
+        c = 3**v * c + B * (3**v - 2**v)
+        A, B, a = A * 3**v, B * 2**(v + 1), a + v
+        runs.append(v)
+        assert 2 * A < 3 * B and B <= A
+        assert 5 * a * A <= 24 * c
+        if length == 26:
+            source = (B - c) * pow(A, -1, 2 * B) % (2 * B)
+            assert source == 4_697_939_311_072_332_635_131
+            assert source > 3 * 2**70
+            x = source
+            for expected in runs:
+                x, v, w = next_excursion(x)
+                assert (v, w) == (expected, 1)
+            assert A * source + c == B * x and x % 2 == 1
+    a, b = 72_057_431_991, 114_208_327_604
+    lower, upper = dyadic_interval(3, a, 192)
+    assert dyadic_less(upper, (1, b))
+    assert dyadic_less((3, b), (4 * lower[0], lower[1]))
+    scale = 24 * 2**71
+    assert dyadic_less((scale, b), ((scale + 5 * a) * lower[0], lower[1]))
+    print(f"Checked 500 balanced prefixes, {terminations} terminal crossings, and the exact source residue.")
+
+
 def scan_coefficient_crossings(limit, check_interior=False):
     exceptions = {}
     for n in range(3, limit, 2):
@@ -535,6 +570,7 @@ def main():
     check_power_gap_bracket()
     check_wide_power_bracket()
     check_boundary_pair()
+    check_balanced_word_barrier()
     assert scan_coefficient_crossings(20_000, check_interior=True) == {
         27: 21, 31: 13, 63: 61, 71: 25
     }
