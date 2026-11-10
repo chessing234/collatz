@@ -272,7 +272,8 @@ private theorem scaled_power_advantage (a k : Nat) :
       _ ≤ (a * (a + 1) ^ k) * (a + 1) := Nat.mul_le_mul_right _ ih
       _ = a * (a + 1) ^ (k + 1) := by rw [Nat.pow_succ, Nat.mul_assoc]
 
-private theorem exists_weight_power {a b : Nat} (hab : a < b) (J : Nat) :
+/-- Any fixed multiplicative weight is eventually absorbed by the larger base. -/
+theorem exists_weight_power {a b : Nat} (hab : a < b) (J : Nat) :
     ∃ k, J * a ^ k ≤ b ^ k := by
   by_cases ha : a = 0
   · subst a

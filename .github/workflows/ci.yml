@@ -114,3 +114,23 @@ jobs:
         run: |
           lake env lean scripts/audit_excursion_alphabet.lean
           python3 scripts/audit_excursion_alphabet.py
+
+      - name: Check reciprocal products for sparse excursions
+        run: |
+          lake env lean scripts/audit_excursion_sparse_product.lean
+          python3 scripts/audit_excursion_sparse_product.py
+
+      - name: Check orbit occupation and affine multiplier bounds
+        run: |
+          lake env lean scripts/audit_orbit_capacity.lean
+          python3 scripts/audit_orbit_capacity.py
+
+      - name: Check the bootstrapped orbit occupation bound
+        run: |
+          lake env lean scripts/audit_orbit_occupation_bootstrap.lean
+          python3 scripts/audit_orbit_occupation_bootstrap.py
+
+      - name: Check translated orbit windows and multiplier occupation
+        run: |
+          lake env lean scripts/audit_orbit_window_bootstrap.lean
+          python3 scripts/audit_orbit_window_bootstrap.py
