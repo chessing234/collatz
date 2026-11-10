@@ -19,8 +19,8 @@ cutoff at $j=P$, use a common denominator $D=2^{PH+1}$, where the
 sample lies below the cutoff at $H+1$. Assign each source $x$ an
 integer weight by summing $2^{P(H-j)}$ for the indices $P\le j\le H$
 whose next cutoff exceeds $x$. The first contributing weight gives
-(D\le xw$x$). Swapping the finite sums and applying the capacity
-assumption gives (2\sum_x w$x$\le D). An integer product inequality
+$D\le xw(x)$. Swapping the finite sums and applying the capacity
+assumption gives $2\sum_x w(x)\le D$. An integer product inequality
 then bounds the product of $1+1/x$ by $2$. The finitely many sources
 below the initial cutoff contribute another fixed factor.
 

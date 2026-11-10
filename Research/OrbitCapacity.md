@@ -6,19 +6,19 @@ $a_k(x)$ count the odd sources among the first $k$ shortcut steps.
 For $x<c2^k$, the inequality $T^k(x)<c3^{a_k(x)}$ follows by induction
 on the first step. This supplies the compression half of the
 Garcia–Tal occupation argument. At depth $5h$, sources below
-$2^{5h+1}$ with at most $3h$ odd steps have images below $2cdot27^h$.
+$2^{5h+1}$ with at most $3h$ odd steps have images below $2\cdot27^h$.
 If the sources belong to one injective orbit, their images are
-distinct. There are therefore at most $2cdot27^h$ such sources.
+distinct. There are therefore at most $2\cdot27^h$ such sources.
 
 For the complementary sources, summing $2^{a_{5h}(x)}$ over the two
-complete dyadic periods gives $2cdot243^h$. Each source counted in the
+complete dyadic periods gives $2\cdot243^h$. Each source counted in the
 complement has weight at least $8^h$. Hence there are at most
-$2cdot31^h$ of them. Together the two bounds give occupation at most
-$4cdot31^h$ below $2^{5h+1}$, so taking sufficiently spaced cutoffs
+$2\cdot31^h$ of them. Together the two bounds give occupation at most
+$4\cdot31^h$ below $2^{5h+1}$, so taking sufficiently spaced cutoffs
 gives the geometric capacity required by the reciprocal product lemma.
 
 For any positive injective orbit and some fixed $C$, Lean now proves
-that $2^kT^k(x)le Cx3^{a_k(x)}$ at every shortcut step. Since
+that $2^kT^k(x)\le Cx3^{a_k(x)}$ at every shortcut step. Since
 $T^k(x)$ tends to infinity on such an orbit, the multiplier
 $3^{a_k(x)}/2^k$ must also tend to infinity. The result gives a
 necessary condition on a divergent orbit. Excluding such growth and
@@ -53,7 +53,7 @@ shortcut period $L$ with all states above the cutoff, the endpoint
 equals the start, so its normalized gap satisfies
 
 $$
-0 < 1-rac{3^{a_L}}{2^L} le rac{1}{K}.
+0 < 1-\frac{3^{a_L}}{2^L} \le \frac{1}{K}.
 $$
 
 The bound on the normalized gap depends on the size cutoff and applies
