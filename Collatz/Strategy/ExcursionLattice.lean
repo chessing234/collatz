@@ -79,7 +79,8 @@ theorem classBase_le_source {m x v u W y : Nat} (h : IsExcursion x v u W y)
   rw [hx]
   exact Nat.add_le_add_left (Nat.mul_le_mul_left d hq) _
 
-private theorem cross_factor (a c : Nat) {m x : Nat} (hm : m ≤ x) :
+/-- Cross-multiplied monotonicity of an affine factor divided by its source. -/
+theorem cross_factor (a c : Nat) {m x : Nat} (hm : m ≤ x) :
     (a * x + c) * m ≤ x * (a * m + c) := by
   simp only [Nat.add_mul, Nat.mul_add]
   have hmain : a * x * m = x * (a * m) := by ac_rfl
@@ -141,6 +142,17 @@ run lengths and the shortcut orbit. -/
 def visits (n : Nat) : List Run → List Visit
   | [] => []
   | r :: rs => ⟨r.oddSteps, Collatz.acceleratedOrbit (time rs) n⟩ :: visits n rs
+
+theorem visit_time {n : Nat} {rs : List Run} {r : Visit} (hr : r ∈ visits n rs) :
+    ∃ j ≤ time rs, r.source = Collatz.acceleratedOrbit j n := by
+  induction rs with
+  | nil => simp [visits] at hr
+  | cons step rs ih =>
+    have hle : time rs ≤ time (step :: rs) := Nat.le_add_left ..
+    rcases List.mem_cons.mp hr with rfl | htail
+    · exact ⟨time rs, hle, rfl⟩
+    · obtain ⟨j, hj, heq⟩ := ih htail
+      exact ⟨j, Nat.le_trans hj hle, heq⟩
 
 def Visit.numerator (r : Visit) : Nat :=
   3 ^ r.oddSteps * r.source + (3 ^ r.oddSteps - 2 ^ r.oddSteps)
@@ -236,6 +248,33 @@ theorem stratified_product {m : Nat} {groups : List Stratum}
       _ = g.sources.prod * ((gs.flatMap Stratum.entries).map Visit.source).prod *
           (g.gridNumerator m * gridNumerator m gs) := by ac_rfl
 
+/-- A cross-multiplied upper bound on the visit product also bounds the
+accumulated denominator when the endpoint is at least the source. -/
+theorem trace_denominator_le {n e lower upper : Nat} {rs : List Run} (h : Trace n e rs)
+    (hn : 0 < n) (hkeep : n ≤ e) (hpos : ∀ r ∈ visits n rs, 0 < r.source)
+    (hbound : ((visits n rs).map Visit.numerator).prod * lower ≤
+      ((visits n rs).map Visit.source).prod * upper) :
+    2 ^ time rs * lower ≤ upper := by
+  let d := ((visits n rs).map Visit.source).prod
+  let a := ((visits n rs).map Visit.numerator).prod
+  have hsurvive : 2 ^ time rs * d ≤ a := by
+    apply Nat.le_of_mul_le_mul_left _ hn
+    calc
+      _ = 2 ^ time rs * n * d := by ac_rfl
+      _ ≤ 2 ^ time rs * e * d :=
+        Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hkeep)
+      _ = n * a := trace_product h
+  have hd : 0 < d := by
+    apply List.prod_pos_iff_forall_pos_nat.mpr
+    intro x hx
+    obtain ⟨r, hr, rfl⟩ := List.mem_map.mp hx
+    exact hpos r hr
+  apply Nat.le_of_mul_le_mul_left _ hd
+  calc
+    _ = (2 ^ time rs * d) * lower := by ac_rfl
+    _ ≤ a * lower := Nat.mul_le_mul_right _ hsurvive
+    _ ≤ d * upper := hbound
+
 /-- If the endpoint stays above the source, the accumulated denominator
 fits below the product of the valuation grids. The partition may be
 computed separately and supplied as a permutation certificate. -/
@@ -245,34 +284,13 @@ theorem trace_grid_bound {n e : Nat} {rs : List Run} (h : Trace n e rs)
     (hsorted : ∀ g ∈ groups, g.sources.Pairwise (· < ·))
     (hfloor : ∀ r ∈ groups.flatMap Stratum.entries, m ≤ r.source) :
     2 ^ time rs * gridDenominator m groups ≤ gridNumerator m groups := by
-  let entries := groups.flatMap Stratum.entries
-  let d := (entries.map Visit.source).prod
-  let a := (entries.map Visit.numerator).prod
-  have hclass : ∀ r ∈ entries, ∃ u W y, IsExcursion r.source r.oddSteps u W y :=
+  have hclass : ∀ r ∈ groups.flatMap Stratum.entries, ∃ u W y,
+      IsExcursion r.source r.oddSteps u W y :=
     fun _ hr => visit_realized h (hperm.mem_iff.mpr hr)
-  have hgrid : a * gridDenominator m groups ≤ d * gridNumerator m groups :=
-    stratified_product hsorted hfloor hclass
-  have hprod : 2 ^ time rs * e * d = n * a := by
-    have heq := trace_product h
-    rw [(hperm.map Visit.source).prod_nat, (hperm.map Visit.numerator).prod_nat] at heq
-    exact heq
-  have hsurvive : 2 ^ time rs * d ≤ a := by
-    apply Nat.le_of_mul_le_mul_left _ hn
-    calc
-      _ = 2 ^ time rs * n * d := by ac_rfl
-      _ ≤ 2 ^ time rs * e * d :=
-        Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hkeep)
-      _ = n * a := hprod
-  have hd : 0 < d := by
-    apply List.prod_pos_iff_forall_pos_nat.mpr
-    intro x hx
-    obtain ⟨r, hr, rfl⟩ := List.mem_map.mp hx
-    exact Nat.lt_of_lt_of_le hm (hfloor r hr)
-  apply Nat.le_of_mul_le_mul_left _ hd
-  calc
-    _ = (2 ^ time rs * d) * gridDenominator m groups := by ac_rfl
-    _ ≤ a * gridDenominator m groups := Nat.mul_le_mul_right _ hsurvive
-    _ ≤ d * gridNumerator m groups := hgrid
+  have hgrid := stratified_product hsorted hfloor hclass
+  rw [← (hperm.map Visit.source).prod_nat, ← (hperm.map Visit.numerator).prod_nat] at hgrid
+  exact trace_denominator_le h hn hkeep
+    (fun r hr => Nat.lt_of_lt_of_le hm (hfloor r (hperm.mem_iff.mp hr))) hgrid
 
 /-- A strict violation of the grid bound certifies a descent. -/
 theorem trace_grid_drop {n e m : Nat} {rs : List Run} {groups : List Stratum}

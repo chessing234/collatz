@@ -302,6 +302,7 @@ import Collatz.Strategy.ValuationBridge
 import Collatz.Strategy.ExcursionMap
 import Collatz.Strategy.ExcursionBudget
 import Collatz.Strategy.ExcursionLattice
+import Collatz.Strategy.ExcursionMixedGrid
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32
