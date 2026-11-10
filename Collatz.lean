@@ -309,6 +309,8 @@ import Collatz.Strategy.ExcursionRays
 import Collatz.Strategy.ExcursionWindowCount
 import Collatz.Strategy.ExcursionAlphabetMass
 import Collatz.Strategy.ExcursionSparseProduct
+import Collatz.Strategy.ForbiddenParity
+import Collatz.Strategy.OrbitCapacity
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32
