@@ -168,3 +168,8 @@ jobs:
         run: |
           lake env lean scripts/audit_inverse_fiber_transport.lean
           python3 scripts/audit_inverse_fiber_transport.py
+
+      - name: Check finite inverse suffix tables and ternary obstructions
+        run: |
+          lake env lean scripts/audit_peak_suffix_table.lean
+          python3 scripts/audit_peak_suffix_table.py
