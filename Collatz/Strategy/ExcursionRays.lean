@@ -124,18 +124,16 @@ private theorem odd_landing {n e : Nat} {r : Run} {rs : List Run} (h : Trace n e
   cases h with
   | step _ hrun => exact hrun.2.2.1
 
-private theorem source_residue_of_le {n e m f : Nat} {r : Run} {rs : List Run}
-    (h : Trace n e (r :: rs)) (h' : Trace m f (r :: rs)) (hnm : n ≤ m) :
+private theorem affine_source_residue_of_le {n e m f : Nat} {r : Run} {rs : List Run}
+    (ha : 3 ^ ExcursionBudget.oddCount (r :: rs) * n + offset (r :: rs) = 2 ^ time (r :: rs) * e)
+    (hb : 3 ^ ExcursionBudget.oddCount (r :: rs) * m + offset (r :: rs) = 2 ^ time (r :: rs) * f)
+    (he : e % 2 = 1) (hf : f % 2 = 1) (hnm : n ≤ m) :
     n % (2 ^ time (r :: rs) * 2) = m % (2 ^ time (r :: rs) * 2) := by
   let S := time (r :: rs)
   let V := ExcursionBudget.oddCount (r :: rs)
-  have he := odd_landing h
-  have hf := odd_landing h'
   have htwo : 2 ∣ f - e := Nat.dvd_of_mod_eq_zero (by omega)
   obtain ⟨k, hk⟩ := htwo
   have hdifference : 3 ^ V * (m - n) = 2 ^ S * (f - e) := by
-    have ha := h.affine
-    have hb := h'.affine
     change 3 ^ V * n + offset (r :: rs) = 2 ^ S * e at ha
     change 3 ^ V * m + offset (r :: rs) = 2 ^ S * f at hb
     rw [Nat.mul_sub_left_distrib, Nat.mul_sub_left_distrib]
@@ -152,13 +150,22 @@ private theorem source_residue_of_le {n e m f : Nat} {r : Run} {rs : List Run}
   change n % (2 ^ S * 2) = m % (2 ^ S * 2)
   rw [hmq, Nat.add_mul_mod_self_left]
 
+/-- A candidate with the correct affine identity and odd landing
+determines the source residue of a genuine profile. -/
+theorem source_residue_of_affine {n e m f : Nat} {r : Run} {rs : List Run}
+    (h : Trace n e (r :: rs))
+    (hf : 3 ^ ExcursionBudget.oddCount (r :: rs) * m + offset (r :: rs) = 2 ^ time (r :: rs) * f)
+    (hodd : f % 2 = 1) :
+    n % (2 ^ time (r :: rs) * 2) = m % (2 ^ time (r :: rs) * 2) := by
+  rcases Nat.le_total n m with hle | hle
+  · exact affine_source_residue_of_le h.affine hf (odd_landing h) hodd hle
+  · exact (affine_source_residue_of_le hf h.affine hodd (odd_landing h) hle).symm
+
 /-- A nonempty excursion profile determines its source residue. -/
 theorem source_residue {n e m f : Nat} {r : Run} {rs : List Run}
     (h : Trace n e (r :: rs)) (h' : Trace m f (r :: rs)) :
-    n % (2 ^ time (r :: rs) * 2) = m % (2 ^ time (r :: rs) * 2) := by
-  rcases Nat.le_total n m with hle | hle
-  · exact source_residue_of_le h h' hle
-  · exact (source_residue_of_le h' h hle).symm
+    n % (2 ^ time (r :: rs) * 2) = m % (2 ^ time (r :: rs) * 2) :=
+  source_residue_of_affine h h'.affine (odd_landing h')
 
 /-- The least nonnegative source representative realizes the same trace. -/
 theorem canonical_trace {n e : Nat} {rs : List Run} (h : Trace n e rs) :
