@@ -602,6 +602,47 @@ residue. The [audit](../scripts/audit_excursion_anchor.py)
 checked 500 balanced prefixes, 355 terminal crossings,
 and the exact 26-excursion source residue.
 
+### Exact reconstruction from the affine identity
+
+For any profile with positive run lengths, the affine
+identity and an odd landing reconstruct the full trace.
+At each boundary, cancel the previous dyadic coefficient
+from the last affine equation. Its coprimality with the
+last tripling coefficient gives the preceding integer
+state. The final odd landing determines the exact last
+halving valuation.
+
+The source is now computable by modular exponentiation.
+The inverse of three modulo a power of two has a closed
+form, and raising it to the odd count gives the inverse
+of the tripling coefficient. This yields the least
+representative modulo `2B` and the complete source
+class. In particular, the balanced large-offset word
+above has a genuine canonical realization outside
+the candidate interval.
+
+For a contracting word, the greatest possible failing
+source before imposing its residue is `floor(C/(B−A))`.
+A failure from any source greater than one occurs
+exactly when the canonical source is greater than one
+and lies at or below this cutoff. If the canonical source
+is one, its odd landing is one and the cutoff is one.
+[Lean](../Collatz/Strategy/ExcursionCanonicalArithmetic.lean)
+checks this equivalence and provides an executable
+test for first-crossing failure.
+
+Universal coefficient coverage and the exact canonical
+offset inequality would suffice for Collatz. The
+reduction uses integer arithmetic throughout. The
+[Python audit](../scripts/audit_excursion_realization.py)
+checked 5,368 legal profiles with three source
+representatives each. The
+[Lean audit](../scripts/audit_excursion_realization.lean)
+also reconstructs the published paradoxical segment
+from 165 to 167 and confirms that its proper prefixes
+disqualify it as a first-crossing failure.
+[Rozier and Terracol](https://arxiv.org/pdf/2502.00948)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks
