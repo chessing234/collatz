@@ -151,23 +151,28 @@ theorem Trace.first_light_of_first_crossing {n e : Nat} {rs : List Run}
       rw [hland, hsplit, Collatz.Exploration.HalvingBlocks.accelerated_halving]
       exact Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _)
 
-private theorem trace_reaches_time (n : Nat) (hn : n % 2 = 1) (k : Nat) :
-    ∃ y rs, Trace n y rs ∧ k ≤ time rs ∧ y % 2 = 1 := by
-  induction k with
-  | zero => exact ⟨n, [], .nil, Nat.zero_le _, hn⟩
-  | succ k ih =>
-    obtain ⟨x, rs, ht, htime, hx⟩ := ih
+/-- An odd source has a genuine trace of any prescribed number of
+excursions. Each excursion takes at least two shortcut steps. -/
+theorem trace_of_length (n : Nat) (hn : n % 2 = 1) (j : Nat) :
+    ∃ y rs, Trace n y rs ∧ rs.length = j ∧ 2 * j ≤ time rs ∧ y % 2 = 1 := by
+  induction j with
+  | zero => exact ⟨n, [], .nil, rfl, Nat.zero_le _, hn⟩
+  | succ j ih =>
+    obtain ⟨x, rs, ht, hlen, htime, hx⟩ := ih
     obtain ⟨v, u, W, y, hstep⟩ := exists_excursion hx
     have hv := hstep.2.2.2.1
-    have ht' : k + 1 ≤ time (⟨v, W⟩ :: rs) := by simp only [time]; omega
-    exact ⟨y, _, .step ht hstep, ht', hstep.2.2.1⟩
+    have hw := hstep.one_le_W
+    refine ⟨y, _, .step ht hstep, by simp [hlen], ?_, hstep.2.2.1⟩
+    simp only [time]
+    omega
 
 /-- Any shortcut coefficient crossing from an odd start yields an
 excursion coefficient crossing. -/
 theorem crossing_of_shortcut_crossing {n k : Nat} (hn : n % 2 = 1)
     (hcross : 3 ^ Collatz.oddCount n k < 2 ^ k) :
     ∃ y rs, Trace n y rs ∧ 3 ^ oddCount rs < 2 ^ time rs := by
-  obtain ⟨y, rs, htrace, hk, _⟩ := trace_reaches_time n hn k
+  obtain ⟨y, rs, htrace, _, htime, _⟩ := trace_of_length n hn k
+  have hk : k ≤ time rs := by omega
   rcases htrace.first_crossing_or_heavy with hheavy | ⟨e, first, hfirst, _, hcoef, _⟩
   · exact False.elim ((Nat.not_le_of_gt hcross)
       (htrace.shortcut_heavy_of_boundary_heavy hheavy.1 hheavy.2 k hk))

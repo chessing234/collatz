@@ -100,6 +100,20 @@ theorem offset_le_weight {p d scale : Nat} {charge : Nat → Nat}
         simp [oddCount, weight, Nat.pow_add, Nat.mul_add, Nat.mul_assoc, Nat.mul_comm,
           Nat.mul_left_comm, Nat.add_comm]
 
+private theorem weight_ones (rs : List Run) : weight (fun _ => 1) rs = rs.length := by
+  induction rs with
+  | nil => rfl
+  | cons run rs ih => simp only [weight, List.length_cons, ih, Nat.add_comm]
+
+/-- At a first coefficient crossing, each excursion contributes
+at most one to the offset normalized by the tripling coefficient. -/
+theorem offset_le_length_mul_coefficient {rs : List Run} (h : ProperPrefixBound 1 1 rs) :
+    offset rs ≤ 3 ^ oddCount rs * rs.length := by
+  have hcharge (v : Nat) : 1 * (3 ^ v - 2 ^ v) ≤ 1 * 3 ^ v :=
+    Nat.mul_le_mul_left _ (Nat.sub_le ..)
+  simpa only [Nat.one_mul, weight_ones] using
+    offset_le_weight (charge := fun _ => 1) hcharge h
+
 /-- If the weighted error fits in the slope gap, the crossing gives a descent. -/
 theorem drop_of_weighted_crossing {p d scale n e : Nat} {rs : List Run}
     {charge : Nat → Nat} (h : Trace n e rs) (hn : 0 < n) (hs : 0 < scale)
