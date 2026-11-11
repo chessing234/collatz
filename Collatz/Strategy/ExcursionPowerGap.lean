@@ -78,7 +78,7 @@ private theorem upper_scale_small {a : Nat} (ha : 17 ≤ a) :
     rw [hpow]
     omega
 
-private theorem lower_cross_product {a b p q : Nat} (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b)
+theorem lower_cross_product {a b p q : Nat} (ha : 0 < a) (hAB : 3 ^ a < 2 ^ b)
     (hbase : 2 ^ p < 3 ^ q) : p * a < b * q := by
   apply Nat.lt_of_not_ge
   intro h
