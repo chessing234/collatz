@@ -46,6 +46,21 @@ theorem meet_of_certificate {k d r B : Nat} (hr : 0 < r)
   rw [hbig, hsmall, Congruence.accOrbit_pow_two_mul_add,
     Congruence.accOrbit_pow_two_mul_add, hc.1, hc.2, Nat.pow_add, Nat.mul_assoc]
 
+/-- The slope condition of a certificate is an odd-count difference
+for the actual peaks as well as for their low parts. -/
+theorem counts_of_certificate {k d r B : Nat} (hr : 0 < r)
+    (hB : B % 2 ^ k = r) (hc : Certificate k d r) :
+    oddCount (B - 1) k = oddCount (3 ^ d * B - 1) k + d := by
+  have hsplit : 2 ^ k * (B / 2 ^ k) + r = B := by
+    rw [← hB]
+    exact Nat.div_add_mod B (2 ^ k)
+  have ⟨hbig, hsmall⟩ := lift_peaks k d r (B / 2 ^ k) hr
+  rw [hsplit] at hbig hsmall
+  have lift_count (q x : Nat) : oddCount (2 ^ k * q + x) k = oddCount x k := by
+    rw [Density.oddCount_mod, Nat.mul_add_mod, ← Density.oddCount_mod]
+  rw [hsmall, hbig, lift_count, lift_count]
+  exact hc.1
+
 /-- Two distinct lifts with meetings already force the full certificate.
 Thus a dyadic residue without a certificate can meet at most once. -/
 theorem certificate_of_two_lifts {k d r p q : Nat} (hr : 0 < r) (hpq : p < q)
@@ -150,13 +165,9 @@ theorem synchronized_drop {k d e u : Nat} (hu : 0 < u)
     odd_run_peak e u hu]
   exact h
 
-/-- A positive exponent drop yields a strictly smaller equal-time
-representative, including the cost of the leading halvings. -/
-theorem leastAt_lt_of_peak_meet {k d e u : Nat} (hu : 0 < u) (hd : 0 < d)
-    (h : acceleratedOrbit k (3 ^ (e + d) * u - 1) =
-      acceleratedOrbit k (3 ^ e * u - 1)) :
-    leastAt (k + (e + d)) (2 ^ (e + d) * u - 1) < 2 ^ (e + d) * u - 1 := by
-  have hrep := leastAt_le (synchronized_drop hu h)
+/-- Padding the shorter odd run still gives a strictly smaller start. -/
+theorem padded_start_lt {d e u : Nat} (hu : 0 < u) (hd : 0 < d) :
+    2 ^ d * (2 ^ e * u - 1) < 2 ^ (e + d) * u - 1 := by
   have hshift : 2 ^ d * (2 ^ e * u - 1) + 2 ^ d = 2 ^ (e + d) * u := by
     calc
       _ = 2 ^ d * ((2 ^ e * u - 1) + 1) := by rw [Nat.mul_add, Nat.mul_one]
@@ -166,6 +177,14 @@ theorem leastAt_lt_of_peak_meet {k d e u : Nat} (hu : 0 < u) (hd : 0 < d)
   have hpow : 2 ≤ 2 ^ d := by
     simpa using Nat.pow_le_pow_right (by decide : 0 < 2) (show 1 ≤ d by omega)
   omega
+
+/-- A positive exponent drop yields a strictly smaller equal-time
+representative, including the cost of the leading halvings. -/
+theorem leastAt_lt_of_peak_meet {k d e u : Nat} (hu : 0 < u) (hd : 0 < d)
+    (h : acceleratedOrbit k (3 ^ (e + d) * u - 1) =
+      acceleratedOrbit k (3 ^ e * u - 1)) :
+    leastAt (k + (e + d)) (2 ^ (e + d) * u - 1) < 2 ^ (e + d) * u - 1 :=
+  Nat.lt_of_le_of_lt (leastAt_le (synchronized_drop hu h)) (padded_start_lt hu hd)
 
 /-- For positive starts, a certified peak meeting transfers reachability
 to the shorter odd-run length. -/

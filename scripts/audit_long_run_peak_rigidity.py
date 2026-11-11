@@ -64,11 +64,11 @@ def safe_run_length(depth):
     return lower_bound
 
 
-def smaller_sources(run, cofactor, suffix):
+def smaller_sources(run, cofactor, suffix, *, lead=0):
     source = 2**run * cofactor - 1
     endpoint, _ = parity_run(source, run + suffix)
     current = {endpoint}
-    for index in range(run + suffix - 1, -1, -1):
+    for index in range(run + suffix - lead - 1, -1, -1):
         following = {2 * value for value in current}
         following.update((2 * value - 1) // 3 for value in current if value % 3 == 2)
         if index <= run:
