@@ -210,3 +210,8 @@ jobs:
         run: |
           lake env lean scripts/audit_faster_peak_mates.lean
           python3 scripts/audit_faster_peak_mates.py
+
+      - name: Check valuation exclusions and odd-prefix meeting compression
+        run: |
+          lake env lean scripts/audit_odd_prefix_valuation.lean
+          python3 scripts/audit_odd_prefix_valuation.py
