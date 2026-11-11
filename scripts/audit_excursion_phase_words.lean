@@ -1,0 +1,11 @@
+import Collatz.Strategy.ExcursionCorridorBoundary
+
+#print axioms Collatz.ExcursionPhaseWords.mem_phaseWords_of_corridor
+#print axioms Collatz.ExcursionPhaseWords.phase_source_certificate
+#print axioms Collatz.ExcursionPhaseWords.phase_word_count
+#print axioms Collatz.ExcursionPhaseWords.phase_source_bound_attained
+#print axioms Collatz.ExcursionPhaseWords.source_large_of_phase_corridor
+#print axioms Collatz.ExcursionPhaseWords.source_sum_large_of_phase_corridor_after_prefix
+#print axioms Collatz.ExcursionPhaseWords.corridor_length_lt_thirty_after_bounded_prefix
+#print axioms Collatz.ExcursionBudget.Trace.first_crossing_failure_cap
+#print axioms Collatz.ExcursionBudget.Trace.first_crossing_failure_no_long_corridor
