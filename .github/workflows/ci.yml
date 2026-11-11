@@ -208,3 +208,8 @@ jobs:
         run: |
           lake env lean scripts/audit_odd_prefix_valuation.lean
           python3 scripts/audit_odd_prefix_valuation.py
+
+      - name: Check dyadic-rational separation and growing even budgets
+        run: |
+          lake env lean scripts/audit_dyadic_rational_defect.lean
+          python3 scripts/audit_dyadic_rational_defect.py
