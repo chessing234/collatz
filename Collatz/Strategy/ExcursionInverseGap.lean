@@ -25,6 +25,36 @@ private theorem boundary_landing_comparison :
       300 * (floorValue + landingAllowance) * 2 ^ 114208327604 :=
   strict_upper_comparison 3 72057431991 192 _ _ 114208327604 (by decide +kernel)
 
+/-- A scaled affine upper bound transfers a strict comparison at
+the floor to every larger source. -/
+theorem landing_lt_add_of_scaled_affine {n e A B J K N M : Nat}
+    (hAB : A ≤ B) (hlarge : N ≤ n)
+    (hnormalize : K * (B * e) ≤ (K * n + J) * A)
+    (hcomp : (K * N + J) * A < K * (N + M) * B) : e < n + M := by
+  let d := n - N
+  have hd : N + d = n := Nat.add_sub_of_le hlarge
+  apply Nat.lt_of_mul_lt_mul_left (a := K * B)
+  calc
+    _ = K * (B * e) := by ac_rfl
+    _ ≤ (K * n + J) * A := hnormalize
+    _ = (K * N + J) * A + K * d * A := by
+      rw [← hd, Nat.mul_add, Nat.add_right_comm, Nat.add_mul]
+    _ < K * (N + M) * B + K * d * B :=
+      Nat.add_lt_add_of_lt_of_le hcomp (Nat.mul_le_mul_left _ hAB)
+    _ = (K * B) * (N + M) + (K * B) * d := by
+      rw [Nat.mul_right_comm K (N + M) B, Nat.mul_right_comm K d B]
+    _ = (K * B) * (n + M) := by
+      rw [← Nat.mul_add, Nat.add_right_comm N M, hd]
+
+/-- A scaled offset charge gives the corresponding affine upper bound. -/
+theorem Trace.scaled_affine_upper {n e J K : Nat} {rs : List Run} (h : Trace n e rs)
+    (hcharge : K * offset rs ≤ J * 3 ^ oddCount rs) :
+    K * (2 ^ time rs * e) ≤ (K * n + J) * 3 ^ oddCount rs := by
+  rw [← h.affine, Nat.mul_add, Nat.add_mul]
+  rw [show K * (3 ^ oddCount rs * n) = (K * n) * 3 ^ oddCount rs by ac_rfl]
+  exact Nat.add_le_add_left hcharge _
+
+set_option maxRecDepth 4096 in
 /-- The positive offset and the mandatory coefficient loss together
 bound the difference between the landing and the source. -/
 theorem Trace.landing_lt_source_add_of_boundary_pair {n e : Nat} {rs : List Run}
@@ -32,32 +62,10 @@ theorem Trace.landing_lt_source_add_of_boundary_pair {n e : Nat} {rs : List Run}
     (hcross : 3 ^ oddCount rs < 2 ^ time rs) (hlarge : 2 ^ 71 ≤ n)
     (ha : oddCount rs = 72057431991) (hb : time rs = 114208327604) :
     e < n + 6443285299 := by
-  let A := 3 ^ oddCount rs
-  let B := 2 ^ time rs
-  let J := 81 * oddCount rs + 24
-  let d := n - floorValue
-  have hd : floorValue + d = n := Nat.add_sub_of_le hlarge
-  have hcomp : (300 * floorValue + J) * A < 300 * (floorValue + landingAllowance) * B := by
-    simpa only [A, B, J, ha, hb] using boundary_landing_comparison
-  have hnormalize : 300 * (B * e) ≤ (300 * n + J) * A := by
-    rw [← h.affine, Nat.mul_add, Nat.add_mul]
-    have hcharge : 300 * offset rs ≤ J * A := h.offset_le_credited_odd hproper
-    have hterm : 300 * (A * n) = (300 * n) * A := by ac_rfl
-    rw [hterm]
-    exact Nat.add_le_add_left hcharge _
-  change e < n + landingAllowance
-  apply Nat.lt_of_mul_lt_mul_left (a := 300 * B)
-  calc
-    _ = 300 * (B * e) := by ac_rfl
-    _ ≤ (300 * n + J) * A := hnormalize
-    _ = (300 * floorValue + J) * A + 300 * d * A := by
-      rw [← hd, Nat.mul_add, Nat.add_right_comm, Nat.add_mul]
-    _ < 300 * (floorValue + landingAllowance) * B + 300 * d * B :=
-      Nat.add_lt_add_of_lt_of_le hcomp (Nat.mul_le_mul_left _ (Nat.le_of_lt hcross))
-    _ = (300 * B) * (floorValue + landingAllowance) + (300 * B) * d := by
-      rw [Nat.mul_right_comm 300 (floorValue + landingAllowance) B, Nat.mul_right_comm 300 d B]
-    _ = (300 * B) * (n + landingAllowance) := by
-      rw [← Nat.mul_add, Nat.add_right_comm floorValue landingAllowance, hd]
+  have hnormalize := h.scaled_affine_upper (h.offset_le_credited_odd hproper)
+  apply landing_lt_add_of_scaled_affine (N := floorValue) (M := landingAllowance)
+    (Nat.le_of_lt hcross) hlarge hnormalize
+  simpa only [ha, hb] using boundary_landing_comparison
 
 private theorem inverse_upper : (3 : Nat) ^ 137528045312 < 2 ^ 217976794617 := by
   simpa only [Nat.one_mul] using
