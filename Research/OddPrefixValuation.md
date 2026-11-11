@@ -35,3 +35,27 @@ bounded-even ternary separation confines all even steps to
 the first \(s+3e-3\) positions when \(e>0\). Both remaining
 tails are all odd, so canceling their common affine multiplier
 pulls back the equality.
+
+## A sharp lower bound on even steps
+
+Any smaller source joining the odd prefix of a multiple of
+three has at least three even steps. With at most two even
+steps, write the nonzero defect as \(3^t q\), with \(3\nmid q\).
+Its leading ternary digit satisfies
+\(q\equiv2^{j-t-1}\pmod3\), where \(j\) is the path length.
+This follows by locating the last two even steps. If they
+are consecutive, their terms contribute one extra factor of
+three. Otherwise the later even step alone determines the
+leading digit.
+
+An odd-prefix meeting of a multiple of three instead requires
+\(t=i\) and \(q\equiv2^{j-i}\pmod3\). These two digit
+conditions are incompatible. Combining the compulsory three
+even steps with the valuation exclusion shows that
+\(3^t\mid n\), \(t>0\), forces overhead at least \(t+4\).
+
+Three even steps are attained on the entire progression
+\(n=1458t+273\), with smaller source \(m=1024t+191\).
+The exact identity is \(T^{10}(m)=T(n)\), and the competing
+path has seven odd and three even steps. Both the lower bound
+and this affine family are checked by Lean.

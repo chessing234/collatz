@@ -330,6 +330,7 @@ import Collatz.Strategy.PeakDropChains
 import Collatz.Strategy.UnequalPeakDepth
 import Collatz.Strategy.FasterPeakMates
 import Collatz.Strategy.OddPrefixValuation
+import Collatz.Strategy.TwoEvenMeeting
 import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionMod32
 import Collatz.Strategy.ExcursionSevenMod32
