@@ -91,6 +91,11 @@ jobs:
           python3 scripts/audit_beatty_phase.py
           lake env lean scripts/audit_beatty_phase.lean
 
+      - name: Check the exceptional exponent cone
+        run: |
+          python3 scripts/audit_excursion_boundary_cone.py
+          lake env lean scripts/audit_excursion_boundary_cone.lean
+
       - name: Check coefficient crossing and interval transfer
         run: python3 scripts/audit_coefficient_descent.py
 

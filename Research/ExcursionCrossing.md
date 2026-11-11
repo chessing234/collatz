@@ -702,6 +702,19 @@ use the same explicit first-crossing and source-floor hypotheses.
 [Lean](../Collatz/Strategy/ExcursionBeattyCrossing.lean)
 [Independent phase and rational audit](../scripts/audit_beatty_phase.py)
 
+The phase charge also extends the exponent classification. Above
+`2^71`, a failed first excursion crossing with fewer than
+325 billion odd steps has exponents
+
+`(a,b) = u(72057431991,114208327604) + v(137528045312,217976794617)`
+
+for nonnegative integers `u,v` with `u+v>0`. The horizon admits
+exactly eight such pairs. The proof first uses determinant-one
+coordinates in a wider cone, then an exact power comparison removes
+the coefficients that would expand in the forward direction.
+[Lean](../Collatz/Strategy/ExcursionBoundaryCone.lean)
+[Rational and lattice audit](../scripts/audit_excursion_boundary_cone.py)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks
