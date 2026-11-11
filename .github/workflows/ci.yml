@@ -96,6 +96,11 @@ jobs:
           python3 scripts/audit_excursion_boundary_cone.py
           lake env lean scripts/audit_excursion_boundary_cone.lean
 
+      - name: Check phase-uniform corridor source bounds
+        run: |
+          python3 scripts/audit_excursion_phase_words.py
+          lake env lean scripts/audit_excursion_phase_words.lean
+
       - name: Check coefficient crossing and interval transfer
         run: python3 scripts/audit_coefficient_descent.py
 
