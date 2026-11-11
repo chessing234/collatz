@@ -362,6 +362,7 @@ import Collatz.Strategy.ExcursionBalancedBarrier
 import Collatz.Strategy.ExcursionRealization
 import Collatz.Strategy.ExcursionCanonicalArithmetic
 import Collatz.Strategy.ExcursionInverseGap
+import Collatz.Strategy.ExcursionFiniteHorizon
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit
