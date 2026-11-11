@@ -241,4 +241,102 @@ theorem compress_meeting_during_run {i s n m : Nat} (hodd : OddRun n i)
     (hmShift.symm.trans hnShift)
   exact Nat.add_right_cancel heq
 
+/-- Ternary precision at a fixed original prefix is bounded by its
+length and the competing even count. -/
+theorem valuation_le_two_prefix_add_two_evens {i s t n m : Nat} (hodd : OddRun n i)
+    (hdiv : 3 ^ t ∣ n) (hsmall : m < n)
+    (hmeet : acceleratedOrbit (i + s) m = acceleratedOrbit i n) :
+    t ≤ 2 * i + 2 * (i + s - oddCount m (i + s)) := by
+  let j := i + s
+  let a := oddCount m j
+  let e := j - a
+  have ha : i + t < a := by
+    apply Nat.lt_of_not_ge
+    intro hbad
+    apply excess_odd_steps_exceed_valuation hodd hsmall hmeet
+    exact Nat.dvd_trans (Nat.pow_dvd_pow 3 (by dsimp only [a, j] at hbad; omega)) hdiv
+  have hsource := RunAlgebra.shifted_affine_exact m j
+  have htarget := RunAlgebra.shifted_affine_exact n i
+  rw [TwoRunOrder.oddCount_oddRun hodd, BoundedEvenDefect.runA_zero_of_full_oddCount
+    (TwoRunOrder.oddCount_oddRun hodd)] at htarget
+  simp only [Nat.add_zero] at htarget
+  change 2 ^ j * (acceleratedOrbit j m + 1) = 3 ^ a * (m + 1) + RunAlgebra.runA j m at hsource
+  rw [show acceleratedOrbit j m = acceleratedOrbit i n from hmeet] at hsource
+  have hbalance : (2 ^ j * 3 ^ i) * (n + 1) =
+      2 ^ i * (3 ^ a * (m + 1) + RunAlgebra.runA j m) := by
+    calc
+      _ = 2 ^ j * (2 ^ i * (acceleratedOrbit i n + 1)) := by rw [htarget]; ac_rfl
+      _ = 2 ^ i * (2 ^ j * (acceleratedOrbit i n + 1)) := by ac_rfl
+      _ = _ := by rw [hsource]
+  have hbalanceInt := congrArg (fun n : Nat => (n : Int)) hbalance
+  simp only [Int.natCast_mul, Int.natCast_add, Int.natCast_pow,
+    show ((2 : Nat) : Int) = 2 by rfl, show ((3 : Nat) : Int) = 3 by rfl,
+    show ((1 : Nat) : Int) = 1 by rfl] at hbalanceInt
+  have heq : (2 : Int) ^ j * (3 : Int) ^ i - (2 : Int) ^ i * (RunAlgebra.runA j m : Int) =
+      (2 : Int) ^ i * ((3 : Int) ^ a * ((m : Int) + 1)) -
+        ((2 : Int) ^ j * (3 : Int) ^ i) * (n : Int) := by
+    simp only [Int.mul_add, Int.mul_one] at hbalanceInt ⊢
+    omega
+  have hfirst : (3 : Int) ^ (i + t) ∣
+      (2 : Int) ^ i * ((3 : Int) ^ a * ((m : Int) + 1)) := by
+    have hpow : (3 : Int) ^ (i + t) ∣ (3 : Int) ^ a := by
+      simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
+        (Int.ofNat_dvd.mpr (Nat.pow_dvd_pow 3 (Nat.le_of_lt ha)))
+    exact Int.dvd_trans hpow (by refine ⟨(2 : Int) ^ i * ((m : Int) + 1), ?_⟩; ac_rfl)
+  have hsecond : (3 : Int) ^ (i + t) ∣
+      ((2 : Int) ^ j * (3 : Int) ^ i) * (n : Int) := by
+    have hd : (3 : Int) ^ t ∣ (n : Int) := by
+      simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using Int.ofNat_dvd.mpr hdiv
+    obtain ⟨q, hq⟩ := hd
+    rw [hq, Int.pow_add]
+    exact ⟨(2 : Int) ^ j * q, by ac_rfl⟩
+  have hcomp : (3 : Int) ^ (i + t) ∣
+      (2 : Int) ^ j * (3 : Int) ^ i - (2 : Int) ^ i * (RunAlgebra.runA j m : Int) := by
+    rw [heq]
+    exact Int.dvd_sub hfirst hsecond
+  apply Nat.le_of_not_gt
+  intro hbad
+  have hc := AffineExact.oddCount_le_self m j
+  apply BoundedEvenDefect.avoids_odd_run_ratio e i m j (by dsimp only [e, a]; omega)
+  have hprec : 2 * e + 3 * i + 1 ≤ i + t := by dsimp only [e, a, j]; omega
+  have hp : (3 : Int) ^ (2 * e + 3 * i + 1) ∣ 3 ^ (i + t) := by
+    simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
+      Int.ofNat_dvd.mpr (Nat.pow_dvd_pow 3 hprec)
+  exact Int.dvd_trans hp hcomp
+
+/-- After pulling the meeting back, its necessary even count grows
+linearly with every ternary power dividing the original start. -/
+theorem valuation_le_compressed_even_budget {i s t n m : Nat} (hodd : OddRun n i)
+    (hdiv : 3 ^ t ∣ n) (hsmall : m < n)
+    (hmeet : acceleratedOrbit (i + s) m = acceleratedOrbit i n) :
+    t ≤ 2 * (3 * (i + s - oddCount m (i + s) - 1)) +
+      2 * (i + s - oddCount m (i + s)) := by
+  let e := i + s - oddCount m (i + s)
+  let L := 3 * (e - 1)
+  change t ≤ 2 * L + 2 * e
+  by_cases hi : i ≤ L
+  · have h := valuation_le_two_prefix_add_two_evens hodd hdiv hsmall hmeet
+    change t ≤ 2 * i + 2 * e at h
+    omega
+  · have hL : L ≤ i := by omega
+    have hcompressed := compress_meeting_during_run hodd hsmall hmeet hL
+    have hmeet' : acceleratedOrbit (L + s) m = acceleratedOrbit L n := by
+      simpa only [Nat.add_comm L s] using hcompressed
+    have hodd' : OddRun n L := fun k hk => hodd k (by omega)
+    have hb := valuation_le_two_prefix_add_two_evens hodd' hdiv hsmall hmeet'
+    have hsplit := AccumulatorArith.oddCount_add m (L + s) (i + s - (L + s))
+    rw [Nat.add_sub_of_le (by omega : L + s ≤ i + s)] at hsplit
+    have hcap := AffineExact.oddCount_le_self (acceleratedOrbit (L + s) m) (i + s - (L + s))
+    dsimp only [e]
+    omega
+
+/-- A positive ternary valuation requires at least its linear
+share of the smaller path's even steps, independently of time. -/
+theorem valuation_add_six_le_eight_evens {i s t n m : Nat} (ht : 0 < t)
+    (hodd : OddRun n i) (hdiv : 3 ^ t ∣ n) (hsmall : m < n)
+    (hmeet : acceleratedOrbit (i + s) m = acceleratedOrbit i n) :
+    t + 6 ≤ 8 * (i + s - oddCount m (i + s)) := by
+  have hb := valuation_le_compressed_even_budget hodd hdiv hsmall hmeet
+  omega
+
 end Collatz.OddPrefixValuation
