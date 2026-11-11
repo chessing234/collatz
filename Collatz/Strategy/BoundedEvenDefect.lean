@@ -218,6 +218,198 @@ theorem avoids_bounded_integer (d B : Nat) {C : Int} (hC : C ≠ 0) (hsize : C.n
       (Nat.pow_le_pow_left (by decide) _) (Nat.pow_le_pow_left (by decide) _)
     _ = _ := by dsimp only [p]; rw [Nat.pow_add, Nat.pow_mul, Nat.pow_mul]
 
+private theorem dyadic_residual {h t N : Nat} (hN : 3 ^ h ≤ N)
+    (hodd : h = 0 ∨ N % 2 = 1) (hdiv : 3 ^ t ∣ N) :
+    ∃ h' M c, 3 ^ h' ≤ M ∧ (h' = 0 ∨ M % 2 = 1) ∧
+      2 ^ (t + 1) * (N / 3 ^ t) = 2 ^ h + 2 ^ c * M ∧
+      2 ^ h = 2 ^ c * 2 ^ h' := by
+  let R := N / 3 ^ t
+  have hNR : 3 ^ t * R = N := Nat.mul_div_cancel' hdiv
+  have hR : 0 < R := by
+    have hpos := Nat.pow_pos (by decide : 0 < 3) (n := h)
+    by_cases hz : R = 0
+    · rw [hz, Nat.mul_zero] at hNR
+      omega
+    · exact Nat.pos_of_ne_zero hz
+  have hheight (ht : t ≤ h) : 3 ^ (h - t) ≤ R := by
+    apply Nat.le_of_mul_le_mul_left (c := 3 ^ t) _ (Nat.pow_pos (by decide))
+    rw [hNR, ← Nat.pow_add, Nat.add_sub_of_le ht]
+    exact hN
+  by_cases hle : h ≤ t + 1
+  · let z := t + 1 - h
+    let M := 2 ^ z * R - 1
+    have hprod : 2 ≤ 2 ^ z * R := by
+      by_cases hz : z = 0
+      · have hht : h = t + 1 := by dsimp only [z] at hz; omega
+        have hr := hheight (by omega : t ≤ h)
+        rw [hht, show t + 1 - t = 1 by omega] at hr
+        simpa only [hz, Nat.pow_zero, Nat.one_mul] using (by omega : 2 ≤ R)
+      · have hp : 2 ≤ 2 ^ z := by
+          simpa using Nat.pow_le_pow_right (by decide : 0 < 2) (show 1 ≤ z by omega)
+        exact Nat.le_trans hp (Nat.le_mul_of_pos_right _ hR)
+    refine ⟨0, M, h, by dsimp only [M]; omega, Or.inl rfl, ?_, by simp⟩
+    have hsplit : 2 ^ (t + 1) = 2 ^ h * 2 ^ z := by
+      rw [← Nat.pow_add, Nat.add_sub_of_le hle]
+    change 2 ^ (t + 1) * R = _
+    rw [hsplit, Nat.mul_assoc]
+    calc
+      _ = 2 ^ h * (1 + M) := by congr 1; dsimp only [M]; omega
+      _ = _ := by rw [Nat.mul_add, Nat.mul_one]
+  · let h' := h - (t + 1)
+    let M := R - 2 ^ h'
+    have hh : 0 < h' := by dsimp only [h']; omega
+    have hr := hheight (by omega : t ≤ h)
+    have he : h - t = h' + 1 := by dsimp only [h']; omega
+    rw [he, Nat.pow_succ'] at hr
+    have htwo : 2 ^ h' ≤ 3 ^ h' := Nat.pow_le_pow_left (by decide) _
+    have hM : 3 ^ h' ≤ M := by dsimp only [M]; omega
+    have hRodd : R % 2 = 1 := by
+      have hnOdd : N % 2 = 1 := hodd.resolve_left (by omega)
+      have hm := congrArg (· % 2) hNR
+      rw [Nat.mul_mod, Arith.three_pow_odd, Nat.one_mul, Nat.mod_mod, hnOdd] at hm
+      exact hm
+    have hMsplit : 2 ^ h' + M = R := by dsimp only [M]; omega
+    have hMeven : 2 ^ h' % 2 = 0 := Nat.mod_eq_zero_of_dvd
+      (Nat.pow_dvd_pow 2 (show 1 ≤ h' by omega))
+    have hModd : M % 2 = 1 := by
+      have hm := congrArg (· % 2) hMsplit
+      rw [Nat.add_mod, hMeven, Nat.zero_add, Nat.mod_mod, hRodd] at hm
+      exact hm
+    have hsplit : 2 ^ h = 2 ^ (t + 1) * 2 ^ h' := by
+      rw [← Nat.pow_add, Nat.add_sub_of_le (by omega : t + 1 ≤ h)]
+    refine ⟨h', M, t + 1, hM, Or.inr hModd, ?_, hsplit⟩
+    change 2 ^ (t + 1) * R = _
+    rw [hsplit, ← Nat.mul_add, hMsplit]
+
+/-- Dyadic rationals with exact denominator 2^h and numerator at
+least 3^h remain separated from bounded-even defects. The residual
+numerator stays above the same threshold at its new denominator. -/
+theorem avoids_dyadic_rational_at_precision (d p h N : Nat) (hN : 3 ^ h ≤ N)
+    (hodd : h = 0 ∨ N % 2 = 1) (hsize : 2 ^ p * (2 ^ d * N) < 3 ^ p) :
+    ∀ x j, j - d ≤ oddCount x j →
+      ¬ (3 : Int) ^ p ∣ (2 : Int) ^ j * (N : Int) - (2 : Int) ^ h * (runA j x : Int) := by
+  induction d generalizing p h N with
+  | zero =>
+    intro x j hcount hdvd
+    have hpos := Nat.pow_pos (by decide : 0 < 3) (n := h)
+    have hprec := integer_precision (C := (N : Int)) (p := p) (by omega) (by
+      change N < 3 ^ p
+      exact Nat.lt_of_le_of_lt (Nat.le_trans (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _))
+        (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _))) hsize)
+    have hfull : oddCount x j = j := Nat.le_antisymm (AffineExact.oddCount_le_self x j) hcount
+    rw [runA_zero_of_full_oddCount hfull, Int.natCast_zero, Int.mul_zero, Int.sub_zero] at hdvd
+    exact hprec (cancel_dyadic hdvd)
+  | succ d ih =>
+    intro x j hcount hdvd
+    have hpos := Nat.pow_pos (by decide : 0 < 3) (n := h)
+    have hprec := integer_precision (C := (N : Int)) (p := p) (by omega) (by
+      change N < 3 ^ p
+      exact Nat.lt_of_le_of_lt (Nat.le_trans (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _))
+        (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _))) hsize)
+    rcases last_even x j with ⟨_, hzero⟩ | ⟨i, t, hlen, ha, hA⟩
+    · rw [hzero, Int.natCast_zero, Int.mul_zero, Int.sub_zero] at hdvd
+      exact hprec (cancel_dyadic hdvd)
+    · have hAint : (runA j x : Int) = (3 : Int) ^ t * ((runA i x : Int) + 2 ^ i) := by
+        simpa only [Int.natCast_mul, Int.natCast_add, Int.natCast_pow,
+          show ((3 : Nat) : Int) = 3 by rfl, show ((2 : Nat) : Int) = 2 by rfl] using
+          congrArg (fun n : Nat => (n : Int)) hA
+      have hNsmall (b : Nat) (hb : b ≤ p) (hbt : b ≤ t) : (3 : Int) ^ b ∣ (N : Int) := by
+        have hdiff := Int.dvd_trans (three_pow_dvd hb) hdvd
+        have hpart : (3 : Int) ^ b ∣ (2 : Int) ^ h * (runA j x : Int) := by
+          rw [hAint, ← Int.mul_assoc, Int.mul_comm (2 ^ h) (3 ^ t), Int.mul_assoc]
+          exact Int.dvd_trans (three_pow_dvd hbt) (Int.dvd_mul_right _ _)
+        exact cancel_dyadic (by simpa only [Int.sub_add_cancel] using Int.dvd_add hdiff hpart)
+      have ht : t < p := by
+        apply Nat.lt_of_not_ge
+        intro hbad
+        exact hprec (hNsmall p (Nat.le_refl _) hbad)
+      have hNt : 3 ^ t ∣ N := by
+        have h := hNsmall t (Nat.le_of_lt ht) (Nat.le_refl _)
+        exact Int.ofNat_dvd.mp (by simpa only [Int.natCast_pow,
+          show ((3 : Nat) : Int) = 3 by rfl] using h)
+      obtain ⟨h', M, c, hM, hModd, hnum, hden⟩ := dyadic_residual hN hodd hNt
+      let R := N / 3 ^ t
+      have hNR : 3 ^ t * R = N := Nat.mul_div_cancel' hNt
+      have hnumInt : (2 : Int) ^ (t + 1) * (R : Int) = 2 ^ h + 2 ^ c * (M : Int) := by
+        simpa only [Int.natCast_mul, Int.natCast_add, Int.natCast_pow,
+          show ((2 : Nat) : Int) = 2 by rfl] using
+          congrArg (fun n : Nat => (n : Int)) hnum
+      have hdenInt : (2 : Int) ^ h = 2 ^ c * 2 ^ h' := by
+        simpa only [Int.natCast_mul, Int.natCast_pow, show ((2 : Nat) : Int) = 2 by rfl] using
+          congrArg (fun n : Nat => (n : Int)) hden
+      have hNRInt : (N : Int) = (3 : Int) ^ t * (R : Int) := by
+        simpa only [Int.natCast_mul, Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
+          congrArg (fun n : Nat => (n : Int)) hNR.symm
+      have hfactor : (2 : Int) ^ j * (N : Int) - (2 : Int) ^ h * (runA j x : Int) =
+          (3 : Int) ^ t * ((2 : Int) ^ c *
+            ((2 : Int) ^ i * (M : Int) - (2 : Int) ^ h' * (runA i x : Int))) := by
+        have htwo : (2 : Int) ^ j = 2 ^ i * 2 ^ (t + 1) := by
+          rw [hlen, Nat.add_assoc, Nat.add_comm 1 t, Int.pow_add]
+        rw [htwo, hNRInt, hAint]
+        calc
+          _ = 3 ^ t * ((2 ^ i * (2 ^ (t + 1) * (R : Int))) -
+              2 ^ h * ((runA i x : Int) + 2 ^ i)) := by
+            rw [Int.mul_sub]
+            congr 1 <;> ac_rfl
+          _ = _ := by
+            congr 1
+            rw [hnumInt, Int.mul_add, Int.mul_add (2 ^ h), Int.mul_sub]
+            have he₁ : (2 : Int) ^ i * (2 ^ c * (M : Int)) = 2 ^ c * (2 ^ i * (M : Int)) := by ac_rfl
+            have he₂ : (2 : Int) ^ h * (runA i x : Int) = 2 ^ c * (2 ^ h' * (runA i x : Int)) := by
+              rw [hdenInt]
+              ac_rfl
+            rw [he₁, he₂, Int.mul_comm (2 ^ i) (2 ^ h)]
+            omega
+      let q := p - t
+      have htp : t + q = p := Nat.add_sub_of_le (Nat.le_of_lt ht)
+      have hqp : q + t = p := Nat.sub_add_cancel (Nat.le_of_lt ht)
+      have hdiv := hdvd
+      conv at hdiv => lhs; rw [← htp, Int.pow_add]
+      rw [hfactor] at hdiv
+      have hpreDiv := cancel_dyadic (Int.dvd_of_mul_dvd_mul_left
+        (Int.ne_of_gt (Int.pow_pos (by decide : (0 : Int) < 3))) hdiv)
+      have hMsize : 3 ^ t * M ≤ (2 * 2 ^ t) * N := by
+        have hsmall : M ≤ 2 ^ (t + 1) * R := by
+          have hle := Nat.le_mul_of_pos_left M (Nat.two_pow_pos c)
+          change 2 ^ (t + 1) * R = 2 ^ h + 2 ^ c * M at hnum
+          omega
+        calc
+          _ ≤ 3 ^ t * (2 ^ (t + 1) * R) := Nat.mul_le_mul_left _ hsmall
+          _ = 2 ^ (t + 1) * N := by rw [Nat.mul_left_comm, hNR]
+          _ = _ := by rw [Nat.pow_succ']
+      have hsize' : 2 ^ q * (2 ^ d * M) < 3 ^ q := by
+        apply Nat.lt_of_mul_lt_mul_left (a := 3 ^ t)
+        calc
+          _ = (2 ^ q * 2 ^ d) * (3 ^ t * M) := by ac_rfl
+          _ ≤ (2 ^ q * 2 ^ d) * ((2 * 2 ^ t) * N) := Nat.mul_le_mul_left _ hMsize
+          _ = 2 ^ p * (2 ^ (d + 1) * N) := by
+            calc
+              _ = (2 ^ q * 2 ^ t) * ((2 ^ d * 2) * N) := by ac_rfl
+              _ = _ := by rw [← Nat.pow_add, hqp, ← Nat.pow_succ]
+          _ < 3 ^ p := hsize
+          _ = 3 ^ t * 3 ^ q := by rw [← Nat.pow_add, htp]
+      exact ih q h' M hM hModd hsize' x i (by omega) hpreDiv
+
+/-- The multiplier of an odd run has an explicit separation
+precision, linear in its length and the competing even budget. -/
+theorem avoids_odd_run_ratio (d h : Nat) :
+    ∀ x j, j - d ≤ oddCount x j →
+      ¬ (3 : Int) ^ (2 * d + 3 * h + 1) ∣
+        (2 : Int) ^ j * (3 : Int) ^ h - (2 : Int) ^ h * (runA j x : Int) := by
+  apply avoids_dyadic_rational_at_precision d (2 * d + 3 * h + 1) h (3 ^ h)
+    (Nat.le_refl _) (Or.inr (Arith.three_pow_odd h))
+  let q := d + h
+  have hbase : 2 ^ (3 * q + 1) < 3 ^ (2 * q + 1) := by
+    rw [Nat.pow_add 2, Nat.pow_add 3, Nat.pow_mul 2, Nat.pow_mul 3]
+    change 8 ^ q * 2 < 9 ^ q * 3
+    exact Nat.lt_of_lt_of_le
+      (Nat.mul_lt_mul_of_pos_left (by decide : 2 < 3) (Nat.pow_pos (by decide)))
+      (Nat.mul_le_mul_right _ (Nat.pow_le_pow_left (by decide) q))
+  rw [← Nat.mul_assoc, ← Nat.pow_add]
+  rw [show 2 * d + 3 * h + 1 + d = 3 * q + 1 by dsimp only [q]; omega,
+    show 2 * d + 3 * h + 1 = (2 * q + 1) + h by dsimp only [q]; omega, Nat.pow_add 3]
+  exact Nat.mul_lt_mul_of_pos_right hbase (Nat.pow_pos (by decide))
+
 /-- For every nonzero integer, a fixed precision works for all orbit
 segments with the same even-step budget. -/
 theorem avoids_nonzero_integer (d : Nat) (C : Int) (hC : C ≠ 0) :
