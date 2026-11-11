@@ -81,6 +81,11 @@ jobs:
           python3 scripts/audit_excursion_inverse_gap.py
           lake env lean scripts/audit_excursion_inverse_gap.lean
 
+      - name: Check Beatty transfer to first coefficient crossings
+        run: |
+          python3 scripts/audit_first_light_beatty.py
+          lake env lean scripts/audit_first_light_beatty.lean
+
       - name: Check coefficient crossing and interval transfer
         run: python3 scripts/audit_coefficient_descent.py
 

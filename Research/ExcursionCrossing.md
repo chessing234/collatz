@@ -643,6 +643,24 @@ from 165 to 167 and confirms that its proper prefixes
 disqualify it as a first-crossing failure.
 [Rozier and Terracol](https://arxiv.org/pdf/2502.00948)
 
+## A kernel-certified first-crossing horizon
+
+The heavy proper prefixes bound the accumulator by the existing
+Beatty ceiling `Bcap`. A Beatty gap certificate bounds every
+potential failure's starting value. The existing block descent
+certificates retain a descent time of at most 224 through the
+required finite range, so the first coefficient crossing is
+within the previously certified 256-step horizon there.
+
+This transfer proves that every first coefficient crossing with
+fewer than 8,951 odd steps is an actual descent, for every source
+greater than one. It also proves the time-indexed horizon 14,186
+and endpoint descent at every first excursion crossing with the
+same odd-count bound. These statements use kernel-checked
+repository certificates throughout.
+[Lean](../Collatz/Strategy/ExcursionFiniteHorizon.lean)
+[Independent finite audit](../scripts/audit_first_light_beatty.py)
+
 ## Inverse contraction at the exceptional landing
 
 At the exceptional exponent pair, the mandatory coefficient loss and
