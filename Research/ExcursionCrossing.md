@@ -685,6 +685,23 @@ admit the inverse words `[2,1]` and `[2,2,1,1]` respectively.
 [Lean proof](../Collatz/Strategy/ExcursionInverseGap.lean)
 [Independent rational audit](../scripts/audit_excursion_inverse_gap.py)
 
+The first-light accumulator also gives a stronger excursion charge.
+Its normalized Beatty sum is bounded blockwise, uniformly over the
+initial phase. A grid with denominator 512 bounds the carry choices
+in every 53-step block. The kernel checks all 513 buckets and the
+53 possible tails. Iterating the block inequality proves
+
+`10000 C ≤ (2431 a + 1500) 3^a`.
+
+At the exceptional pair, this reduces the forward allowance to
+`e < n + 4504940378` and gives the sharper cap
+`e < 3178644722122268046850`. For a least counterexample above
+`2^71`, every valid inverse word at this landing with fewer than
+`615582794569` odd steps has slope at least one. These improvements
+use the same explicit first-crossing and source-floor hypotheses.
+[Lean](../Collatz/Strategy/ExcursionBeattyCrossing.lean)
+[Independent phase and rational audit](../scripts/audit_beatty_phase.py)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks

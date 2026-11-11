@@ -1,0 +1,11 @@
+import Collatz.Strategy.ExcursionBeattyCrossing
+
+#print axioms Collatz.BeattyPhaseCertificate.bucket_certificate
+#print axioms Collatz.BeattyPhaseCertificate.tail_certificate
+#print axioms Collatz.BeattyPhaseBound.beatty_charge
+#print axioms Collatz.ExcursionBudget.Trace.offset_le_beatty_of_first_crossing
+#print axioms Collatz.ExcursionBudget.Trace.offset_le_phase_charge
+#print axioms Collatz.ExcursionBudget.Trace.landing_lt_source_add_of_phase_charge
+#print axioms Collatz.ExcursionBudget.Trace.landing_lt_cap_of_phase_charge
+#print axioms Collatz.ExcursionBudget.inverse_gap_at_phase_boundary
+#print axioms Collatz.ExcursionBudget.Trace.no_inverse_contraction_of_phase_boundary
