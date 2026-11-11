@@ -363,6 +363,7 @@ import Collatz.Strategy.ExcursionRealization
 import Collatz.Strategy.ExcursionCanonicalArithmetic
 import Collatz.Strategy.ExcursionInverseGap
 import Collatz.Strategy.ExcursionFiniteHorizon
+import Collatz.Strategy.ExcursionBeattyCrossing
 import Collatz.Strategy.ExcursionLTE
 import Collatz.Strategy.ExcursionOddLight
 import Collatz.Strategy.ExcursionExit
