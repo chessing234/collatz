@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import Collatz.Strategy.ExcursionData
-=======
 import Collatz.Strategy.ExcursionMap
->>>>>>> origin/main
 
 /-!
 # Weighted descent at an excursion crossing
@@ -26,13 +22,8 @@ structure Run where
 /-- Runs are stored in reverse chronological order to expose the last run. -/
 inductive Trace (n : Nat) : Nat → List Run → Prop where
   | nil : Trace n n []
-<<<<<<< HEAD
-  | step {x y v u W : Nat} {prior : List Run} :
-      Trace n x prior → IsExcursion x v u W y → Trace n y (⟨v, W⟩ :: prior)
-=======
   | step {x y v u W : Nat} {rs : List Run} :
       Trace n x rs → IsExcursion x v u W y → Trace n y (⟨v, W⟩ :: rs)
->>>>>>> origin/main
 
 def oddCount : List Run → Nat
   | [] => 0
@@ -80,11 +71,7 @@ theorem Trace.affine {n e : Nat} {rs : List Run} (h : Trace n e rs) :
         rw [ih, Nat.mul_left_comm (3 ^ v), ← Nat.mul_add]
       _ = _ := by
         rw [hstep]
-<<<<<<< HEAD
-        simp [time, Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
-=======
         simp [time, Nat.pow_add, Nat.mul_assoc, Nat.mul_comm]
->>>>>>> origin/main
 
 theorem Trace.landing {n e : Nat} {rs : List Run} (h : Trace n e rs) :
     Collatz.acceleratedOrbit (time rs) n = e := by
@@ -113,8 +100,6 @@ theorem offset_le_weight {p d scale : Nat} {charge : Nat → Nat}
         simp [oddCount, weight, Nat.pow_add, Nat.mul_add, Nat.mul_assoc, Nat.mul_comm,
           Nat.mul_left_comm, Nat.add_comm]
 
-<<<<<<< HEAD
-=======
 private theorem weight_ones (rs : List Run) : weight (fun _ => 1) rs = rs.length := by
   induction rs with
   | nil => rfl
@@ -129,7 +114,6 @@ theorem offset_le_length_mul_coefficient {rs : List Run} (h : ProperPrefixBound 
   simpa only [Nat.one_mul, weight_ones] using
     offset_le_weight (charge := fun _ => 1) hcharge h
 
->>>>>>> origin/main
 /-- If the weighted error fits in the slope gap, the crossing gives a descent. -/
 theorem drop_of_weighted_crossing {p d scale n e : Nat} {rs : List Run}
     {charge : Nat → Nat} (h : Trace n e rs) (hn : 0 < n) (hs : 0 < scale)
@@ -139,18 +123,10 @@ theorem drop_of_weighted_crossing {p d scale n e : Nat} {rs : List Run}
   have hbound := offset_le_weight hcharge hp
   have hlt : (d * scale * 2 ^ time rs) * e < (d * scale * 2 ^ time rs) * n := by
     calc
-<<<<<<< HEAD
-      _ = 3 ^ oddCount rs * (d * scale * n) + d * scale * offset rs := by
-        calc
-          _ = d * scale * (2 ^ time rs * e) := by ac_rfl
-          _ = d * scale * (3 ^ oddCount rs * n + offset rs) := by rw [h.affine]
-          _ = _ := by rw [Nat.mul_add]; ac_rfl
-=======
       _ = (d * scale) * (2 ^ time rs * e) := Nat.mul_assoc ..
       _ = 3 ^ oddCount rs * (d * scale * n) + d * scale * offset rs := by
         rw [← h.affine, Nat.mul_add]
         ac_rfl
->>>>>>> origin/main
       _ ≤ 3 ^ oddCount rs * (d * scale * n + p * weight charge rs) := by
         rw [Nat.mul_add, Nat.mul_left_comm (3 ^ oddCount rs) p]
         exact Nat.add_le_add_left hbound _
@@ -183,8 +159,6 @@ theorem drop_of_first_half {n e : Nat} {rs : List Run}
     (hbudget : 2 * weight ninths rs ≤ 9 * n) : e < n :=
   drop_of_weighted_crossing h hn (by decide) ninths_bound hp (by simpa using hcross) (by omega)
 
-<<<<<<< HEAD
-=======
 /-- For a fixed ratio, every prefix stays on its initial side as long as
 the orbit stays above its starting value and the total charge fits. -/
 theorem prefix_bound_of_no_drop {p d scale n e : Nat} {rs : List Run}
@@ -235,5 +209,4 @@ theorem slope_bound_of_no_drop {n e : Nat} {rs : List Run}
   · rw [Nat.sub_eq_zero_of_le (Nat.le_of_not_ge hcost), Nat.zero_mul]
     exact Nat.zero_le _
 
->>>>>>> origin/main
 end Collatz.ExcursionBudget

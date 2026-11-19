@@ -406,7 +406,7 @@ import Collatz.Strategy.ExcursionLandOneNext
 import Collatz.Strategy.ExcursionLyapunov
 import Collatz.Strategy.ExcursionTelescope
 import Collatz.Strategy.ExcursionHeavy
-import Collatz.Strategy.ExcursionPowerGap
+import Collatz.Strategy.ContractingExcursion
 import Collatz.Strategy.ExcursionCharge
 import Collatz.Strategy.SyracuseWordSieve
 import Collatz.Strategy.ExcursionChain
