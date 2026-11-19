@@ -1,3 +1,4 @@
+import Collatz.Strategy.ExcursionData
 import Collatz.Strategy.LiftExponent
 import Collatz.Structure.RunDescent
 import Collatz.Strategy.NeverDrops
@@ -61,17 +62,6 @@ open Collatz.NeverDrops
 
 
 /-! ## 1.  The excursion datum -/
-
-/-- One complete excursion from an odd start: maximal odd run of length `v`,
-then exactly `W` halvings, landing on the odd state `e`.
-
-The last equation is `3^v u = 2^W e + 1`, i.e. `v₂(3^v u − 1) = W` with odd
-cofactor `e`, written without truncated subtraction. -/
-def IsExcursion (n v u W e : Nat) : Prop :=
-  n % 2 = 1 ∧ u % 2 = 1 ∧ e % 2 = 1 ∧
-  0 < v ∧ 0 < W ∧
-  n + 1 = 2 ^ v * u ∧
-  3 ^ v * u = 2 ^ W * e + 1
 
 /-- Extra halvings actually occur: this is the even branch. -/
 theorem IsExcursion.one_le_W {n v u W e : Nat} (h : IsExcursion n v u W e) : 1 ≤ W :=
@@ -211,22 +201,6 @@ theorem peak_eq {n v u W e : Nat} (h : IsExcursion n v u W e) :
   have hquot := oddRun_value_quot hrun h.2.2.2.2.2.1
   have hge := three_pow_u_ge_two h.2.2.2.1 h.2.1
   omega
-
-/-- **The landing is an accelerated iterate.**  After `v + W` accelerated
-steps the state is exactly the next odd number of the excursion. -/
-theorem landing_eq {n v u W e : Nat} (h : IsExcursion n v u W e) :
-    acceleratedOrbit (v + W) n = e := by
-  have hpeak := peak_eq h
-  have hy : acceleratedOrbit v n = 2 ^ W * e := by
-    rw [hpeak, h.2.2.2.2.2.2, Nat.add_sub_cancel]
-  have heven := even_orbit_of_val2 h.2.2.1 hy
-  have hchain := halving_chain W (acceleratedOrbit v n) heven
-  have hshift : acceleratedOrbit W (acceleratedOrbit v n) = acceleratedOrbit (v + W) n := by
-    rw [acceleratedOrbit_add, Nat.add_comm]
-  rw [hshift] at hchain
-  have : 2 ^ W * acceleratedOrbit (v + W) n = 2 ^ W * e := by
-    rw [hchain, hy]
-  exact Nat.eq_of_mul_eq_mul_left (two_pow_pos W) this
 
 /-- A one-step excursion. -/
 def NextOdd (n e : Nat) : Prop := ∃ v u W : Nat, IsExcursion n v u W e

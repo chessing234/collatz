@@ -1,4 +1,5 @@
 import Collatz.Strategy.ExcursionEleven
+import Collatz.Strategy.ExcursionMod8
 import Collatz.Strategy.ExcursionLandOne
 import Collatz.Strategy.ExcursionLandVal2
 import Collatz.Strategy.ExcursionLandTwo
@@ -16,12 +17,15 @@ case-splitting the first excursion and the two clocks, and leaves a single
 named predicate `OpenRemainder` for the families those theorems do not close:
 
 * the 71 family: `(3, 1)` fuel 5 then `v' = 1`, `W' = 1`;
-* `(2, 1)` remainder 2 with next `v' ≥ 7` or light `W'`;
+* `(2, 1)` remainder 2 with next `v' ≥ 7` whose extra halvings miss
+  `3^{2+v'} < 2^{2+v'+W'}`, or a light `W'`;
 * `(2, 1)` rem 2 with `v' = 6` and `W' ≤ 3`;
 * `(3, 1)` fuel 6 then another `(2, 1)`;
-* `(3, 1)` fuel 7 with next `v' = 4`, `W' ≤ 3`, or `v' ≥ 5`;
+* `(3, 1)` fuel 7 with next `v' = 4`, `W' ≤ 3`, or `v' ≥ 5` missing
+  `3^{3+v'} < 2^{3+v'+W'}`;
 * `(3, 1)` fuel 8 with next `W' = 2`;
-* longer leftover chains (fuel `≥ 9`);
+* longer leftover chains (fuel `≥ 9`) whose third run misses
+  `3^{6+v''} < 2^{7+v''+W''}`;
 * longer `(2, 1)` chains (fuel `7`, `8`, or `≥ 10`);
 * first-excursion `v ≥ 4` with a light halving count,
   `2^W (2^v - 1) < 3^v`, except a next run meeting
@@ -29,7 +33,13 @@ named predicate `OpenRemainder` for the families those theorems do not close:
   `ExcursionTelescope.drop_of_light_then_long`) and, when that second
   run misses the exponent, a third run meeting
   `3^{v+v'+v''} < 2^{v+v'+v''+W+W'+W''−1}` (three-step drop,
-  `ExcursionTelescope.drop_of_short_then_long`).
+  `ExcursionTelescope.drop_of_short_then_long`) and, when that third
+  run also misses, a fourth run meeting
+  `3^{v+v'+v''+v'''} < 2^{v+v'+v''+v'''+W+W'+W''+W'''−1}` (four-step drop,
+  `ExcursionTelescope.drop_of_two_misses_then_long`) and, when that
+  fourth run also misses, a fifth run meeting
+  `3^{v+v'+v''+v'''+v₄} < 2^{v+v'+v''+v'''+v₄+W+W'+W''+W'''+W₄−1}`
+  (five-step drop, `ExcursionTelescope.drop_of_three_misses_then_long`).
   Heavy runs drop in one step (`ExcursionHeavy.drop_of_heavy`).  In
   particular `W ≥ v − ⌊127v/306⌋` is heavy for every `v ≥ 2`.  The
   boundary count `W = ⌈log₂(3^v)⌉ − v` is heavy when that ceiling shares
@@ -49,6 +59,7 @@ open Collatz.ExcursionEleven Collatz.ExcursionLandOne Collatz.ExcursionLand
 open Collatz.ExcursionLandVal2 Collatz.ExcursionLandTwo
 open Collatz.ExcursionRemTwo Collatz.ExcursionRemTwoLeft
 open Collatz.ExcursionLTE Collatz.ExcursionExit Collatz.ExcursionOddLight
+open Collatz.ExcursionMod8
 open Collatz.ExcursionTelescope
 open Collatz.ExcursionHeavy
 
@@ -62,7 +73,7 @@ def OpenRemTwoNext (v' W' : Nat) : Prop :=
   (v' = 4 ∧ W' ≤ 2) ∨
   (v' = 5 ∧ W' ≤ 3) ∨
   (v' = 6 ∧ W' ≤ 3) ∨
-  7 ≤ v'
+  (7 ≤ v' ∧ 2 ^ (2 + v' + W') ≤ 3 ^ (2 + v'))
 
 /-- `(2, 1)` clock remainders not closed by chaining.  Fuel `4` is
 `lemmaX_of_eleven_mod_thirtytwo`; fuel `6` is one light then remainder `3`;
@@ -81,9 +92,13 @@ def OpenLeftover (n _u e : Nat) : Prop :=
     ((r = 5 ∧ ∃ u' e' : Nat, IsExcursion e 1 u' 1 e') ∨
      (r = 6 ∧ ∃ u' e' : Nat, IsExcursion e 2 u' 1 e') ∨
      (r = 7 ∧ ∃ v' u' W' e' : Nat,
-        IsExcursion e v' u' W' e' ∧ (v' = 4 ∧ W' ≤ 3 ∨ 5 ≤ v')) ∨
+        IsExcursion e v' u' W' e' ∧
+          (v' = 4 ∧ W' ≤ 3 ∨
+            5 ≤ v' ∧ 2 ^ (3 + v' + W') ≤ 3 ^ (3 + v'))) ∨
      (r = 8 ∧ ∃ u' e' : Nat, IsExcursion e 3 u' 2 e') ∨
-     9 ≤ r)
+     (9 ≤ r ∧ ∃ u' e' v'' u'' W'' e'' : Nat,
+        IsExcursion e 3 u' 1 e' ∧ IsExcursion e' v'' u'' W'' e'' ∧
+          2 ^ (7 + v'' + W'') ≤ 3 ^ (6 + v'')))
 
 /-- **The remaining Lemma X input.**  `n` is here only when the first
 excursion / fuel analysis does not fire an existing lemmaX theorem. -/
@@ -95,7 +110,25 @@ def OpenRemainder (n : Nat) : Prop :=
        ∀ v' u' W' e' : Nat, IsExcursion e v' u' W' e' →
          2 ^ (v + v' + W + W' - 1) ≤ 3 ^ (v + v') ∧
            ∀ v'' u'' W'' e'' : Nat, IsExcursion e' v'' u'' W'' e'' →
-             2 ^ (v + v' + v'' + W + W' + W'' - 1) ≤ 3 ^ (v + v' + v'')))
+             2 ^ (v + v' + v'' + W + W' + W'' - 1) ≤ 3 ^ (v + v' + v'') ∧
+               ∀ v''' u''' W''' e''' : Nat, IsExcursion e'' v''' u''' W''' e''' →
+                 2 ^ (v + v' + v'' + v''' + W + W' + W'' + W''' - 1) ≤
+                   3 ^ (v + v' + v'' + v''') ∧
+                   ∀ v4 u4 W4 e4 : Nat, IsExcursion e''' v4 u4 W4 e4 →
+                     2 ^ (v + v' + v'' + v''' + v4 + W + W' + W'' + W''' + W4 - 1) ≤
+                       3 ^ (v + v' + v'' + v''' + v4) ∧
+                       ∀ v5 u5 W5 e5 : Nat, IsExcursion e4 v5 u5 W5 e5 →
+                         2 ^ (v + v' + v'' + v''' + v4 + v5 + W + W' + W'' +
+                             W''' + W4 + W5 - 1) ≤
+                           3 ^ (v + v' + v'' + v''' + v4 + v5) ∧
+                           ∀ v6 u6 W6 e6 : Nat, IsExcursion e5 v6 u6 W6 e6 →
+                             2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + W + W' +
+                                 W'' + W''' + W4 + W5 + W6 - 1) ≤
+                               3 ^ (v + v' + v'' + v''' + v4 + v5 + v6) ∧
+                               ∀ v7 u7 W7 e7 : Nat, IsExcursion e6 v7 u7 W7 e7 →
+                                 2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + v7 +
+                                     W + W' + W'' + W''' + W4 + W5 + W6 + W7 - 1) ≤
+                                   3 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + v7)))
 
 
 /-! ## 2.  Constructors, so the case-split inhabits the predicate cleanly -/
@@ -114,7 +147,25 @@ theorem open_of_v_ge_four {n v u W e : Nat}
     (hshort : ∀ v' u' W' e' : Nat, IsExcursion e v' u' W' e' →
       2 ^ (v + v' + W + W' - 1) ≤ 3 ^ (v + v') ∧
         ∀ v'' u'' W'' e'' : Nat, IsExcursion e' v'' u'' W'' e'' →
-          2 ^ (v + v' + v'' + W + W' + W'' - 1) ≤ 3 ^ (v + v' + v'')) :
+          2 ^ (v + v' + v'' + W + W' + W'' - 1) ≤ 3 ^ (v + v' + v'') ∧
+            ∀ v''' u''' W''' e''' : Nat, IsExcursion e'' v''' u''' W''' e''' →
+              2 ^ (v + v' + v'' + v''' + W + W' + W'' + W''' - 1) ≤
+                3 ^ (v + v' + v'' + v''') ∧
+                ∀ v4 u4 W4 e4 : Nat, IsExcursion e''' v4 u4 W4 e4 →
+                  2 ^ (v + v' + v'' + v''' + v4 + W + W' + W'' + W''' + W4 - 1) ≤
+                    3 ^ (v + v' + v'' + v''' + v4) ∧
+                    ∀ v5 u5 W5 e5 : Nat, IsExcursion e4 v5 u5 W5 e5 →
+                      2 ^ (v + v' + v'' + v''' + v4 + v5 + W + W' + W'' +
+                          W''' + W4 + W5 - 1) ≤
+                        3 ^ (v + v' + v'' + v''' + v4 + v5) ∧
+                        ∀ v6 u6 W6 e6 : Nat, IsExcursion e5 v6 u6 W6 e6 →
+                          2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + W + W' +
+                              W'' + W''' + W4 + W5 + W6 - 1) ≤
+                            3 ^ (v + v' + v'' + v''' + v4 + v5 + v6) ∧
+                            ∀ v7 u7 W7 e7 : Nat, IsExcursion e6 v7 u7 W7 e7 →
+                              2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + v7 +
+                                  W + W' + W'' + W''' + W4 + W5 + W6 + W7 - 1) ≤
+                                3 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + v7)) :
     OpenRemainder n :=
   ⟨v, u, W, e, h, Or.inr (Or.inr ⟨hv, hlight, hshort⟩)⟩
 
@@ -147,7 +198,8 @@ theorem open_leftover_then_light {n u e u' e' : Nat}
 
 theorem open_leftover_fuel_seven {n u e v' u' W' e' : Nat}
     (hr : Val2 (11 * n + 19) 7) (h' : IsExcursion e v' u' W' e')
-    (hnxt : v' = 4 ∧ W' ≤ 3 ∨ 5 ≤ v') : OpenLeftover n u e :=
+    (hnxt : v' = 4 ∧ W' ≤ 3 ∨
+        5 ≤ v' ∧ 2 ^ (3 + v' + W') ≤ 3 ^ (3 + v')) : OpenLeftover n u e :=
   ⟨7, hr, Or.inr (Or.inr (Or.inl ⟨rfl, v', u', W', e', h', hnxt⟩))⟩
 
 theorem open_leftover_fuel_eight_W_two {n u e u' e' : Nat}
@@ -155,9 +207,12 @@ theorem open_leftover_fuel_eight_W_two {n u e u' e' : Nat}
     OpenLeftover n u e :=
   ⟨8, hr, Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, u', e', h'⟩)))⟩
 
-theorem open_leftover_fuel_long {n u e r : Nat}
-    (hr : Val2 (11 * n + 19) r) (h9 : 9 ≤ r) : OpenLeftover n u e :=
-  ⟨r, hr, Or.inr (Or.inr (Or.inr (Or.inr h9)))⟩
+theorem open_leftover_fuel_long {n u e r u' e' v'' u'' W'' e'' : Nat}
+    (hr : Val2 (11 * n + 19) r) (h9 : 9 ≤ r)
+    (h2 : IsExcursion e 3 u' 1 e') (h3 : IsExcursion e' v'' u'' W'' e'')
+    (hmiss : 2 ^ (7 + v'' + W'') ≤ 3 ^ (6 + v'')) : OpenLeftover n u e :=
+  ⟨r, hr, Or.inr (Or.inr (Or.inr (Or.inr ⟨h9, u', e', v'', u'', W'', e'',
+    h2, h3, hmiss⟩)))⟩
 
 theorem pack_two {n v u W e v' u' W' e' : Nat}
     (h : IsExcursion n v u W e) (h' : IsExcursion e v' u' W' e')
@@ -170,6 +225,85 @@ theorem pack_three {n v u W e v' u' W' e' v'' u'' W'' e'' : Nat}
     ∃ eout : Nat, ExChain n eout ∧ eout < n :=
   ⟨e'', ExChain.cons ⟨v, u, W, h⟩
       (ExChain.cons ⟨v', u', W', h'⟩ (ExChain.one ⟨v'', u'', W'', h''⟩)), hlt⟩
+
+theorem pack_four
+    {n v u W e v' u' W' e' v'' u'' W'' e'' v''' u''' W''' e''' : Nat}
+    (h : IsExcursion n v u W e) (h' : IsExcursion e v' u' W' e')
+    (h'' : IsExcursion e' v'' u'' W'' e'')
+    (h''' : IsExcursion e'' v''' u''' W''' e''') (hlt : e''' < n) :
+    ∃ eout : Nat, ExChain n eout ∧ eout < n :=
+  ⟨e''', ExChain.cons ⟨v, u, W, h⟩
+      (ExChain.cons ⟨v', u', W', h'⟩
+        (ExChain.cons ⟨v'', u'', W'', h''⟩
+          (ExChain.one ⟨v''', u''', W''', h'''⟩))), hlt⟩
+
+theorem pack_five
+    {n v u W e v' u' W' e' v'' u'' W'' e'' v''' u''' W''' e'''
+      v4 u4 W4 e4 : Nat}
+    (h : IsExcursion n v u W e) (h' : IsExcursion e v' u' W' e')
+    (h'' : IsExcursion e' v'' u'' W'' e'')
+    (h''' : IsExcursion e'' v''' u''' W''' e''')
+    (h4 : IsExcursion e''' v4 u4 W4 e4) (hlt : e4 < n) :
+    ∃ eout : Nat, ExChain n eout ∧ eout < n :=
+  ⟨e4, ExChain.cons ⟨v, u, W, h⟩
+      (ExChain.cons ⟨v', u', W', h'⟩
+        (ExChain.cons ⟨v'', u'', W'', h''⟩
+          (ExChain.cons ⟨v''', u''', W''', h'''⟩
+            (ExChain.one ⟨v4, u4, W4, h4⟩)))), hlt⟩
+
+theorem pack_six
+    {n v u W e v' u' W' e' v'' u'' W'' e'' v''' u''' W''' e'''
+      v4 u4 W4 e4 v5 u5 W5 e5 : Nat}
+    (h : IsExcursion n v u W e) (h' : IsExcursion e v' u' W' e')
+    (h'' : IsExcursion e' v'' u'' W'' e'')
+    (h''' : IsExcursion e'' v''' u''' W''' e''')
+    (h4 : IsExcursion e''' v4 u4 W4 e4)
+    (h5 : IsExcursion e4 v5 u5 W5 e5) (hlt : e5 < n) :
+    ∃ eout : Nat, ExChain n eout ∧ eout < n :=
+  ⟨e5, ExChain.cons ⟨v, u, W, h⟩
+      (ExChain.cons ⟨v', u', W', h'⟩
+        (ExChain.cons ⟨v'', u'', W'', h''⟩
+          (ExChain.cons ⟨v''', u''', W''', h'''⟩
+            (ExChain.cons ⟨v4, u4, W4, h4⟩
+              (ExChain.one ⟨v5, u5, W5, h5⟩))))), hlt⟩
+
+theorem pack_seven
+    {n v u W e v' u' W' e' v'' u'' W'' e'' v''' u''' W''' e'''
+      v4 u4 W4 e4 v5 u5 W5 e5 v6 u6 W6 e6 : Nat}
+    (h : IsExcursion n v u W e) (h' : IsExcursion e v' u' W' e')
+    (h'' : IsExcursion e' v'' u'' W'' e'')
+    (h''' : IsExcursion e'' v''' u''' W''' e''')
+    (h4 : IsExcursion e''' v4 u4 W4 e4)
+    (h5 : IsExcursion e4 v5 u5 W5 e5)
+    (h6 : IsExcursion e5 v6 u6 W6 e6) (hlt : e6 < n) :
+    ∃ eout : Nat, ExChain n eout ∧ eout < n :=
+  ⟨e6, ExChain.cons ⟨v, u, W, h⟩
+      (ExChain.cons ⟨v', u', W', h'⟩
+        (ExChain.cons ⟨v'', u'', W'', h''⟩
+          (ExChain.cons ⟨v''', u''', W''', h'''⟩
+            (ExChain.cons ⟨v4, u4, W4, h4⟩
+              (ExChain.cons ⟨v5, u5, W5, h5⟩
+                (ExChain.one ⟨v6, u6, W6, h6⟩)))))), hlt⟩
+
+theorem pack_eight
+    {n v u W e v' u' W' e' v'' u'' W'' e'' v''' u''' W''' e'''
+      v4 u4 W4 e4 v5 u5 W5 e5 v6 u6 W6 e6 v7 u7 W7 e7 : Nat}
+    (h : IsExcursion n v u W e) (h' : IsExcursion e v' u' W' e')
+    (h'' : IsExcursion e' v'' u'' W'' e'')
+    (h''' : IsExcursion e'' v''' u''' W''' e''')
+    (h4 : IsExcursion e''' v4 u4 W4 e4)
+    (h5 : IsExcursion e4 v5 u5 W5 e5)
+    (h6 : IsExcursion e5 v6 u6 W6 e6)
+    (h7 : IsExcursion e6 v7 u7 W7 e7) (hlt : e7 < n) :
+    ∃ eout : Nat, ExChain n eout ∧ eout < n :=
+  ⟨e7, ExChain.cons ⟨v, u, W, h⟩
+      (ExChain.cons ⟨v', u', W', h'⟩
+        (ExChain.cons ⟨v'', u'', W'', h''⟩
+          (ExChain.cons ⟨v''', u''', W''', h'''⟩
+            (ExChain.cons ⟨v4, u4, W4, h4⟩
+              (ExChain.cons ⟨v5, u5, W5, h5⟩
+                (ExChain.cons ⟨v6, u6, W6, h6⟩
+                  (ExChain.one ⟨v7, u7, W7, h7⟩))))))), hlt⟩
 
 
 /-! ## 3.  Glue lemmas that chain existing theorem statements -/
@@ -300,8 +434,12 @@ theorem drop_or_open_rem_two {n u e v' u' W' e' : Nat}
                 (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, hW3⟩))))))
           · have hlt := lemmaX_of_two_one_then_v_six h h' hWge
             exact pack_two h h' hlt
-        · exact hX (open_of_clock h
-            (open_clock_rem_two hr h' (Or.inr (Or.inr (Or.inr (Or.inr hv7))))))
+        · by_cases hlong : 3 ^ (2 + v') < 2 ^ (2 + v' + W')
+          · exact pack_two h h' (drop_of_W_one_then_long h h' (by omega) hlong)
+          · have hmiss : 2 ^ (2 + v' + W') ≤ 3 ^ (2 + v') := Nat.le_of_not_gt hlong
+            exact hX (open_of_clock h
+              (open_clock_rem_two hr h'
+                (Or.inr (Or.inr (Or.inr (Or.inr ⟨hv7, hmiss⟩))))))
 
 theorem drop_or_open_clock {n u e : Nat}
     (h : IsExcursion n 2 u 1 e) (hn : 1 < n)
@@ -389,7 +527,11 @@ theorem drop_or_open_leftover_seven {n u e : Nat}
         (open_leftover_fuel_seven hr h' (Or.inl ⟨rfl, hW3⟩)))
     · have hlt := lemmaX_of_land_two_v_four h hr2 h' hWge hn
       exact pack_two h h' hlt
-  · exact hX (open_of_leftover h (open_leftover_fuel_seven hr h' (Or.inr hv5)))
+  · by_cases hlong : 3 ^ (3 + v') < 2 ^ (3 + v' + W')
+    · exact pack_two h h' (drop_of_W_one_then_long h h' (by omega) hlong)
+    · have hmiss : 2 ^ (3 + v' + W') ≤ 3 ^ (3 + v') := Nat.le_of_not_gt hlong
+      exact hX (open_of_leftover h
+        (open_leftover_fuel_seven hr h' (Or.inr ⟨hv5, hmiss⟩)))
 
 theorem v_eq_three_of_fifteen_mod_sixteen {e v' u' W' e' : Nat}
     (h' : IsExcursion e v' u' W' e') (h16 : e % 16 = 7) : v' = 3 := by
@@ -424,6 +566,39 @@ theorem drop_or_open_leftover_eight {n u e : Nat}
     have hlt := lemmaX_of_land_two_v_three h hr2 h'3 h3 hn
     exact pack_two h h' hlt
 
+/-- Fuel at least `5` is exactly a `(3, 1)` excursion: `11n + 19` divisible
+by `32` forces `n ≡ 7 (mod 32)`. -/
+theorem three_one_of_fuel {n v u W e r : Nat}
+    (h : IsExcursion n v u W e) (hr : Val2 (11 * n + 19) r) (h5 : 5 ≤ r) :
+    v = 3 ∧ W = 1 := by
+  have h32 : 32 ∣ 11 * n + 19 := by
+    have hdv : 2 ^ 5 ∣ 11 * n + 19 := (Val2.dvd_iff_le hr).mpr h5
+    simpa [show (2 : Nat) ^ 5 = 32 by decide] using hdv
+  have hmul : 32 ∣ 3 * (11 * n + 19) :=
+    Nat.dvd_trans h32 (Nat.dvd_mul_left (11 * n + 19) 3)
+  have h32n : 32 ∣ 32 * (n + 1) := Nat.dvd_mul_right 32 (n + 1)
+  have h25 : 32 ∣ n + 25 := by
+    have hsub : n + 25 = 3 * (11 * n + 19) - 32 * (n + 1) := by
+      have : 3 * (11 * n + 19) = 32 * (n + 1) + (n + 25) := by omega
+      omega
+    rw [hsub]
+    exact Nat.dvd_sub hmul h32n
+  have hmod : n % 32 = 7 := by
+    obtain ⟨k, hk⟩ := h25
+    have hk0 : 0 < k := by
+      have : 0 < n + 25 := by omega
+      omega
+    have hn : n = 7 + 32 * (k - 1) := by omega
+    rw [hn, Nat.add_mul_mod_self_left]
+  have h16 : n % 16 = 7 := by
+    rw [← Nat.mod_mod_of_dvd n (by decide : 16 ∣ 32), hmod]
+  have hv : v = 3 := (v_eq_three_iff h).mpr h16
+  refine ⟨hv, ?_⟩
+  subst hv
+  have hnu : n + 1 = 2 ^ 3 * u := h.2.2.2.2.2.1
+  have hu4 : u % 4 = 1 := by omega
+  exact W_eq_one_of_odd_v_u_one_mod_four h (by decide) hu4
+
 theorem drop_or_open_leftover {n u e : Nat}
     (h : IsExcursion n 3 u 1 e) (hn : 1 < n)
     (hX : OpenRemainder n → ∃ eout : Nat, ExChain n eout ∧ eout < n) :
@@ -445,7 +620,22 @@ theorem drop_or_open_leftover {n u e : Nat}
         rcases Nat.eq_or_lt_of_le h8 with hr8 | hgt8
         · subst hr8
           exact drop_or_open_leftover_eight h hr hn hX
-        · exact hX (open_of_leftover h (open_leftover_fuel_long hr hgt8))
+        · have h9 : 9 ≤ r := by omega
+          have heodd : e % 2 = 1 := h.2.2.1
+          obtain ⟨v', u', W', e', h'⟩ := exists_excursion heodd
+          have hs := val2_landing h hr
+          have h5 : 5 ≤ r - 4 := by omega
+          have ⟨hv', hW'⟩ := three_one_of_fuel h' hs h5
+          have h'31 : IsExcursion e 3 u' 1 e' := hv' ▸ hW' ▸ h'
+          have he'odd : e' % 2 = 1 := h'31.2.2.1
+          obtain ⟨v'', u'', W'', e'', h''⟩ := exists_excursion he'odd
+          by_cases hlong : 3 ^ (6 + v'') < 2 ^ (7 + v'' + W'')
+          · exact pack_three h h'31 h''
+              (drop_of_two_three_one_then_long h h'31 h'' hlong)
+          · have hmiss : 2 ^ (7 + v'' + W'') ≤ 3 ^ (6 + v'') :=
+              Nat.le_of_not_gt hlong
+            exact hX (open_of_leftover h
+              (open_leftover_fuel_long hr h9 h'31 h'' hmiss))
 
 
 /-! ## 6.  First-excursion split, and the reduction -/
@@ -505,26 +695,129 @@ theorem lemmaX_of_not_open {n : Nat} (hn : 1 < n) (hodd : n % 2 = 1)
               2 ^ (v + v' + v'' + W + W' + W'' - 1)
           · exact pack_three h h' h''
               (drop_of_short_then_long h h' h'' hv4' hlight hshort hlong3)
-          · apply hX
-            refine open_of_v_ge_four h hv4' hlight ?_
-            intro va ua Wa ea ha
-            have hva := excursion_v_unique ha h'
-            subst hva
-            have hua := excursion_u_unique ha h'
-            subst hua
-            have hWa := Val2.unique (val2_peak_of ha) (val2_peak_of h')
-            subst hWa
-            have hea := next_odd_unique ha h'
-            subst hea
-            refine And.intro hshort ?_
-            intro vb ub Wb eb hb
-            have hvb := excursion_v_unique hb h''
-            subst hvb
-            have hub := excursion_u_unique hb h''
-            subst hub
-            have hWb := Val2.unique (val2_peak_of hb) (val2_peak_of h'')
-            subst hWb
-            exact Nat.le_of_not_gt fun hlt => hlong3 hlt
+          · have hshort3 : 2 ^ (v + v' + v'' + W + W' + W'' - 1) ≤
+                3 ^ (v + v' + v'') := Nat.le_of_not_gt hlong3
+            have he''odd : e'' % 2 = 1 := h''.2.2.1
+            obtain ⟨v''', u''', W''', e''', h'''⟩ := exists_excursion he''odd
+            by_cases hlong4 : 3 ^ (v + v' + v'' + v''') <
+                2 ^ (v + v' + v'' + v''' + W + W' + W'' + W''' - 1)
+            · exact pack_four h h' h'' h'''
+                (drop_of_two_misses_then_long h h' h'' h''' hv4' hlight hshort
+                  hshort3 hlong4)
+            · have hshort4 : 2 ^ (v + v' + v'' + v''' + W + W' + W'' + W''' - 1) ≤
+                  3 ^ (v + v' + v'' + v''') := Nat.le_of_not_gt hlong4
+              have he'''odd : e''' % 2 = 1 := h'''.2.2.1
+              obtain ⟨v4, u4, W4, e4, h4⟩ := exists_excursion he'''odd
+              by_cases hlong5 : 3 ^ (v + v' + v'' + v''' + v4) <
+                  2 ^ (v + v' + v'' + v''' + v4 + W + W' + W'' + W''' + W4 - 1)
+              · exact pack_five h h' h'' h''' h4
+                  (drop_of_three_misses_then_long h h' h'' h''' h4 hv4' hlight
+                    hshort hshort3 hshort4 hlong5)
+              · have hshort5 :
+                    2 ^ (v + v' + v'' + v''' + v4 + W + W' + W'' + W''' + W4 - 1) ≤
+                      3 ^ (v + v' + v'' + v''' + v4) := Nat.le_of_not_gt hlong5
+                have he4odd : e4 % 2 = 1 := h4.2.2.1
+                obtain ⟨v5, u5, W5, e5, h5⟩ := exists_excursion he4odd
+                by_cases hlong6 : 3 ^ (v + v' + v'' + v''' + v4 + v5) <
+                    2 ^ (v + v' + v'' + v''' + v4 + v5 + W + W' + W'' + W''' +
+                      W4 + W5 - 1)
+                · exact pack_six h h' h'' h''' h4 h5
+                    (drop_of_four_misses_then_long h h' h'' h''' h4 h5 hv4' hlight
+                      hshort hshort3 hshort4 hshort5 hlong6)
+                · have hshort6 : 2 ^ (v + v' + v'' + v''' + v4 + v5 + W + W' +
+                      W'' + W''' + W4 + W5 - 1) ≤
+                      3 ^ (v + v' + v'' + v''' + v4 + v5) := Nat.le_of_not_gt hlong6
+                  have he5odd : e5 % 2 = 1 := h5.2.2.1
+                  obtain ⟨v6, u6, W6, e6, h6⟩ := exists_excursion he5odd
+                  by_cases hlong7 : 3 ^ (v + v' + v'' + v''' + v4 + v5 + v6) <
+                      2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + W + W' + W'' +
+                        W''' + W4 + W5 + W6 - 1)
+                  · exact pack_seven h h' h'' h''' h4 h5 h6
+                      (drop_of_five_misses_then_long h h' h'' h''' h4 h5 h6
+                        hv4' hlight hshort hshort3 hshort4 hshort5 hshort6 hlong7)
+                  · have hshort7 : 2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 +
+                        W + W' + W'' + W''' + W4 + W5 + W6 - 1) ≤
+                        3 ^ (v + v' + v'' + v''' + v4 + v5 + v6) :=
+                      Nat.le_of_not_gt hlong7
+                    have he6odd : e6 % 2 = 1 := h6.2.2.1
+                    obtain ⟨v7, u7, W7, e7, h7⟩ := exists_excursion he6odd
+                    by_cases hlong8 : 3 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + v7) <
+                        2 ^ (v + v' + v'' + v''' + v4 + v5 + v6 + v7 + W + W' +
+                          W'' + W''' + W4 + W5 + W6 + W7 - 1)
+                    · exact pack_eight h h' h'' h''' h4 h5 h6 h7
+                        (drop_of_six_misses_then_long h h' h'' h''' h4 h5 h6 h7
+                          hv4' hlight hshort hshort3 hshort4 hshort5 hshort6
+                          hshort7 hlong8)
+                    · apply hX
+                      refine open_of_v_ge_four h hv4' hlight ?_
+                      intro va ua Wa ea ha
+                      have hva := excursion_v_unique ha h'
+                      subst hva
+                      have hua := excursion_u_unique ha h'
+                      subst hua
+                      have hWa := Val2.unique (val2_peak_of ha) (val2_peak_of h')
+                      subst hWa
+                      have hea := next_odd_unique ha h'
+                      subst hea
+                      refine And.intro hshort ?_
+                      intro vb ub Wb eb hb
+                      have hvb := excursion_v_unique hb h''
+                      subst hvb
+                      have hub := excursion_u_unique hb h''
+                      subst hub
+                      have hWb := Val2.unique (val2_peak_of hb) (val2_peak_of h'')
+                      subst hWb
+                      have heb := next_odd_unique hb h''
+                      subst heb
+                      refine And.intro hshort3 ?_
+                      intro vc uc Wc ec hc
+                      have hvc := excursion_v_unique hc h'''
+                      subst hvc
+                      have huc := excursion_u_unique hc h'''
+                      subst huc
+                      have hWc := Val2.unique (val2_peak_of hc) (val2_peak_of h''')
+                      subst hWc
+                      have hec := next_odd_unique hc h'''
+                      subst hec
+                      refine And.intro hshort4 ?_
+                      intro vd ud Wd ed hd
+                      have hvd := excursion_v_unique hd h4
+                      subst hvd
+                      have hud := excursion_u_unique hd h4
+                      subst hud
+                      have hWd := Val2.unique (val2_peak_of hd) (val2_peak_of h4)
+                      subst hWd
+                      have hed := next_odd_unique hd h4
+                      subst hed
+                      refine And.intro hshort5 ?_
+                      intro ve ue We ee he
+                      have hve := excursion_v_unique he h5
+                      subst hve
+                      have hue := excursion_u_unique he h5
+                      subst hue
+                      have hWe := Val2.unique (val2_peak_of he) (val2_peak_of h5)
+                      subst hWe
+                      have hee := next_odd_unique he h5
+                      subst hee
+                      refine And.intro hshort6 ?_
+                      intro vf uf Wf ef hf
+                      have hvf := excursion_v_unique hf h6
+                      subst hvf
+                      have huf := excursion_u_unique hf h6
+                      subst huf
+                      have hWf := Val2.unique (val2_peak_of hf) (val2_peak_of h6)
+                      subst hWf
+                      have hef := next_odd_unique hf h6
+                      subst hef
+                      refine And.intro hshort7 ?_
+                      intro vg ug Wg eg hg
+                      have hvg := excursion_v_unique hg h7
+                      subst hvg
+                      have hug := excursion_u_unique hg h7
+                      subst hug
+                      have hWg := Val2.unique (val2_peak_of hg) (val2_peak_of h7)
+                      subst hWg
+                      exact Nat.le_of_not_gt fun hlt => hlong8 hlt
       · have hlt := drop_of_heavy h hheavy
         exact ⟨e, ExChain.one ⟨v, u, W, h⟩, hlt⟩
 
@@ -534,7 +827,11 @@ at least four drop in one step when `3^v ≤ 2^W (2^v - 1)`.  A light
 run whose next run meets `3^{v+v'} < 2^{v+v'+W+W'−1}` drops in two steps.
 When that second run misses the exponent and the third meets
 `3^{v+v'+v''} < 2^{v+v'+v''+W+W'+W''−1}`, the start drops in three steps.
-Only the remaining light complement stays in that branch. -/
+When the third also misses and the fourth meets
+`3^{v+v'+v''+v'''} < 2^{v+v'+v''+v'''+W+W'+W''+W'''−1}`, the start drops
+in four steps.  When the fourth also misses and the fifth meets
+`3^{v+v'+v''+v'''+v₄} < 2^{v+v'+v''+v'''+v₄+W+W'+W''+W'''+W₄−1}`, the start
+drops in five steps.  Only the remaining light complement stays in that branch. -/
 theorem collatz_of_open_remainder
     (hX : ∀ n : Nat, 1 < n → n % 2 = 1 → OpenRemainder n →
       ∃ e : Nat, ExChain n e ∧ e < n) :
@@ -739,7 +1036,72 @@ theorem forty_seven_open : OpenRemainder 47 := by
     subst hu''
     have hW'' := Val2.unique (val2_peak_of h'') (val2_peak_of h91)
     subst hW''
-    decide
+    have he'' := next_odd_unique h'' h91
+    subst he''
+    refine And.intro ?_ ?_
+    · decide
+    · intro v''' u''' W''' e''' h'''
+      have h103 : IsExcursion 103 3 13 1 175 :=
+        ⟨rfl, rfl, rfl, by omega, by omega, rfl, rfl⟩
+      have hv''' := excursion_v_unique h''' h103
+      subst hv'''
+      have hu''' := excursion_u_unique h''' h103
+      subst hu'''
+      have hW''' := Val2.unique (val2_peak_of h''') (val2_peak_of h103)
+      subst hW'''
+      have he''' := next_odd_unique h''' h103
+      subst he'''
+      refine And.intro ?_ ?_
+      · decide
+      · intro v4 u4 W4 e4 h4
+        have h175 : IsExcursion 175 4 11 1 445 :=
+          ⟨rfl, rfl, rfl, by omega, by omega, rfl, rfl⟩
+        have hv4 := excursion_v_unique h4 h175
+        subst hv4
+        have hu4 := excursion_u_unique h4 h175
+        subst hu4
+        have hW4 := Val2.unique (val2_peak_of h4) (val2_peak_of h175)
+        subst hW4
+        have he4 := next_odd_unique h4 h175
+        subst he4
+        refine And.intro ?_ ?_
+        · decide
+        · intro v5 u5 W5 e5 h5
+          have h445 : IsExcursion 445 1 223 2 167 :=
+            ⟨rfl, rfl, rfl, by omega, by omega, rfl, rfl⟩
+          have hv5 := excursion_v_unique h5 h445
+          subst hv5
+          have hu5 := excursion_u_unique h5 h445
+          subst hu5
+          have hW5 := Val2.unique (val2_peak_of h5) (val2_peak_of h445)
+          subst hW5
+          have he5 := next_odd_unique h5 h445
+          subst he5
+          refine And.intro ?_ ?_
+          · decide
+          · intro v6 u6 W6 e6 h6
+            have h167 : IsExcursion 167 3 21 1 283 :=
+              ⟨rfl, rfl, rfl, by omega, by omega, rfl, rfl⟩
+            have hv6 := excursion_v_unique h6 h167
+            subst hv6
+            have hu6 := excursion_u_unique h6 h167
+            subst hu6
+            have hW6 := Val2.unique (val2_peak_of h6) (val2_peak_of h167)
+            subst hW6
+            have he6 := next_odd_unique h6 h167
+            subst he6
+            refine And.intro ?_ ?_
+            · decide
+            · intro v7 u7 W7 e7 h7
+              have h283 : IsExcursion 283 2 71 1 319 :=
+                ⟨rfl, rfl, rfl, by omega, by omega, rfl, rfl⟩
+              have hv7 := excursion_v_unique h7 h283
+              subst hv7
+              have hu7 := excursion_u_unique h7 h283
+              subst hu7
+              have hW7 := Val2.unique (val2_peak_of h7) (val2_peak_of h283)
+              subst hW7
+              decide
 
 end ExcursionChain
 end Collatz

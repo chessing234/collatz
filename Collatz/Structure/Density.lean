@@ -90,12 +90,10 @@ theorem accOrbit_two_pow_add (r k : Nat) :
   simp only [Nat.mul_one] at h
   exact h
 
-/-- **The pairing lemma.**  A residue and its shift by the modulus take opposite
-parity steps at time `k`, so their weights sum to three times the common weight
-at level `k`. -/
-theorem weight_pair (r k : Nat) (hr : r < 2 ^ k) :
-    2 ^ oddCount r (k + 1) + 2 ^ oddCount (2 ^ k + r) (k + 1)
-      = 3 * 2 ^ oddCount r k := by
+/-- The two lifts of a residue contribute opposite final parity bits. -/
+theorem oddCount_lift_pair (r k : Nat) (hr : r < 2 ^ k) :
+    (oddCount r (k + 1) = oddCount r k ∧ oddCount (2 ^ k + r) (k + 1) = oddCount r k + 1) ∨
+      (oddCount r (k + 1) = oddCount r k + 1 ∧ oddCount (2 ^ k + r) (k + 1) = oddCount r k) := by
   have hshift : oddCount (2 ^ k + r) k = oddCount r k := oddCount_two_pow_add hr
   have horb : acceleratedOrbit k (2 ^ k + r) = 3 ^ oddCount r k + acceleratedOrbit k r :=
     accOrbit_two_pow_add r k
@@ -104,11 +102,17 @@ theorem weight_pair (r k : Nat) (hr : r < 2 ^ k) :
   have hz : oddCount r k + 0 = oddCount r k := by omega
   rcases Arith.mod_two_eq_zero_or_one (acceleratedOrbit k r) with he | ho
   · have h1 : (3 ^ oddCount r k + acceleratedOrbit k r) % 2 = 1 := by omega
-    rw [he, h1, hz, Arith.two_pow_succ]
-    omega
+    exact Or.inl ⟨by rw [he, hz], by rw [h1]⟩
   · have h1 : (3 ^ oddCount r k + acceleratedOrbit k r) % 2 = 0 := by omega
-    rw [ho, h1, hz, Arith.two_pow_succ]
-    omega
+    exact Or.inr ⟨by rw [ho], by rw [h1, hz]⟩
+
+/-- A residue and its shift by the modulus have weights whose sum is
+three times their common weight at level `k`. -/
+theorem weight_pair (r k : Nat) (hr : r < 2 ^ k) :
+    2 ^ oddCount r (k + 1) + 2 ^ oddCount (2 ^ k + r) (k + 1)
+      = 3 * 2 ^ oddCount r k := by
+  rcases oddCount_lift_pair r k hr with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ <;>
+    rw [h₁, h₂, Arith.two_pow_succ] <;> omega
 
 /-! ## The weight sum -/
 
@@ -135,6 +139,52 @@ theorem weightSum_eq (k : Nat) : weightSum k = 3 ^ k := by
     rw [hcombine, sumRange_const_mul]
     have : sumRange (2 ^ k) (fun r => 2 ^ oddCount r k) = 3 ^ k := ih
     rw [this, ← Arith.three_pow_succ]
+
+private theorem oddCount_le_steps (r k : Nat) : oddCount r k ≤ k := by
+  simpa [oddCount, parityVector] using
+    (List.count_le_length (a := 1) (l := parityVector r k))
+
+private theorem two_base_weight_pair (A B r k : Nat) (hr : r < 2 ^ k) :
+    A ^ oddCount r (k + 1) * B ^ (k + 1 - oddCount r (k + 1)) +
+      A ^ oddCount (2 ^ k + r) (k + 1) * B ^ (k + 1 - oddCount (2 ^ k + r) (k + 1)) =
+      (A + B) * (A ^ oddCount r k * B ^ (k - oddCount r k)) := by
+  have hk := oddCount_le_steps r k
+  have he : k + 1 - oddCount r k = (k - oddCount r k) + 1 := by omega
+  have ho : k + 1 - (oddCount r k + 1) = k - oddCount r k := by omega
+  rcases oddCount_lift_pair r k hr with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ <;>
+    rw [h₁, h₂, he, ho, Nat.pow_succ A, Nat.pow_succ B] <;> grind
+
+/-- The parity moment with a separate weight for each kind of step. -/
+theorem two_base_weight_sum (A B k : Nat) :
+    sumRange (2 ^ k) (fun r => A ^ oddCount r k * B ^ (k - oddCount r k)) = (A + B) ^ k := by
+  induction k with
+  | zero => simp [Congruence.oddCount_zero]
+  | succ k ih =>
+    rw [Arith.two_pow_succ, sumRange_two_mul, ← sumRange_add]
+    rw [sumRange_congr (fun r hr => two_base_weight_pair A B r k hr), sumRange_const_mul,
+      ih, Nat.pow_succ, Nat.mul_comm]
+
+/-- Bound a parity tail by a two-base moment, using the larger weight
+on odd steps. -/
+theorem count_odd_at_least_weighted {A B k c : Nat} (hAB : B ≤ A) :
+    (A ^ c * B ^ (k - c)) * countRange (2 ^ k) (fun r => decide (c ≤ oddCount r k)) ≤ (A + B) ^ k := by
+  have h := mul_countRange_le (w := A ^ c * B ^ (k - c))
+    (p := fun r => decide (c ≤ oddCount r k)) (n := 2 ^ k)
+    (f := fun r => A ^ oddCount r k * B ^ (k - oddCount r k)) (by
+      intro r _ hr
+      let a := oddCount r k
+      have hca : c ≤ a := of_decide_eq_true hr
+      have ha : a ≤ k := oddCount_le_steps r k
+      have he : (a - c) + (k - a) = k - c := by omega
+      have ha' : c + (a - c) = a := by omega
+      change A ^ c * B ^ (k - c) ≤ A ^ a * B ^ (k - a)
+      calc
+        _ = (A ^ c * B ^ (a - c)) * B ^ (k - a) := by rw [← he, Nat.pow_add, Nat.mul_assoc]
+        _ ≤ (A ^ c * A ^ (a - c)) * B ^ (k - a) :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hAB _))
+        _ = _ := by rw [← Nat.pow_add, ha'])
+  rw [two_base_weight_sum] at h
+  exact h
 
 /-! ## Heavy residues -/
 
