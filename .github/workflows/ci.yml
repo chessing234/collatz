@@ -69,6 +69,33 @@ jobs:
           python3 scripts/test_descent_intervals.py
           python3 scripts/audit_descent_intervals.py
 
+      - name: Check weighted excursion crossings
+        run: |
+          python3 scripts/audit_excursion_crossing.py
+          python3 scripts/audit_excursion_switch_floor.py
+          python3 scripts/audit_excursion_shift_grid.py
+          python3 scripts/audit_excursion_anchor.py
+
+      - name: Check inverse gaps at excursion landings
+        run: |
+          python3 scripts/audit_excursion_inverse_gap.py
+          lake env lean scripts/audit_excursion_inverse_gap.lean
+
+      - name: Check Beatty transfer to first coefficient crossings
+        run: |
+          python3 scripts/audit_first_light_beatty.py
+          lake env lean scripts/audit_first_light_beatty.lean
+
+      - name: Check uniform Beatty phase bounds
+        run: |
+          python3 scripts/audit_beatty_phase.py
+          lake env lean scripts/audit_beatty_phase.lean
+
+      - name: Check the exceptional exponent cone
+        run: |
+          python3 scripts/audit_excursion_boundary_cone.py
+          lake env lean scripts/audit_excursion_boundary_cone.lean
+
       - name: Check coefficient crossing and interval transfer
         run: python3 scripts/audit_coefficient_descent.py
 
@@ -77,3 +104,124 @@ jobs:
 
       - name: Check depth-fifteen passage atlas and horizon 2592
         run: python3 scripts/audit_passage_atlas.py
+
+      - name: Check odd-run excursion budgets
+        run: |
+          lake env lean scripts/audit_excursion_budget.lean
+          python3 scripts/audit_excursion_budget.py
+
+      - name: Check valuation-stratified excursion products
+        run: |
+          lake env lean scripts/audit_excursion_lattice.lean
+          lake env lean scripts/audit_excursion_mixed_grid.lean
+          python3 scripts/audit_excursion_lattice.py
+
+      - name: Check full-history excursion residues
+        run: |
+          lake env lean scripts/audit_excursion_history_grid.lean
+          python3 scripts/audit_excursion_history_grid.py
+
+      - name: Check distinct excursion source assignments
+        run: |
+          lake env lean scripts/audit_excursion_greedy_slots.lean
+          python3 scripts/audit_excursion_greedy_slots.py
+
+      - name: Check excursion source classes and descent thresholds
+        run: |
+          lake env lean scripts/audit_excursion_rays.lean
+          python3 scripts/audit_excursion_rays.py
+
+      - name: Check bounded excursion alphabets and repeated windows
+        run: |
+          lake env lean scripts/audit_excursion_alphabet.lean
+          python3 scripts/audit_excursion_alphabet.py
+
+      - name: Check reciprocal products for sparse excursions
+        run: |
+          lake env lean scripts/audit_excursion_sparse_product.lean
+          python3 scripts/audit_excursion_sparse_product.py
+
+      - name: Check orbit occupation and affine multiplier bounds
+        run: |
+          lake env lean scripts/audit_orbit_capacity.lean
+          python3 scripts/audit_orbit_capacity.py
+
+      - name: Check the bootstrapped orbit occupation bound
+        run: |
+          lake env lean scripts/audit_orbit_occupation_bootstrap.lean
+          python3 scripts/audit_orbit_occupation_bootstrap.py
+
+      - name: Check translated orbit windows and multiplier occupation
+        run: |
+          lake env lean scripts/audit_orbit_window_bootstrap.lean
+          python3 scripts/audit_orbit_window_bootstrap.py
+
+      - name: Check near-critical orbit windows
+        run: |
+          lake env lean scripts/audit_orbit_near_return.lean
+          python3 scripts/audit_orbit_near_return.py
+
+      - name: Check synchronous Collatz classes and inverse fibers
+        run: |
+          lake env lean scripts/audit_synchronous_classes.lean
+          python3 scripts/audit_synchronous_classes.py
+
+      - name: Check the dynamics of least synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_dynamics.lean
+          python3 scripts/audit_synchronous_dynamics.py
+
+      - name: Check reduced multiplier growth of synchronous representatives
+        run: |
+          lake env lean scripts/audit_synchronous_growth.lean
+          python3 scripts/audit_synchronous_growth.py
+
+      - name: Check the earliest synchronous meetings after odd runs
+        run: |
+          lake env lean scripts/audit_synchronous_excursion.lean
+          python3 scripts/audit_synchronous_excursion.py
+
+      - name: Check uniform peak meetings and exponent reductions
+        run: |
+          lake env lean scripts/audit_peak_contraction.lean
+          python3 scripts/audit_peak_contraction.py
+
+      - name: Check inverse fiber transport and stable minimum profiles
+        run: |
+          lake env lean scripts/audit_inverse_fiber_transport.lean
+          python3 scripts/audit_inverse_fiber_transport.py
+
+      - name: Check finite inverse suffix tables and ternary obstructions
+        run: |
+          lake env lean scripts/audit_peak_suffix_table.lean
+          python3 scripts/audit_peak_suffix_table.py
+
+      - name: Check bounded even defects and long-run peak rigidity
+        run: |
+          lake env lean scripts/audit_long_run_peak_rigidity.lean
+          python3 scripts/audit_long_run_peak_rigidity.py
+
+      - name: Check delayed synchronous meetings and progression ancestors
+        run: |
+          lake env lean scripts/audit_gap_ancestors.lean
+          python3 scripts/audit_gap_ancestors.py
+
+      - name: Check compressed Collatz backtraces and periodic targets
+        run: |
+          lake env lean scripts/audit_backtrace_compression.lean
+          python3 scripts/audit_backtrace_compression.py
+
+      - name: Check exact minima from short inverse fibers
+        run: |
+          lake env lean scripts/audit_short_prefix_minimum.lean
+          python3 scripts/audit_short_prefix_minimum.py
+
+      - name: Check unequal-depth separation of scaled peaks
+        run: |
+          lake env lean scripts/audit_unequal_peak_depth.lean
+          python3 scripts/audit_unequal_peak_depth.py
+
+      - name: Check earlier meetings after long odd runs
+        run: |
+          lake env lean scripts/audit_faster_peak_mates.lean
+          python3 scripts/audit_faster_peak_mates.py

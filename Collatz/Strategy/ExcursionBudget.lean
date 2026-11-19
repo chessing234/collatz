@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import Collatz.Strategy.ExcursionData
+=======
+import Collatz.Strategy.ExcursionMap
+>>>>>>> origin/main
 
 /-!
 # Weighted descent at an excursion crossing
@@ -22,8 +26,13 @@ structure Run where
 /-- Runs are stored in reverse chronological order to expose the last run. -/
 inductive Trace (n : Nat) : Nat → List Run → Prop where
   | nil : Trace n n []
+<<<<<<< HEAD
   | step {x y v u W : Nat} {prior : List Run} :
       Trace n x prior → IsExcursion x v u W y → Trace n y (⟨v, W⟩ :: prior)
+=======
+  | step {x y v u W : Nat} {rs : List Run} :
+      Trace n x rs → IsExcursion x v u W y → Trace n y (⟨v, W⟩ :: rs)
+>>>>>>> origin/main
 
 def oddCount : List Run → Nat
   | [] => 0
@@ -71,7 +80,11 @@ theorem Trace.affine {n e : Nat} {rs : List Run} (h : Trace n e rs) :
         rw [ih, Nat.mul_left_comm (3 ^ v), ← Nat.mul_add]
       _ = _ := by
         rw [hstep]
+<<<<<<< HEAD
         simp [time, Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+=======
+        simp [time, Nat.pow_add, Nat.mul_assoc, Nat.mul_comm]
+>>>>>>> origin/main
 
 theorem Trace.landing {n e : Nat} {rs : List Run} (h : Trace n e rs) :
     Collatz.acceleratedOrbit (time rs) n = e := by
@@ -100,6 +113,23 @@ theorem offset_le_weight {p d scale : Nat} {charge : Nat → Nat}
         simp [oddCount, weight, Nat.pow_add, Nat.mul_add, Nat.mul_assoc, Nat.mul_comm,
           Nat.mul_left_comm, Nat.add_comm]
 
+<<<<<<< HEAD
+=======
+private theorem weight_ones (rs : List Run) : weight (fun _ => 1) rs = rs.length := by
+  induction rs with
+  | nil => rfl
+  | cons run rs ih => simp only [weight, List.length_cons, ih, Nat.add_comm]
+
+/-- At a first coefficient crossing, each excursion contributes
+at most one to the offset normalized by the tripling coefficient. -/
+theorem offset_le_length_mul_coefficient {rs : List Run} (h : ProperPrefixBound 1 1 rs) :
+    offset rs ≤ 3 ^ oddCount rs * rs.length := by
+  have hcharge (v : Nat) : 1 * (3 ^ v - 2 ^ v) ≤ 1 * 3 ^ v :=
+    Nat.mul_le_mul_left _ (Nat.sub_le ..)
+  simpa only [Nat.one_mul, weight_ones] using
+    offset_le_weight (charge := fun _ => 1) hcharge h
+
+>>>>>>> origin/main
 /-- If the weighted error fits in the slope gap, the crossing gives a descent. -/
 theorem drop_of_weighted_crossing {p d scale n e : Nat} {rs : List Run}
     {charge : Nat → Nat} (h : Trace n e rs) (hn : 0 < n) (hs : 0 < scale)
@@ -109,11 +139,18 @@ theorem drop_of_weighted_crossing {p d scale n e : Nat} {rs : List Run}
   have hbound := offset_le_weight hcharge hp
   have hlt : (d * scale * 2 ^ time rs) * e < (d * scale * 2 ^ time rs) * n := by
     calc
+<<<<<<< HEAD
       _ = 3 ^ oddCount rs * (d * scale * n) + d * scale * offset rs := by
         calc
           _ = d * scale * (2 ^ time rs * e) := by ac_rfl
           _ = d * scale * (3 ^ oddCount rs * n + offset rs) := by rw [h.affine]
           _ = _ := by rw [Nat.mul_add]; ac_rfl
+=======
+      _ = (d * scale) * (2 ^ time rs * e) := Nat.mul_assoc ..
+      _ = 3 ^ oddCount rs * (d * scale * n) + d * scale * offset rs := by
+        rw [← h.affine, Nat.mul_add]
+        ac_rfl
+>>>>>>> origin/main
       _ ≤ 3 ^ oddCount rs * (d * scale * n + p * weight charge rs) := by
         rw [Nat.mul_add, Nat.mul_left_comm (3 ^ oddCount rs) p]
         exact Nat.add_le_add_left hbound _
@@ -146,4 +183,57 @@ theorem drop_of_first_half {n e : Nat} {rs : List Run}
     (hbudget : 2 * weight ninths rs ≤ 9 * n) : e < n :=
   drop_of_weighted_crossing h hn (by decide) ninths_bound hp (by simpa using hcross) (by omega)
 
+<<<<<<< HEAD
+=======
+/-- For a fixed ratio, every prefix stays on its initial side as long as
+the orbit stays above its starting value and the total charge fits. -/
+theorem prefix_bound_of_no_drop {p d scale n e : Nat} {rs : List Run}
+    {charge : Nat → Nat} (h : Trace n e rs) (hn : 0 < n) (hs : 0 < scale)
+    (hcharge : ∀ v, scale * (3 ^ v - 2 ^ v) ≤ charge v * 3 ^ v)
+    (hbudget : d * scale * n + p * weight charge rs ≤ p * scale * n)
+    (hmin : ∀ j ≤ time rs, n ≤ Collatz.acceleratedOrbit j n) :
+    d * 2 ^ time rs ≤ p * 3 ^ oddCount rs ∧ ProperPrefixBound p d rs := by
+  induction h with
+  | nil =>
+    have h := Nat.le_of_mul_le_mul_right (by simpa [weight, Nat.mul_assoc] using hbudget :
+        d * (scale * n) ≤ p * (scale * n)) (Nat.mul_pos hs hn)
+    simpa [time, oddCount, ProperPrefixBound] using h
+  | @step x y v u W rs hprev hrun ih =>
+    have hsub : weight charge rs ≤ weight charge (⟨v, W⟩ :: rs) := by simp [weight]
+    have hprevBudget := Nat.le_trans
+      (Nat.add_le_add_left (Nat.mul_le_mul_left p hsub) (d * scale * n)) hbudget
+    have htime : time rs ≤ time (⟨v, W⟩ :: rs) := by simp [time]
+    have hp : ProperPrefixBound p d (⟨v, W⟩ :: rs) :=
+      ih hprevBudget (fun j hj => hmin j (Nat.le_trans hj htime))
+    refine ⟨?_, hp⟩
+    apply Nat.le_of_not_gt
+    intro hc
+    have htrace := Trace.step hprev hrun
+    have hdrop := drop_of_weighted_crossing htrace hn hs hcharge hp hc hbudget
+    have hkeep := hmin _ (Nat.le_refl _)
+    rw [htrace.landing] at hkeep
+    omega
+
+/-- A finite necessary condition for staying at or above the source.
+Each long run is charged at most one, irrespective of its odd length. -/
+theorem slope_bound_of_no_drop {n e : Nat} {rs : List Run}
+    (h : Trace n e rs) (hn : 0 < n)
+    (hmin : ∀ j ≤ time rs, n ≤ Collatz.acceleratedOrbit j n) :
+    (9 * n - weight ninths rs) * 2 ^ time rs ≤ 9 * n * 3 ^ oddCount rs := by
+  by_cases hcost : weight ninths rs ≤ 9 * n
+  · have hsum : (9 * n - weight ninths rs) + weight ninths rs = 9 * n :=
+      Nat.sub_add_cancel hcost
+    have hbudget : (9 * n - weight ninths rs) * 9 * n + 9 * n * weight ninths rs ≤
+        9 * n * 9 * n := by
+      apply Nat.le_of_eq
+      calc
+        _ = ((9 * n - weight ninths rs) + weight ninths rs) * (9 * n) := by
+          rw [Nat.add_mul, Nat.mul_assoc, Nat.mul_comm (9 * n) (weight ninths rs)]
+        _ = 9 * n * (9 * n) := by rw [hsum]
+        _ = 9 * n * 9 * n := (Nat.mul_assoc ..).symm
+    exact (prefix_bound_of_no_drop h hn (by decide) ninths_bound hbudget hmin).1
+  · rw [Nat.sub_eq_zero_of_le (Nat.le_of_not_ge hcost), Nat.zero_mul]
+    exact Nat.zero_le _
+
+>>>>>>> origin/main
 end Collatz.ExcursionBudget

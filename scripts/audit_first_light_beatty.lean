@@ -1,0 +1,8 @@
+import Collatz.Strategy.ExcursionFiniteHorizon
+
+#print axioms Collatz.Search.bounded_drop_of_blocks
+#print axioms Collatz.FirstLightDescent.affineC_le_beatty_of_heavy_proper
+#print axioms Collatz.FirstLightDescent.first_light_drop_of_beatty_certificate
+#print axioms Collatz.FirstLightDescent.first_light_drop_of_odd_count_lt_8951
+#print axioms Collatz.FirstLightDescent.exactThrough_14186
+#print axioms Collatz.ExcursionBudget.Trace.first_crossing_drop_of_odd_count_lt_8951

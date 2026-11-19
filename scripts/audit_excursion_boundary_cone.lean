@@ -1,0 +1,6 @@
+import Collatz.Strategy.ExcursionBoundaryCone
+
+#print axioms Collatz.ExcursionPowerGap.boundary_cone_of_scaled_gap
+#print axioms Collatz.ExcursionPowerGap.boundary_eight_pairs_of_scaled_gap
+#print axioms Collatz.ExcursionBudget.Trace.first_crossing_failure_boundary_cone
+#print axioms Collatz.ExcursionBudget.Trace.first_crossing_failure_eight_pairs
