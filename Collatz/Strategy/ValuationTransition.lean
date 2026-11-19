@@ -1,3 +1,4 @@
+import Collatz.Strategy.SyracuseData
 import Collatz.Strategy.ScaleRecord
 import Collatz.Structure.OddRuns
 
@@ -32,26 +33,7 @@ namespace ValuationTransition
 
 /-! ## 1.  One step of the transition system -/
 
-/-- One Syracuse step recorded with its valuation: `n` odd, `m` odd,
-`3n+1 = 2^r * m`.  This *is* the statement `r = v₂(3n+1)` and `m = S(n)`,
-written without a valuation function. -/
-def SyrStep (n r m : Nat) : Prop := n % 2 = 1 ∧ m % 2 = 1 ∧ 3 * n + 1 = 2 ^ r * m
-
-/-- The source of a step is positive. -/
-theorem SyrStep.pos {n r m : Nat} (h : SyrStep n r m) : 0 < n := by
-  obtain ⟨h1, _, _⟩ := h; omega
-
-/-- **Every valuation is at least one**: the odd branch always feeds the even
-branch at least once. -/
-theorem SyrStep.one_le {n r m : Nat} (h : SyrStep n r m) : 1 ≤ r := by
-  obtain ⟨hn, hm, he⟩ := h
-  cases r with
-  | zero => simp at he; omega
-  | succ k => omega
-
-/-- The target of a step is positive. -/
-theorem SyrStep.target_pos {n r m : Nat} (h : SyrStep n r m) : 0 < m := by
-  obtain ⟨_, hm, _⟩ := h; omega
+/-! The exact step predicate and its positivity facts are in `SyracuseData`. -/
 
 /-- A step determines its target. -/
 theorem SyrStep.target_unique {n r m m' : Nat} (h : SyrStep n r m) (h' : SyrStep n r m') :
@@ -216,20 +198,7 @@ theorem val_class_unique {n n' r m m' : Nat}
 
 /-! ## 3.  Runs: the valuation word and the exact two-sided affine law -/
 
-/-- A run of Syracuse steps, recorded by its **valuation word** `rs`. -/
-inductive SyrPath : Nat → List Nat → Nat → Prop where
-  | nil (n : Nat) : SyrPath n [] n
-  | cons {n r m e : Nat} {rs : List Nat} : SyrStep n r m → SyrPath m rs e → SyrPath n (r :: rs) e
-
-/-- The valuation sum `S = Σ rᵢ` of a word: the total number of halvings. -/
-def valSum : List Nat → Nat
-  | [] => 0
-  | r :: rs => r + valSum rs
-
-@[simp] theorem valSum_nil : valSum [] = 0 := rfl
-
-@[simp] theorem valSum_cons (r : Nat) (rs : List Nat) :
-    valSum (r :: rs) = r + valSum rs := rfl
+/-! `SyrPath` and its chronological valuation sum are defined in `SyracuseData`. -/
 
 /-- **Length ≤ sum.**  Every letter of a realizable valuation word is `≥ 1`, so
 the halving count is at least the step count.  Equality holds exactly when the

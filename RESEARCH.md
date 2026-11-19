@@ -5,6 +5,1053 @@ Persistent checkpoint. Update at every synthesis round. Status codes:
 **CONJ** = conjectural. **REFUTED** = killed, with counterexample. **CLOSED** = provably
 unreachable by the stated method.
 
+## Finite-memory transfer defect, 2026-11-19 (PROVED)
+
+A level-`k` potential on odd inputs depends only on `n mod 2^k`. For the
+odd-to-odd step, the centered increment is `(2 − v₂(3n+1)) log 2`. The integer
+`2^{k+1} − 1` maps to `3·2^k − 1` by a single halving, and both endpoints lie
+in the class `−1` modulo `2^k`. Every level-`k` potential is constant on that
+strict increase, so the uniform cocycle defect is at least `log 2`. No step
+has a larger centered increment, so the zero potential matches the bound.
+Thus the defect equals `log 2` at every level `k ≥ 1`. It does not decay, and
+the residue self-loop at `−1` makes the worst path gain infinite. The
+mean-square residual still falls through eight bits; see
+[the note](Research/TransferDefect.md). The uniform finite-memory attack is
+closed.
+
+## Syracuse shadows and seed-forgetting, 2026-11-19 (PROVED)
+
+On an odd positive integer the Syracuse map is `T(n) = (3n+1)/2^v` with
+`v = v₂(3n+1)`. Write `n_k` for the iterate and `S_k` for the sum of the
+first `k` exponents.
+
+The real shadow is the integer contraction
+`2^k (n_k + 1) ≤ 3^k (n_0 + 1)`. Once `n_0 + 1 < 2^k`, the same inequality
+forces `n_k < 3^k`. `SyracuseShadow.seed_forgetting` is that statement.
+
+The 3-adic shadow is the cocycle `2^{S_k} n_k = 3^k n_0 + b_k`, with
+`b_0 = 0` and `b_{j+1} = 3 b_j + 2^{S_j}`. Reducing modulo `3^k` erases the
+seed. If the iterate is also below `3^k`, it is the only integer in that
+range with the resulting residue. The exponent word is still read off the
+orbit, so this forgets the seed inside one history. It does not predict the
+next exponent.
+
+A finite 2-adic shadow is checked rather than proved by hand.
+`certifies M r k` accepts a residue class when `k` forced Syracuse steps
+land strictly below the class for every positive cofactor.
+`certified_drop` is the soundness theorem. The checker accepts `1` modulo
+`8` in one step, `19` modulo `32` in two steps, and `43` modulo `64` in
+three steps.
+
+An informal inverse statement — a large 3-adic Fourier bias on a long orbit
+segment forces the exponent word to be nearly periodic — is not a theorem
+here. No Hausdorff dimension, power-saving exceptional set, or proof that
+every orbit reaches one is claimed.
+
+## Congruence descent ladder, 2026-11-19 (PROVED)
+
+A forward-orbit minimum cannot be `1` modulo `4`: two accelerated steps send
+it to `(3m+1)/4`. That comparison is not uniform modulo `8`. `T³(7) = 26`,
+so the class `7` modulo `8` is not a three-step descent.
+
+The parity word becomes constant again on six thinner progressions, and the
+image is an exact contracting affine function for every term:
+
+    m ≡ 3  (mod 16)   T⁴(m) = (9m + 5)/16
+    m ≡ 11 (mod 32)   T⁵(m) = (27m + 23)/32
+    m ≡ 23 (mod 32)   T⁵(m) = (27m + 19)/32
+    m ≡ 7  (mod 128)  T⁷(m) = (81m + 73)/128
+    m ≡ 15 (mod 128)  T⁷(m) = (81m + 65)/128
+    m ≡ 59 (mod 128)  T⁷(m) = (81m + 85)/128
+
+The numerator is `3` to the number of odd steps in the forced word, and the
+denominator is `2` to the length of that word. `DescentSieve.lean` checks
+each identity and the strict inequality. Any value that is minimal on its
+own forward orbit avoids all six classes. No cycle hypothesis is required
+for that exclusion.
+
+A nontrivial cycle minimum is already `7` or `11` modulo `12`. Intersecting
+that constraint with the four- and five-step descents leaves eight classes
+modulo `96`:
+
+    7, 31, 47, 59, 71, 79, 91, 95.
+
+The seven-step descents cut the same set further. Modulo `384`, which is
+the least common multiple of `128` and `12`, the modulo-twelve condition
+alone leaves `64` residues. The ladder leaves `26`:
+
+    31, 47, 71, 79, 91, 95, 103, 127, 155, 167, 175, 191,
+    199, 223, 239, 251, 283, 287, 295, 319, 335, 347, 359,
+    367, 379, 383.
+
+The earlier density was `1/6`. The checked count is `26/384 = 13/192`.
+This is a restriction on where a cycle minimum can sit. It does not prove
+that every positive orbit reaches one.
+
+## Fifth-power room past ratio six, 2026-11-19 (PROVED)
+
+The odd-value product bound gives `m (2^L)^5 ≤ (M+2) (3^a)^5` for a
+least cycle in `[m,M]` with `m ≥ 4`. Comparing that estimate with a
+hypothetical discrepancy displacement of two periods produces the exact
+numerical room
+
+    M^5 (M+2) < 9^5 m^6.
+
+`CycleNumericalWidth.walk_width_lt_twice_of_fifth_room` proves that this
+inequality forces discrepancy width strictly below `2L`. The older
+sixfold band is the special case `M ≤ 6m`, where `M+2 ≤ 7m` leaves a
+comfortable gap under `9^5`. The same gap still holds for the wider
+ratio `43/7`: `43^6 < 9^5 7^6`, and the linear remainder
+`14·43^5` is absorbed once `m ≥ 4`.
+
+The comparison is uniform in the rational bound. If `p^6 < 9^5 q^6` and
+`(2q) p^5 < (9^5 q^6 − p^6) m`, every integer band `q M ≤ p m` has the
+fifth-power room. `fifth_room_of_ratio` is that lemma. The fraction
+`56/9` satisfies it for every floor `m ≥ 19`, since
+`56^6 < 9^11` and `18·56^5` fits in the gap times nineteen. Ratio
+`56/9 ≈ 6.222` is the sharpest multiple of `1/9` under the ceiling
+`9^{5/6} ≈ 6.240`. A least cycle inside either band has width below
+`2L`, hence coprime period and odd count.
+
+The contrapositive uses the repeated-phase width theorem. A least cycle
+whose period and odd count share a divisor greater than one has width at
+least `2L`. Therefore its maximum `M` and minimum `m` satisfy
+`43 m + 1 ≤ 7 M` whenever `m ≥ 4`, and `56 m + 1 ≤ 9 M` whenever
+`m ≥ 19`. Coprime cycles, and every question of universal convergence,
+stay outside this exclusion. The conjecture remains open. Ratio six was
+an artifact of the estimate `M+2 ≤ 7m`, not the limit of the fifth-power
+argument.
+
+## Width beyond balance, 2026-11-10
+
+For a least shortcut period `L` with `a` odd steps, put
+`W_i = L·oddCount(n,i) − a·i`. The earlier balanced-cycle argument covers
+spread strictly below `L`. Lean now excludes nontrivial cycles with
+spread `L` or `L+1` as well.
+
+At spread exactly `L`, the two strip endpoints have the same residue
+modulo `L`. Take the least positive phase offset `p` with `L ∣ a·p`.
+It lies in `[2,L)`. Start each length-`p` block one step before the
+boundary phase. For every other offset in the block, that phase has
+a unique representative inside the strip, so the synchronized walk
+values agree. All blocks have the same odd count `b > 0` and their
+corrections have the form `3^q·c_i+C`, where `q` is the common suffix
+odd count and any two `c_i` differ by at most one. Only the first two
+bits can change, by exchanging `01` and `10`.
+
+For the block-start sequence, each equation
+`2^p·x_(i+1) = 3^b·x_i + 3^q·c_i + C` gives the same residue modulo
+`3^q` on the right. Coprimality of `2^p` and `3^q` puts every block
+start in one residue class. Distinct inputs are at least `3^q` apart.
+Since the offset spread is at most `3^q`, their output order is strict.
+An order-preserving periodic sequence has a fixed block start, which
+would give the original cycle a return after `p<L` steps.
+`BoundaryWidthCycle.lean` also proves the general block lemma for
+offsets `M·c_i+C` with multiplier divisible by `M` and spread less than
+the multiplier times `M`.
+
+At spread exactly `L+1`, rotate to the minimum and let `k` be the time
+of the maximum. Write `a·k+1=L·b`, `X=2^k`, `Y=3^b`, `A=3^a`,
+`B=2^L`, and `D=B−A`. The adjacent phase equation makes the `L` phases
+distinct. For the minimum and maximum rotations, the maximum rotation
+has one fewer odd step in each proper nonempty prefix except at `k`
+and `L−k`, where it has two fewer. The exact accumulator identity
+
+    2 C_L + 2^L = 3^a + Σ_(t<L) 2^t 3^(a−oddCount(n,t+1))
+
+then makes `D` divide `X²−X·Y+Y²`. This gives `X^6 ≡ Y^6 (mod D)`.
+Also `2X^a ≡ Y^a` and `3X^L ≡ Y^L (mod D)`. Taking sixth powers and
+cancelling the unit `X` gives `D ∣ 2^6−1` and `D ∣ 3^6−1`, hence
+`D ∣ 7`. If `D=7`, reducing `2^L=3^a+7` modulo three and eight forces
+both `L` and `a` even, contrary to `a·k+1=L·b`. Thus `D=1` and the
+cycle is trivial. `OneExtraCycle.lean` verifies this chain without an
+external gap hypothesis. Every nontrivial least cycle must have scaled
+discrepancy spread at least `L+2` within one period.
+
+### Polynomial test for coprime periods (PROVED)
+
+For coprime `(L,a)`, rotate to the minimum and write each walk value as
+`s+L·e(s)`, where `s` is its residue modulo `L`. At spread `L+r<2L`,
+`e(s)` is zero or one and can be one only for `1≤s≤r`. Let `S` be the
+lifted residues, choose `k,b` with `a·k+1=L·b`, and put
+`z=2^k/3^b (mod D)`. The weight `2^t·3^(a−oddCount(n,t))` at phase `s`
+is congruent to `3^a·z^s·3^(−e(s))`. This follows by writing the time
+as `s·k` modulo `L` and cancelling `2^L/3^a ≡ 1`. In the sum over
+`t=1,…,L`, phase zero is represented by time `L`, with weight `2^L`.
+The area identity therefore gives
+
+    12(1−z) C_L ≡ 2·3^a [1−(1−z) Σ_(s∈S) z^s]  (mod D).
+
+The factors `2`, `3`, and `1−z` are units. For the last, `2z^a ≡ 1`
+excludes every common divisor with `z−1`. The displayed formula gives
+the same gcd with `D` for the bracket and `C_L`. Exact tests checked
+113,967 valid words for periods through 78 and excess through seven.
+All gcds matched and none of the tested words gave an integral cycle.
+
+`PhasePolynomial.lean` verifies the equivalence of divisibility by
+`D` for the bracket and `C_L`. It also verifies an unrestricted-height
+form for any prefix with a positive gap, coprime length and odd count,
+and nonnegative walk. For any bound `E` on the lifts, the gap divides
+`C_L` exactly when it divides
+
+    Σ_(0≤s<L) 3^(E−e(s)) z^s.
+
+The proof constructs an inverse of three modulo `D`, proves that
+`t = k·s mod L` permutes the period, and transfers the affine area sum
+to that ordering. The same `z` works for every `E` and satisfies
+`2z^a ≡ 3z^L ≡ 1 mod D`. For a coprime nontrivial least cycle of
+width `L+2`, phase two must be lifted and phase one is optional.
+Lean consequently forces a common modular root of the two power
+relations and one of `1−z²+z³` or `1−z+z³`.
+
+For fixed excess and few runs of lifted residues, the bracket is monic
+with few nonzero coefficients. Its resultant with `2z^a−1` could
+bound the possible gap. For the two cubics, reciprocation puts both
+in the ring with `z³=z−1`. Multiplication by `z` sends a coefficient
+triple `(A,B,C)` to `(−C,A+C,B)`. Its entries can be bounded using the
+positive recurrence with characteristic equation `x³=x+1`, since
+`(4/3)^3>1+4/3`. For the norm of `U+Vz+Wz²`, use the determinant of
+the matrix with rows `(U,−W,−V)`, `(V,U+W,V−W)`, and
+`(W,V,U+W)`. The integer recurrence and the determinant expansion
+give `|N| ≤ 1296·(64/27)^a` for either power equation. Lean verifies
+that each norm is odd and that a common modular root forces `D ∣ N`.
+With `3a<2L`, the integer separation bound `PowerSeparation` contradicts
+this for `L≥1024`. The base check is
+`729^1024 > 8·1296³·1024^42·512^1024`. The comparison persists since
+`512·1025^42 < 729·1024^42`. The existing kernel-checked minimum
+period of 1,539 for a nonconvergent cycle covers all shorter periods.
+`CubicPhaseNorm.reachesOne_of_coprime_width_two` proves the resulting
+exclusion for all coprime periods under `PowerSeparation`.
+[Rhin's estimate as stated by Rozier and Terracol](https://arxiv.org/html/2502.00948v4#S6.Thmproposition3)
+
+An exact computation for all coprime pairs with `3≤L≤2000` and
+`D>1` left only `(L,a)=(3,1),(5,3)` after either norm-divisibility
+test. In those pairs the total of positive walk increments is
+`a(L−a)`, smaller than `L+2`, so that width is impossible.
+The short-period proof uses the existing minimum period theorem.
+
+The walk and `L` are multiples of `g=gcd(L,a)`. Consequently if the
+excess width is less than `g`, the earlier width-`L` theorem applies.
+Lean reduces any remaining nonconvergent width-`L+2` cycle to
+`g=2` under `PowerSeparation`.
+
+For `g=2`, write `L=2p, a=2b` and divide the walk by two. After
+rotating to its minimum, it lies in `[0,p+1]`. Start at discrepancy
+residue two, which has a unique height in the strip. The two length-`p`
+blocks then both start and end at height two and have `b` odd steps.
+At matching offsets their walk values can differ only at the two
+repeated residues zero and one, with a height difference of `p`.
+At an exceptional offset `t` the higher odd count `A_h` has
+`p·A_h−b·t≥p−2≥0`. Raising the weight
+`2^t·3^(b−A_h)` to the `p`th power and using `3^b<2^p`
+bounds it by `2^p`. The affine area identity then gives a correction
+difference of absolute value at most `2^p`, since at each of at most
+two offsets the doubled correction difference is bounded by `2^p`.
+Subtracting the two return equations shows that the correction
+difference is `(2^p+3^b)(y−x)`. Distinct block starts are impossible.
+`DoublePhaseCycle.reachesOne_of_gcd_two_width_two` verifies the
+two-block argument without a separation hypothesis. Combining all
+three gcd cases, `DoublePhaseCycle.nonconvergent_cycle_needs_width_three`
+proves that every nonconvergent least cycle has width at least `L+3`
+under `PowerSeparation`.
+
+For wider coprime strips, `dvd_short_power_relation` combines the two
+phase powers. If `a·u≤L·v`, it gives
+`D ∣ 3^v·z^(L·v−a·u)−2^u` by cancelling a unit. The reversed inequality
+gives the relation with the roles of two and three exchanged.
+`CubicPhaseNorm.exists_short_binomial` verifies the approximation
+step by putting the first `Q+1` multiples of `a` modulo `L` into
+`Q` buckets. It obtains `1≤u≤Q`, `v≤u`, and
+`Q·Δ<L` for `Δ=|L·v−a·u|`. For a nonconstant sparse polynomial
+`P`, the resultant against this shorter binomial is nonzero because
+a root of `P` is an algebraic unit and a nonunit rational cannot be
+its power. The paper bound
+
+    log D ≤ (r+1)(log 2 + Q log 3) + (L/(2Q)) log(1+2h)
+
+uses `h` runs of lifted phases and the coefficient bound on Mahler
+measure. Optimizing `Q` could exclude widths `L+r` with
+`r log(r+2)=o(L)` for sufficiently large coprime periods under
+`PowerSeparation`. The determinant route is a paper argument.
+
+An integer-only version uses the Sylvester matrix. Its `Δ` rows of
+shifted `P` have absolute row sum `1+2h`. The other rows have absolute
+row sum at most `2·3^Q`. Expanding the determinant over permutations
+bounds it by the product of these row sums. This replaces `L/(2Q)`
+in the preceding estimate by `L/Q` and keeps the same asymptotic
+conclusion. The determinant is odd because modulo two the binomial
+is either `Z^Δ` or a nonzero constant. In the first case its rows
+occupy the last columns and the remaining triangle has diagonal
+`P(0)=1`. In the second case its rows occupy the first columns and
+the remaining triangle has diagonal the leading coefficient of `P`.
+The evaluation vector `(1,z,z²,...)` sends every row to a multiple
+of `D`. Replacing the first column by that combination therefore
+gives `D` as a divisor of the determinant. This proof plan avoids
+complex roots and works with the core Lean integer arithmetic.
+
+Lean verifies a determinant-free proof. If the integer rows vanish
+at `z` modulo `D` and their rational span contains every constant
+vector, `PhaseResidueBox.modulus_le_column_box` gives
+
+    D ≤ Π_j (1 + 2 Σ_i |A_ij|).
+
+For a constant residue `k`, subtract the integer floors of the
+rational row coefficients. The resulting integer vector still
+evaluates to `k` modulo `D`. Each of its coordinates lies in the box
+with radius equal to the absolute column sum. Lean uses mixed-radix
+encoding and pigeonhole to bound the number of residues in this box.
+The rational span follows by eliminating with an odd pivot `p=A_00`
+and the recursive matrix `B_ij=p A_(i+1,j+1)−A_(i+1,0) A_(0,j+1)`.
+The elimination preserves the odd diagonal and the even side of the
+triangle. Apply it to the transpose to solve for row coefficients.
+The binomial reduces modulo two to a single monomial. Put its shifted
+rows before or after the shifted polynomial rows according to which
+coefficient is odd. The two orders give opposite triangularities
+and both satisfy the same coefficient bound.
+
+Let `M` be the absolute coefficient sum of `P`, `d` its degree,
+and `e` the short binomial degree. Every column receives at most
+`M` from the shifted `P` rows. Each binomial coefficient affects
+an interval of only `d` columns. Lean proves
+
+    D ≤ (2M+1)^(d+e) (2|c|+1)^d (2|b|+1)^d
+
+for a common root of `P` and `cZ^e−b`. The phase coefficients are
+finite differences of the indicators of lifted phases, with constant
+and leading coefficients one. The last lifted phase determines
+`d≤r+1`. The coefficient mass satisfies `M≤r+2`. Each run of lifted
+phases contributes two changes, so `M=1+2h` for `h` runs.
+
+Set `s=1+floor(log₂(2M+1))` and choose the approximation budget
+`Q=4s`. The short-binomial bound gives `e≤L/Q`. After comparing the
+box estimate with `PowerSeparation`, the polynomial factor in the
+separation estimate costs at most one quarter of `L` in the binary
+exponent. The term `s·e` costs at most another quarter. The remaining
+bound is
+
+    L ≤ 2(r+1)(13 floor(log₂(2M+1)) + 17).
+
+`SparsePhaseBound.mass_bound_of_nonconvergent_coprime_cycle` verifies
+this inequality. With `M≤r+2`, the excess width must grow at least
+on the order of `L/log L`. For a fixed number of runs it must grow
+linearly in `L`. The theorem `growing_width_of_nonconvergent_coprime_cycle`
+gives an explicit pair of times witnessing the width. The scope here
+is coprime cycles and the stated power-separation estimate.
+
+### Two phase copies and the larger gap factor
+
+Write `L=gp`, `a=gβ`, with `p,β` coprime. Use the larger gap factor
+
+    D' = (2^L−3^a)/(2^p−3^β)
+       = Σ_(j<g) (2^p)^(g−1−j) (3^β)^j.
+
+Thus `D'≥2^(p(g−1))` without a power separation estimate. Modulo
+`D'` put `R=2^p/3^β`, choose `βk+1=pc`, and put `z=2^k/3^c`.
+Then `Σ_(u<g) R^u=0`, `2z^β=R^c`, and `3z^p=R^k`.
+After rotating to the minimum of the reduced discrepancy walk,
+index the full period by `t=(ks+pu) mod L`, for `s<p,u<g`.
+The indexing is a bijection because it is injective first modulo
+`p` in `s` and then modulo `g` in `u`.
+Writing the reduced walk at that time as `s+p·e(s,u)` gives
+`2^t3^(a−oddCount(n,t))≡3^a z^s R^u 3^(−e(s,u)) mod D'`.
+
+If the reduced width is at most `p+r'` with `r'<p`, the lifts
+are zero or one and only residues `s≤r'` can be lifted. The affine
+area identity gives a vanishing sum of the lifted terms modulo `D'`,
+since the baseline terms cancel by `Σ R^u=0`. If the lifts were
+constant in `u` for every `s`, the reduced discrepancy would be
+`p`-periodic and all length-`p` odd counts would agree, contradicting
+least period. For `g=2`, `R=−1` and the lifted sum is an ordinary
+sparse polynomial with coefficients in `{−1,0,1}`. Trim the zero
+ends and cancel a unit power of `z`. Its endpoint coefficients are
+odd. Lean verifies this construction in
+`PhasePolynomial.cycle_paired_phase_root`. It pairs times
+`t=ks mod p` and `t+p`, giving coefficient
+`(-1)^(⌊ks/p⌋)(e(s,1)−e(s,0))` at phase `s`, where the two
+lifts are read at those paired times.
+
+The two signed power relations give short binomials with opposite
+coefficient parities. The coefficient box applies to polynomials with
+odd endpoint coefficients. For `g=2` and width at most `2p+2r` with
+`r<p`, the checked inequality is
+
+    p ≤ 2r(7 floor(log₂(2r+3)) + 11).
+
+`SparsePhaseBound.paired_width_excess_bound` proves the inequality
+without `PowerSeparation`, since `D'=2^p+3^β≥2^p`.
+`growing_width_of_gcd_two_cycle` gives a pair of times witnessing
+width `L+Ω(L/log L)`, and the verified cycle-length floor excludes
+widths through `L+18` for nonconvergent least cycles with `g=2`.
+
+### Order of aligned cycle rotations (PROVED)
+
+For two starting values `x≤y`, compare their accelerated endpoints
+after dividing each by three to the power of its own prefix odd
+count. `AlignedOrbitOrder.scaled_orbit_le_of_isolated_double` proves
+that this preserves the initial order when the two prefix counts
+differ by at most two and differences of two are isolated. An
+isolated excursion from count difference one to two and back
+swaps the two parity bits. In the direction where normalized
+order might reverse, the resulting scaled difference is
+`(3Δ−5)/4` with `Δ` a positive integer. Integrality excludes
+a nonpositive value. The opposite direction has a positive
+correction. The one-step comparisons handle differences of at
+most one and the entry into a difference of two.
+
+Consecutive differences of two can reverse the order. The starts
+`48<49` have prefix count differences `0,1,1,2,2,1,0`
+and reach `8>7` after six steps, with two odd steps on each side.
+
+On a cycle, an offset `p` starting at an increasing pair gives
+a strict inequality at the first copy of that offset. If normalized
+order persists at every later copy, it telescopes to
+`p·a < L·oddCount(x,p)` on returning to the same point. This is
+`PhaseOrderCycle.increasing_offset_forces_higher_odd_density`
+when the prefix count difference stays within one.
+
+If `gcd(a,L)>1`, choose a proper offset with integer mean
+`p·a/L` and rotate to a window attaining that mean. The count
+difference of the two prefixes is the difference of their
+discrepancy heights divided by `L`. In a strip narrower than
+`2L+min(a,L−a)`, two heights separated by `2L` must both have
+phase near the bottom of the strip. Such a phase cannot occur in
+two consecutive steps, because the residue shifts by `−a`
+modulo `L`. The scaled order then persists, contradicting the
+exact mean. The reverse offset handles the opposite ordering
+of the pair. Lean verifies the resulting bound
+
+    width ≥ 2L + min(a,L−a)
+
+in `PhaseOrderCycle.repeated_phase_width_lower_bound`, with no
+power-separation estimate. It applies to every nontrivial common
+divisor and strengthens the separate polynomial bound for two
+phase copies. Cycles with wider discrepancy and cycles with
+coprime counts remain outside this exclusion.
+
+The same telescoping comparison applies to a nonrepeating orbit
+when an offset increases the value even though its coefficient
+`3^b/2^p` is less than one. If normalized order persisted over
+`q` copies, it would force `2^(pq) < 2^263·3^(bq)` by the global
+coefficient ceiling. Bernoulli's inequality contradicts this
+for `q=2^263·3^b`. The checked result
+`CoefficientEscape.contracting_increase_forces_count_separation`
+therefore finds a prefix by time `pq` with a count difference
+of at least three or with differences of two at consecutive
+times. Divergence remains possible under this necessary condition.
+
+### One-sided order and coprime cycles (PROVED)
+
+In the normalized comparison of two prefixes, the count bound is
+one-sided. `AlignedOrbitOrder.scaled_orbit_le_from` propagates the
+comparison whenever the right prefix has at most one more odd step
+than the left. If the left prefix has the larger count, its competing
+value carries an integer power of three. At an odd/even comparison,
+parity prevents equality with that even multiple. If the right count
+exceeds the left by one, the right endpoint is prime to three, so it
+cannot equal three times the left endpoint. These two facts absorb the
+additive correction in the corresponding comparisons.
+
+For two rotations of a cycle, one-sided control in either direction
+suffices. If the initial order reversed at some prefix, the opposite
+comparison would persist from there to a common return, contradicting
+the initial order. This applies whenever the maximum and minimum odd
+counts of cyclic windows of a fixed length differ by at most three.
+In a strip of width strictly less than `2L`, every window
+length has that property. Lean checks the resulting exact order law
+`PhaseOrderCycle.orbit_lt_iff_walk_lt_of_width_lt_twice`
+
+    T^i(n) < T^j(n)  iff  W_i < W_j.
+
+For an offset `p` whose mean count is nonintegral, the floor and ceiling
+counts both occur. Let `b=floor(p·a/L)` and `c=oddCount(n,p)`.
+`endpoint_ratio_between_phase_powers` uses those rotations to prove
+
+    3^b T^p(n) < 3^c n < 3^(b+1) T^p(n).
+
+Now assume the width is at most `L+r` with `r<min(a,L−a)` and
+`gcd(a,L)=1`. Rotate to the discrepancy minimum, which is also
+the least orbit value `x`. With `K=3x`, multiply each value whose
+walk is below `L` by three and leave the higher values alone. The
+ratio inequalities place every normalized value `v` in `[K,3K)`.
+Consecutive high phases are impossible under the strip hypothesis.
+Checking the parity in the remaining transitions gives the exact map
+
+    q = floor((v+1)/2)
+    v' = 3q if q<K, and q otherwise.
+
+The original value is `v/3` if `3∣v` and `v` otherwise, since
+positive periodic orbit values are prime to three.
+`RoundedPhaseCycle.roundedOrbit_of_least_cycle` proves that the
+rounded orbit from `K` has the original least period and decodes
+point by point. The rounded map itself has other cycles, for example
+`9→15→24→12→18→9`. That example decodes `4→6` at one step, whereas
+the accelerated map sends `4` to `2`. Excluding compatible rounded
+cycles still requires the decoding constraints.
+
+On a positive nonrepeating trajectory, an increasing length-`p`
+window with `A=3^b<2^p` forces a later length-`p` window with exactly
+`b+2` odd steps and an actual increase by more than a factor of nine.
+The first such count is attained without prior violation of the
+one-sided bound, so normalized order applies at that prefix. The
+checked deadline is `p·(floor(2^263 A/(2^p−A))+1)`.
+`CoefficientEscape.contracting_increase_forces_polynomial_count_rise`
+bounds the count-rise deadline by `p(2^264 p^14+1)` given
+`PowerSeparation`. These conditions leave open nonrepeating
+trajectories with the required count rise.
+
+### Odd prime common divisors (paper argument)
+
+For odd prime `g`, the partially lifted residues give nonzero
+coefficients in the cyclotomic field of `R`. A partial lift
+coefficient also survives at some factor of `Φ_g` modulo two,
+since it is a nonzero proper subset sum of powers of `R` and
+`Φ_g` is squarefree modulo two. At a surviving place above two,
+the short binomial makes `z` or its inverse have positive
+valuation. The corresponding trimmed constant coefficient is a
+unit there, ruling out a common root. Bounding the integer norm of
+the resultant could then compare against the large factor `D'`.
+For `g=3` this reduction is now kernel-checked.
+`TriplePhaseCyclotomic.lean` defines the Eisenstein multiplication
+`x + yω` and proves that its field norm `x² − xy + y²` is
+multiplicative. The large factor
+
+    D = 2^(2p) + 2^p · 3^b + 3^(2b)
+
+is that norm at `(2^p, −3^b)`. Whenever `3^(3b) < 2^(3p)` and `b > 0`,
+which is the inequality `accCycle_bounds` supplies for a cycle of
+period `3p` and odd count `3b`, Lean proves `D ≥ 2^(2p)`,
+`D` is prime to six, and
+
+    (2^p − 3^b) · D = 2^(3p) − 3^(3b).
+
+The ratio `R ≡ 2^p · (3^b)⁻¹ (mod D)` satisfies `1 + R + R² ≡ 0`,
+so `R³ ≡ 1`, and `R ≢ 1` because `D` does not divide three.
+Every nonempty proper subset sum of `{1, R, R²}` is a unit modulo
+`D`: each one is congruent to `±1`, `±R`, or `±R²`. Powers of `R`
+reduce to integer coordinates on the basis `(1, R)` by the rule
+`(A, B) ↦ (−B, A − B)`. Those coordinates are always coprime as a
+pair and repeat every three exponents. This is the endpoint-unit
+statement the width argument needs.
+
+Expanding a Sylvester matrix on these coordinates and comparing the
+resulting box with `D` is still open. A prime divisor of `D` has
+residue one modulo three by the order of `R`, but that congruence
+is not formalized here. No width exclusion for `g = 3`, and no
+Collatz convergence, follows from the identities alone.
+
+Solomon's related work uses polynomial coordinates indexed by odd
+steps and excludes one-swap mechanical words. The certificate above
+uses the phases of every shortcut step. [Polynomial Boundary Coordinates for Collatz Cycles](https://aaronksolomon.github.io/collatz-boundary/paper/collatz-boundary-paper.pdf)
+
+## Realized cycle splits and narrow-cycle exclusion, 2026-11-10 (PROVED)
+
+For a least shortcut period `L` with `a` odd steps, write `A = 3^a`,
+`B = 2^L`, and `D = B−A`. Summing odd counts over the `L` cyclic windows
+of length `k` gives `k·a`. Adjacent windows change the count by at most
+one. Consequently every integer within strictly less than one of the
+mean `k·a/L` is attained. If `B < 3A` and the arithmetic counts `(k,b)`
+and `(L−k,a−b)` both contract, the two power comparisons place `b`
+within that distance of the mean. The split must occur on the cycle.
+
+For the endpoints `x,y` of a realized contracting split, the two affine
+identities imply `A y ≤ B x` and `A x ≤ B y`. If the endpoints share their
+next `t` parity bits, then their difference is a nonzero multiple of
+`2^t`. In particular,
+
+    2^t A ≤ D · min(x,y).
+
+At the same offset there must also be a different rotation with an odd
+count other than `b`. A constant window count would make the parity
+sequence periodic at offset `k`, and the full parity sequence determines
+the start. The changed count forces a height ratio at least `3A/B` in
+one direction. A smaller odd count with normalized gap no larger than
+the full gap automatically gives such a split. Thus a near-resonant
+cycle that stays below `A/D`, or has width ratio below `3A/B`, must have
+a record-small normalized gap for its odd count.
+
+The height test also applies to record pairs using expanding arcs. An
+arithmetic coefficient `P = 3^b/2^k` with `1 < P ≤ 3A/B` lies within one
+odd step of the cyclic mean and therefore occurs. Its return coefficient
+is `Q = 3^(a−b)/2^(L−k)`. The rise is at least one integer unit, forcing
+the lower endpoint to be at least `Q/(1−Q)`. With `t` matching parity bits
+the right-hand side is multiplied by `2^t`. These are orbit constraints,
+but they permit high and wide cycles. `CycleArcSplit.lean` contains the
+checked statements.
+
+`NarrowCycle.lean` rules out the entire balanced class in the kernel.
+If all heights are between `m` and `M` and `R = M/m` satisfies
+`R² < 9A/B`, equal-length windows cannot differ by two odd steps. Their
+two relative endpoint ratios would differ by a factor at least `9A/B`,
+while both ratios lie between `1/R` and `R`.
+
+On a balanced least period the integer discrepancy walk
+`W_i = L·oddCount(n,i) − a·i` has width less than `L`. Its `L` values
+are distinct. Otherwise a proper offset would have an integral mean
+window count, and balance plus the sum identity would make the count
+constant, contradicting least period. The walk thus fills `L` consecutive
+integers. Start two rotations at its minimum and maximum. The difference
+of their synchronized walk values is `1−L` at the start and at the full
+return, and `1` at every intermediate time. Therefore their parity
+words agree except for a swap across the period boundary. Rotating by
+one position makes them `01·u` and `10·u`. Their affine accumulators
+differ by a power of three, so `D` divides that power. Since `D` is
+coprime to three, `D = 1`, which forces the trivial cycle. This gives
+`R² ≥ 9A/B` for every hypothetical nontrivial least cycle, without an
+external arithmetic hypothesis. The balanced-cycle exclusion is known
+through the high-cycle literature. The argument here uses the two walk
+extrema directly. [Knight, *Collatz high cycles do not exist*](https://doi.org/10.1016/j.disc.2025.114812)
+
+## Shared bounds for cycles and sharper high-orbit correction, 2026-11-10 (PROVED)
+
+Distinct periodic points, even on different cycles, cannot merge at a
+common time. If they did, advancing both to a sufficiently large common
+multiple of their periods would recover the two starting points from the
+same endpoint. Thus the interval collision bound applies to any finite
+selection of distinct periodic points, as well as to a nonrepeating orbit.
+
+Write `q = 6561/8192`. To sharpen the reciprocal estimate, divide the
+shell `[8192^s,8192^(s+1))` into thirteen bands. The band beginning at
+`2^j·8192^s` contains `2^j` aligned blocks of length `8192^s`. Quotient
+labels separate the blocks. In each block there are at most `4·6561^s`
+distinct synchronized images. Dividing the resulting capacity by the
+band's lower endpoint gives `4q^s`, independent of `j`. Summing over the
+thirteen bands and using `52+262q ≤ 262` gives the stronger bound
+
+    Σ_i 1/x_i ≤ 262 q^s
+
+for any such finite selection above `8192^s`. This supersedes the
+earlier constant `264000`.
+
+For a positive prefix, put `S_k = Σ_{i<k} 1/x_i` and
+`D_k = (S_k + 1/x_0 − 1/x_k)/4`. At a single step the change in `D_k`
+is `d = (2/x_i − 1/x_{i+1})/4`. It vanishes on an even step. On an odd
+step it satisfies `d(3x_i+1) = 1 + 1/(2x_i)`, so the compensated
+coefficient comparison is
+
+    (1 − D_k) · 2^k · x_k ≤ 3^a_k · x_0.
+
+For a nonrepeating prefix above `8192^s`, `D_k ≤ (263/4)q^s`.
+At `s = 22` this is strictly below `1/2`, lowering the height for the
+arbitrary-depth half-coefficient descent theorem from `2^715` to `2^286`.
+
+For a least period `L` with `a` odd steps the reciprocal endpoint terms
+cancel. Its normalized gap `δ = 1 − 3^a/2^L` is positive and bounded by
+one quarter of the reciprocal sum of the cycle. The sum of `δ` across
+any finite selection of disjoint cycles wholly above `8192^s` is at most
+`(262/4)q^s`. For cycles above `2^286`, this also forces
+`2^(L−1) < 3^a < 2^L`. Thus `a` determines `L` as the first exponent with
+`2^L > 3^a`. An additional lower bound `ε` on every selected `δ` bounds
+the number of cycles times `ε` by the same budget. The version for
+periods at most `K` takes `ε = 1/(2K^14)` and keeps `PowerSeparation`
+as an explicit hypothesis.
+
+This does not exclude all cycle pairs. Upper continued-fraction
+convergents to `log₂(3)` give pairs `(a,L)` with `0 < L − a log₂(3) < 1/a`.
+A subsequence can have a sum of normalized gaps as small as desired.
+That shows why a bound on the powers alone still needs information about
+their realizing orbits. The checked results are in `CycleCollisionBudget.lean`
+and `OrbitCorrectionBudget.lean`.
+
+## Unrestricted ancestor tests and convergent witnesses, 2026-11-10 (PROVED)
+
+Suppose a positive ancestor reaches `x` with a prefix coefficient above
+one. Along this prefix, choose a time where the inverse coefficient is
+maximal. It is strictly before the endpoint. From this time to `x`,
+all positive-time coefficients exceed one. The selected value is less
+than `x` by the affine formula. If the first `L` prefixes from `x` also
+have coefficients above one, the selected start keeps that property
+all the way to `x` and through those `L` steps. This uses the exact
+coefficient cocycle on the finite path.
+
+A divergent orbit eventually leaves the multiples of three and gives a
+strictly expanding suffix there. Among all positive starts coprime to
+three with every forward coefficient above one, choose the least. It
+has no expanding ancestor coprime to three, at any depth.
+Every path from a positive ancestor has coefficient at most `3/2`.
+Indeed, even steps contribute `1/2`, and the first odd step contributes
+`3/2` and lands at a nonmultiple of three. The suffix from there has
+coefficient at most one. `unit_cover_iff_repetition` proves that ruling
+out these two-sided witnesses is equivalent to repetition of every
+positive orbit. `collatz_of_unit_cover_and_cycle_exclusion` connects
+that criterion and exclusion of other cycles to `CollatzConjecture`.
+
+Even an unlimited backward search cannot make a fixed forward horizon
+sufficient. For any `K` and height `B`, there is a positive start above
+`B`, coprime to three and known to reach one, that expands through `K`
+and obeys both backward bounds at every depth. To find one, first take
+a horizon that exceeds the first coefficient crossings of all starts
+up to `B` that reach one. Arbitrarily long all-odd prefixes are
+available among such convergent starts by the dyadic inverse-class
+construction, and removing their first step enters a nonmultiple of
+three. Minimize among the convergent unit starts that pass the longer
+horizon. Any qualifying expanding ancestor would give a smaller such
+start, since reaching one is inherited along the same orbit. This is
+`convergent_witness_with_unrestricted_ancestors`.
+
+There are also unit witnesses with budgets growing at once. For every
+`b ≥ 1`, some start of binary length `100b+1` has every coefficient
+above one through that length and no expanding ancestor with at most
+`22b+1` odd steps. Put `64b+1` initial odd steps into its dyadic class,
+and prescribe residue one modulo `3^(22b)`. The joint modulus fits in
+`[2^(100b),2^(100b+1))`. The initial odd steps build enough coefficient
+growth to cover the full forward budget. For unrestricted starts there
+is an even simpler family. The `2j`-bit number `2^(2j)-1` expands through
+`3j` steps and is divisible by three, so every path into it has zero odd
+steps. These families do not establish that every forward prefix can
+expand forever. The universal unit cover and cycle exclusion remain open.
+
+## Superlinear coefficient peaks on a nonrepeating trajectory (PROVED)
+
+For any positive nonrepeating orbit, select a tail `x` whose values
+are all at least `8192^22`. The synchronized image bound allows only
+`4·6561^b` distinct visits in the aligned interval `[0,8192^b)`.
+Therefore some time `k≤4·6561^b` on this tail reaches at least
+`8192^b`. The earlier uniform correction bound then gives
+
+    8192^b · 2^k ≤ 2x · 3^oddCount(x,k).
+
+`CoefficientEscape.high_nonrepeating_coefficient_peak` verifies the
+inequality. A linear upper envelope for the homogeneous coefficient
+`3^oddCount(n,k)/2^k` would survive the shift to the tail up to a
+constant factor and contradict these peaks, since `8192>6561`.
+Lean proves that every positive orbit under such an envelope repeats.
+Equivalently a positive nonrepeating orbit beats every linear envelope
+arbitrarily late. The proof gives a peak growth exponent
+`log(8192)/log(6561)≈1.02526` along the specified time scales.
+
+## Disjoint-block parity bound for nonrepeating trajectories (PROVED)
+
+`Density.two_base_weight_sum` verifies the exact parity moment
+
+    Σ_(r<2^k) A^a(r,k) B^(k−a(r,k)) = (A+B)^k.
+
+The two lifts of a residue take opposite final parity steps, so their
+weights sum to `A+B` times the preceding weight. With `A=5`, `B=3`,
+and `k=2000b`, the number of residues below `2^k` whose odd count is
+at least `1260b` is at most `3^(1200b)`. The base comparison is
+`8^2000≤5^1260·3^1940`.
+
+For any positive nonrepeating orbit, the reciprocal sum of its first
+`k` states is at most 262. Put `y=1/(3x)` at a state `x`.
+The one-step correction admits a factor `1−y` on the endpoint.
+Keep a residual `u∈[0,1/3]` and consolidate successive factors
+using
+
+    (1−u)(1−y) ≥ 1−(u+y)
+    (1−u)(1−y) ≥ (2/3)(1−(u+y−1/3)).
+
+Use the second inequality when the residual crosses `1/3`.
+The difference in the second inequality is
+`(1/3−u)(1/3−y)≥0`. If the accumulated reciprocal sum is `q+3u`,
+the retained factor is at least `(2/3)^q(1−u)`. Since `q≤262`,
+this gives the kernel-checked comparison
+
+    2^k T^k(n) ≤ 2^263 · 3^oddCount(n,k) · n.
+
+It applies from the original start of every positive nonrepeating
+orbit, including prefixes below the earlier high-tail threshold.
+It also gives a direct proof that the homogeneous coefficient tends
+to infinity on such an orbit.
+
+Now take `R=740·3^(1200b)+1` disjoint blocks of length `k=2000b`.
+If the initial point is already at least `2^k`, the ceiling is hit at
+time zero. Otherwise, for `b>0`, the margin `2·3^1261≤2^2000`
+implies `2^(263+k)·3^(1261bR)≤2^(kR)` because `bR≥263+k`.
+The global correction comparison and positivity of the endpoint
+give `2^(kR)≤2^(263+k)·3^oddCount(n,kR)`. Thus at least
+`1261bR` odd steps occur in total.
+If `H` blocks meet the threshold `1260b`, the total is at most
+`1260bR+740bH`. Thus `R≤740H` for `b>0`. If every block start were
+below `2^(2000b)`, they would be distinct residues in the same range
+and the weighted count would give `H≤3^(1200b)`. The chosen `R`
+makes this impossible. A block start therefore crosses `2^(2000b)`
+by time `2000bR`. The bound applies to every suffix as well.
+
+Absorb the factor `b` in the horizon using `b≤3^b`. The result
+excludes a polynomial upper envelope of exponent `p/q` whenever
+`3^(1201p)<2^(2000q)`. In particular an orbit bounded by a constant
+times `(t+1)^(21/20)` repeats. The global correction comparison
+transfers the result to polynomial upper envelopes for the
+homogeneous coefficient. The canonical Collatz reduction in
+`CoefficientEscape.collatz_of_power_envelope_and_cycle_exclusion`
+separates the universal polynomial-envelope obligation from the
+exclusion of nontrivial cycles.
+
+Optimizing the two-base moment and choosing a threshold closer to
+`log(2)/log(3)` could approach the reciprocal of the binary entropy
+at that density, about `1.05268`. The disjoint-block proof uses only
+the total odd count and distinctness of block starts. Improving
+substantially on that exponent requires information about the
+compatibility of successive blocks.
+
+## Strict coefficient crossings and limits of bounded searches, 2026-11-10 (PROVED)
+
+Write `P_k(n) = 3^a_k / 2^k` for the coefficient of a shortcut prefix.
+On a positive nonrepeating orbit, `P_k(n)` tends to infinity. Shift to a
+tail above the reciprocal-budget threshold. There the exact coefficient
+bound gives `P_k(n) ≥ T^k(n)/(2n)` for the shifted start, and its orbit
+eventually exceeds every fixed height. Multiplying by the coefficient of
+the initial prefix transports the limit back to the original start.
+
+Beyond any given time and height, minimize the prefix coefficient on the
+remaining tail. The limit ensures the minimum is attained. The cocycle
+law then makes every positive-time coefficient from that minimizing
+state at least one. Equality is impossible because a positive power of
+two cannot equal a power of three. Conversely, each positive repeating
+orbit eventually crosses below one by any prescribed factor, since its
+cycle coefficient is strictly below one. Thus for every fixed positive
+height, universal strict coefficient crossing at or above that height
+is equivalent to repetition of every positive orbit. `CoefficientEscape.lean`
+formalizes this equivalence and reduces Collatz to strict crossings and
+exclusion of other cycles.
+
+`ResidueEndpoint.lean` proves that for `a = a_k(n)`, the quotient of
+`T^k(n)` by `3^a` is `n / 2^k`, and its remainder is `T^k(n % 2^k)`.
+If `T^k(m) ≡ 1 (mod 3^H)` and `a ≤ H`, an expanding prefix would give a
+binary representative landing at one. The affine identity would force
+that representative to be zero, which stays zero. The obstruction also
+holds for `a = H+1` when `H ≥ 3`. Remove the prefix through the first odd
+step. The suffix has `H` odd steps and length `l` with `2^l < 2·3^H`,
+so its representative must be one. The cycle of one then requires
+`l = 2H`, contrary to `4^H ≥ 2·3^H`.
+
+In every interval of length `2^K·3^H` with `H ≥ 1`, the joint class
+`n ≡ −1 (mod 2^K)` and `n ≡ 1 (mod 3^H)` supplies a start with every
+forward coefficient through `K` above one and no expanding ancestor
+using at most `H` odd steps. In particular, the two tests leave a witness
+in `[X,2X)` whenever `2^K·3^H ≤ X`. There is also a kernel-checked witness
+at `223` for the larger budgets `K = 8` and `H = 6`, its binary and
+ternary lengths. The finite backward check is exhaustive because any
+expanding ancestor must start below `223` and use fewer than ten steps.
+`TwoSidedCoefficientBarrier.lean` contains both obstructions. The length
+witness rules out a universal rule using those two budgets. It leaves an
+eventual rule open and does not supply a suffix that expands forever.
+
+## High nonrepeating orbits and half-coefficient crossings, 2026-11-10 (PROVED)
+
+Write `T` for the shortcut map and `a_k` for the number of odd steps
+through time `k`. To force descent from `3^a_k / 2^k ≤ 1/2`, the earlier
+excursion arguments needed a budget on the number of steps. On a
+nonrepeating orbit whose first `k` states are at least `2^715`, the same
+coefficient condition now forces `T^k(n) < n` at **any** depth.
+
+The new input is a uniform count on actual orbit visits. For each `b ≥ 0`,
+more than `8·3^(8b)` states listed in any interval of length `2^(13b)`
+force two entries to agree after `13b` shortcut steps. This applies to
+distinct visit indices of a nonrepeating orbit, since equal-time
+agreement would make that orbit repeat.
+
+For the count, split the interval across at most two aligned dyadic
+blocks. Within each block, a residue with `a ≤ 8b` odd steps can be
+encoded by `3^a + T^(13b)(residue)` in `[3^a,3^(a+1))`. Equal codes
+identify both the odd count and the representative endpoint, which
+determines the translated endpoint. The remaining residues each carry
+weight at least `2^(8b)` in the parity moment `Σ 2^a = 3^(13b)`. Since
+`3^5 < 2^8`, there are at most `3^(8b)` such residues. The two codes
+together fit in `4·3^(8b)` positions per aligned block. This follows the
+equal-time collision method of García and Tal, with an explicit parity
+moment and without their logarithmic factor in the interval estimate.
+[García and Tal, Fundamental Lemma and equation (6)](https://matwbn.icm.edu.pl/ksiazki/aa/aa90/aa9033.pdf)
+
+Summing the interval bound over shells `[8192^j,8192^(j+1))` gives
+
+    Σ_i 1/x_i ≤ 264000 (6561/8192)^s
+
+for any finite selection of distinct visit indices on a nonrepeating
+trajectory, when the selected values are all at least `8192^s`. The
+finite proof charges the first shell at most `52488 (6561/8192)^s` and
+uses `52488 + 264000·6561/8192 ≤ 264000` to absorb the rest.
+The coefficient comparison retains the `+1` terms exactly and gives
+
+    (1 − 88000 (6561/8192)^s) · 2^k · T^k(n) ≤ 3^a_k · n.
+
+At `s = 55`, the factor on the left exceeds `1/2`. No bound on `k`
+is required. Every divergent orbit has arbitrarily high tail minima,
+so each such minimum above the stated floor supplies an actual start
+whose coefficients stay above `1/2` forever.
+
+`collatz_of_high_half_crossings_and_cycle_exclusion` checks the remaining
+obligations against the standard conjecture. One must prove that every
+start at least `2^715` has a half-coefficient crossing and exclude all
+positive shortcut cycles other than `{1,2}`. Neither universal input is
+supplied here. `SynchronizedCollision.lean` and
+`OrbitCorrectionBudget.lean` contain the checked reduction.
+
+## Power separation closes the one-excursion boundary, 2026-11-10
+
+For every run length `v ≥ 2` and every extra-halving count `W ≥ 1`,
+
+    3^v < 2^(v+W)  ⇒  3^v ≤ 2^W (2^v − 1).
+
+Consequently an excursion from an odd start `n > 1` lands below `n`
+exactly when its coefficient `3^v / 2^(v+W)` is less than one. The
+case `v = 1` uses the existing descent theorem for `n ≡ 1 (mod 4)`.
+This closes the coprime boundary beyond length 128 in the earlier notes.
+
+### Published estimate and integer reduction
+
+Let `A = 3^v < B = 2^s` and `d = B − A`. Since `2^v ≤ 3^v`, we have
+`v < s`. For `s ≥ 2`, Rhin's bound with integer coefficients
+`(0, s, −v)` gives `log(B/A) ≥ s^−13.3 ≥ s^−14`. The bound uses height
+`max(s,v) = s`. [Rhin, page 160](https://doi.org/10.1007/978-1-4757-4267-1_11), [statement in Rozier and Terracol, Proposition 6.3](https://arxiv.org/html/2502.00948v4#S6.Thmproposition3)
+
+Since `log(B/A) = log(1+d/A) ≤ d/A`, we get `A ≤ s^14 d` and then
+`B ≤ (s^14+1)d ≤ 2s^14 d`. For `s = 1`, the inequality `A < B` forces
+`v = 0`, and `B = 2s^14 d = 2`. The case `s = 0` is impossible.
+
+For `v ≤ 128` the existing checked boundary table supplies the claimed
+inequality. For `W ≥ v` the existing heavy-excursion theorem applies.
+Otherwise `s = v+W < 2v`. For all `v ≥ 128`,
+`2 (2v)^14 ≤ 2^v`. The base comparison at 128 is exact. The inductive
+step uses `128(v+1) ≤ 129v` and `129^14 ≤ 2·128^14` to bound the growth
+of the polynomial by a factor of two. Therefore `B ≤ 2^v d`, or
+`2^W ≤ d`, which is precisely the cofactor-free threshold above.
+
+### First coefficient crossings at arbitrary depth
+
+At a first coefficient crossing in `k` accelerated steps with `a` odd
+steps, the existing accumulator theorem implies that survival at the
+crossing requires `3(2^k−3^a)n ≤ a·3^a`. Combining it with the same
+separation bound gives `3n < 2 k^14 a ≤ 2 k^15` for `n > 0`.
+In particular, if the coefficient is below one at any time `t` with
+`2 t^15 ≤ 3n`, the first coefficient crossing and the first actual
+descent occur at the same step, by time `t`. A never-dropping start must
+therefore have every coefficient at least one throughout this growing
+window. Bounding when a crossing must occur remains open. Related
+power-gap arguments for these stopping times appear in Section 6 and
+Appendix A of [Rozier and Terracol, Paradoxical behavior in Collatz sequences](https://arxiv.org/abs/2502.00948).
+
+`PowerSeparation.lean`, `ExcursionPowerGap.lean`, and
+`FirstLightPowerGap.lean` take the integer separation inequality as an
+explicit hypothesis. The derivation above discharges that hypothesis
+mathematically using the published estimate. The estimate itself is
+external to this Lean development.
+
+## Two `(3, 1)` steps then a long third drops, 2026-10-25 (PROVED)
+
+Fuel at least `5` is exactly a `(3, 1)` excursion: `32 ∣ 11n + 19` forces
+`n ≡ 7 (mod 32)`.  One such step spends four factors of two, so fuel at
+least `9` lands on another `(3, 1)`.  Length `3` leaves a factor `4`.
+Four copies of the fixed errors `27` and `16` fit in `3^6`, and the
+coefficient `7` sits under `8`.  Therefore two `(3, 1)` steps followed by
+a run meeting
+
+    3^{6+v''} < 2^{7+v''+W''}
+
+land strictly below the original start.  `231 → 391 → 661 → 31` meets it
+(`2187 < 8192`) and drops.  A third run that misses the exponent stays
+open.  This does not prove Collatz.
+
+## A long run after `(3, 1)` fuel 7 drops, 2026-10-25 (PROVED)
+
+A `(3, 1)` start with `v₂(11n+19) = 7` whose next run has length `v' ≥ 5`
+and meets
+
+    3^{3+v'} < 2^{3+v'+W'}
+
+lands strictly below its start.  The same one-extra-halving test used
+after `(2, 1)` applies, because that test only needs the first run to
+have length at least `2` and a single extra halving.  Next runs that miss
+the exponent stay in the fuel-`7` leftover.  `12647 → 21343 → 5065` meets
+it (`6561 < 8192`) and drops.  This does not prove Collatz.
+
+## A long run after `(2, 1)` drops, 2026-10-24 (PROVED)
+
+Every `(2, 1)` start whose next run has length `v' ≥ 7` and meets
+
+    3^{2+v'} < 2^{2+v'+W'}
+
+lands strictly below its start.  This is `drop_of_W_one_then_long` with
+the first run of length `2` and one extra halving.  The runs that miss
+the exponent stay in `OpenRemTwoNext`.  `62235 → 70015 → 4673` meets it
+(`19683 < 131072`) and drops.  This does not prove Collatz.
+
+## Six misses then a long eighth drops, 2026-10-24 (PROVED)
+
+A light excursion of length `v ≥ 4` whose next six runs miss their
+cumulative exponents, and whose eighth run meets the combined ceiling,
+lands strictly below the original start, for every positive cofactor.
+This is the last length of the spare-bit budget.  `close_one_long` allows
+a debt of at most six copies of `A`; the eighth step uses all six, and
+the leading coefficient is exactly `16`.  A seventh miss would ask for
+`17`.  `111 → 283 → 319 → 911 → 577 → 433 → 325 → 61 → 23` is such a
+drop.  `47` misses the eighth exponent as well and stays open.  The
+length-`2` and length-`3` clocks stay open.  The coprime one-step
+boundary past length `128` stays open.  This does not prove Collatz.
+
+## Five misses then a long seventh drops, 2026-10-24 (PROVED)
+
+A light excursion of length `v ≥ 4` whose next five runs miss their
+cumulative exponents, and whose seventh run meets the combined ceiling,
+lands strictly below the original start, for every positive cofactor.
+`close_one_long` takes a polynomial `A u + C` whose debt is at most `k`
+copies of `A`, with `k ≤ 6`, and spends one more copy on the last miss.
+Here `k = 5`, so the leading coefficient is `15`, still under `16`.
+`223 → 425 → 319 → 911 → 577 → 433 → 325 → 61` is such a drop.  `47`
+misses the seventh exponent as well and stays open.  One further step,
+with `k = 6`, is the last length of this budget and is not yet checked.
+This does not prove Collatz.
+
+## Four misses then a long sixth drops, 2026-10-24 (PROVED)
+
+A light excursion of length `v ≥ 4` whose next four runs miss their
+cumulative exponents, and whose sixth run meets
+
+    3^{v+v'+v''+v'''+v₄+v₅} < 2^{v+⋯+v₅+W+⋯+W₅−1},
+
+lands strictly below the original start, for every positive cofactor.
+`compose_step` attaches one excursion to a landing identity, and
+`push_closed` pushes one factor of `3` through the inner polynomial
+`A u + C`.  The new error still fits eight times, and the whole debt
+`8 D ≤ 5 A` stays under the spare-bit ceiling `16`.  `639 → 5467 → 6151 →
+10381 → 3893 → 365 → 137` is such a drop.  `47` misses this sixth exponent
+as well and stays open.  Steps seven and eight are still inside the same
+budget and are not yet kernel-checked.  This does not prove Collatz.
+
+## Three short steps then a long fifth drops, 2026-10-24 (PROVED)
+
+A light excursion of length `v ≥ 4` whose next three runs miss their
+cumulative exponents, and whose fifth run meets
+
+    3^{v+v'+v''+v'''+v₄} < 2^{v+v'+v''+v'''+v₄+W+W'+W''+W'''+W₄−1},
+
+lands strictly below the original start, for every positive cofactor.
+The new instrument is a spare-bit budget: the factor `8` coming from
+`v ≥ 4` absorbs any list of at most seven earlier errors, each of which
+fits in `3` to the total length eight times, together with the terminal
+power.  Four errors are this five-step case.  Seven is the last length
+the factor can absorb; an eighth error would ask the leading coefficient
+to pass `16`.  `303 → 769 → 577 → 433 → 325 → 61` misses the two-, three-,
+and four-step exponents and meets the five-step one (`6561 < 16384`).
+`47 → 121 → 91 → 103 → 175 → 445` misses all four and stays open.  A fifth
+run that also misses the exponent stays open.  The length-`2` and
+length-`3` clocks stay open.  The coprime one-step boundary past length
+`128` stays open.  This does not prove Collatz.
+
+## Two short steps then a long fourth drops, 2026-10-24 (PROVED)
+
+A light excursion of length `v ≥ 4` whose next two runs miss
+
+    3^{v+v'} < 2^{v+v'+W+W'−1},
+    3^{v+v'+v''} < 2^{v+v'+v''+W+W'+W''−1},
+
+and whose fourth run meets
+
+    3^{v+v'+v''+v'''} < 2^{v+v'+v''+v'''+W+W'+W''+W'''−1},
+
+lands strictly below the original start, for every positive cofactor.
+Length at least `4` leaves three spare bits, so eight copies of each of
+the three earlier errors fit in `3^{v+v'+v''+v'''}`. The resulting
+coefficient `12` sits under `16`. Counting the same way, the comparison
+still has room through eight excursions and fails at the ninth, where
+the leading coefficient becomes `17`. Only the four-step case is
+kernel-checked. `623 → 1579 → 1777 → 1333 → 125` misses the two- and
+three-step exponents (`128 ≤ 729`, `512 ≤ 2187`) and meets the four-step
+one (`6561 < 16384`). `47 → 121 → 91 → 103 → 175` misses all three and
+stays open. A fourth run that also misses the exponent stays open. The
+length-`2` and length-`3` clocks stay open. The coprime one-step boundary
+past length `128` stays open. This does not prove Collatz.
+
 ## A short second step then a long third drops, 2026-10-22 (PROVED)
 
 A light excursion of length `v ≥ 4` whose next run misses

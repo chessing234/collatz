@@ -19,9 +19,9 @@ the class `1 mod 4` is excluded, and an odd `m` must be `3 mod 4`.
 Combining with the modulo-three result, the least point of a hypothetical cycle
 lies in exactly **two classes modulo twelve: `7` and `11`**.
 
-The same argument does not go further: for `m ≡ 3 (mod 8)` and `m ≡ 7 (mod 8)`
-the two-step and three-step images both exceed `m`, so modulo `4` is where this
-particular idea stops.
+The same two- and three-step comparison does not continue uniformly modulo
+`8`: `T³(7) = 26`. Thinner progressions do fall below their start. Those
+identities, and the resulting residue sieve, are in `DescentSieve`.
 -/
 
 namespace Collatz

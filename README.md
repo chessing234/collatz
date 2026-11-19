@@ -28,6 +28,36 @@ own verification instructions.
 
 ## Research entry points
 
+- [One orbit, three arithmetic shadows](Research/ThreeArithmeticShadows.md) —
+  exact Syracuse cocycles, a logarithmic endpoint-recovery threshold, and a
+  sound checker for infinite residue-class descent certificates. Coverage,
+  digit independence, and the proposed Fourier inverse theorem remain unproved.
+
+- [Optimal excursion-error charges](Research/OptimalExcursionCharges.md) —
+  least valid integer charges at every scale, refinement laws, exact ternary
+  scales, and a strictly sharper conditional descent budget. This is a new
+  formal development here, not an established mathematical-priority claim.
+
+- [Finite-memory transfer defect](Research/TransferDefect.md) —
+  every potential that depends on `k` bits has the same uniform cocycle defect
+  `log 2`, forced by the residue class `−1`.
+- [Syracuse shadows](RESEARCH.md#syracuse-shadows-and-seed-forgetting-2026-11-19-proved) —
+  the contraction `2^k(n_k+1) ≤ 3^k(n_0+1)`, the cocycle that erases the seed
+  modulo `3^k`, and a checker for residue classes that drop below their start.
+- [Congruence descent ladder](RESEARCH.md#congruence-descent-ladder-2026-11-19-proved) —
+  six exact affine images force a forward-orbit minimum off classes modulo
+  `16`, `32`, and `128`. A nontrivial cycle minimum then lies in `8` classes
+  modulo `96` and `26` classes modulo `384`.
+- [Fifth-power room past ratio six](RESEARCH.md#fifth-power-room-past-ratio-six-2026-11-19-proved) —
+  a least cycle in a band of ratio at most `56/9` has discrepancy width
+  below twice its period. A repeated phase then forces the maximum at
+  least that far above the minimum.
+- [Discrepancy width of cycles with repeated phases](RESEARCH.md#order-of-aligned-cycle-rotations-proved) —
+  a least cycle whose period `L` and odd count `a` share a divisor greater
+  than one has discrepancy width at least `2L + min(a,L−a)`.
+- [One-sided order and coprime cycles](RESEARCH.md#one-sided-order-and-coprime-cycles-proved) —
+  discrepancy orders orbit values below twice the period. Thin coprime
+  cycles admit an exact rounded-map representation that preserves least period.
 - [Anchored barriers and finite cycle extraction](Research/BarrierKernel.md) —
   exact window splitting, the greatest invariant barrier kernel, an executable
   interval checker, exact one- and two-step capacities, and smaller verified
@@ -57,6 +87,10 @@ own verification instructions.
 - [Rational band obstruction](Research/RationalBandObstruction.md) — a
   denominator-aware cycle certificate, exact closure classification, and
   why the integer floor bound does not extend to rational floors.
+- [Power separation and descent](RESEARCH.md#power-separation-closes-the-one-excursion-boundary-2026-11-10) —
+  a published irrationality bound closes the one-excursion boundary at
+  every run length and gives an explicit start-size criterion for descent
+  at arbitrary coefficient-crossing depths.
 - [Weighted excursion crossings](Research/ExcursionCrossing.md) prove descent
   at a first factor-two coefficient crossing when the start pays for the
   excursions. One extra halving costs one unit instead of two, which
@@ -68,18 +102,32 @@ own verification instructions.
   every `v ≤ 128`, every `W ≥ v − ⌊127v/306⌋` is heavy for `v ≥ 2`,
   and the boundary count is heavy whenever it shares a factor with `v`
   or the ceiling grew by two from the previous length. A growth of one
-  is isolated between growths of two. The one-step boundary past length
-  `128` remains only for that isolated growth when the ceiling is coprime
-  to the length.
+  is isolated between growths of two. The power separation argument above
+  also covers the isolated coprime cases past length `128`.
   A light run of length at least 4 drops in two steps when the next run
   meets `3^{v+v'} < 2^{v+v'+W+W'−1}`, for every extra-halving count on the
   first step. When that second run misses the exponent and the third meets
   `3^{v+v'+v''} < 2^{v+v'+v''+W+W'+W''−1}`, the start drops in three steps.
+  When the second and third both miss and the fourth meets
+  `3^{v+v'+v''+v'''} < 2^{v+v'+v''+v'''+W+W'+W''+W'''−1}`, the start drops
+  in four steps. Eight copies of each earlier error fit in that power of
+  three, and the coefficient `12` sits under `16`. The same factor `8`
+  absorbs up to seven earlier errors. When the fourth run also misses and
+  the fifth meets
+  `3^{v+v'+v''+v'''+v₄} < 2^{v+v'+v''+v'''+v₄+W+W'+W''+W'''+W₄−1}`,
+  the start drops in five steps.
   `431 → 1093 → 205` and `79 → 101 → 19` are two-step drops.
-  `463 → 587 → 661 → 31` is a three-step drop. `47 → 121 → 91 → 103` misses
-  both exponents and stays open. Runs of length at least 4 stay in the
-  remaining Lemma X input only when the one-step test fails and neither
-  later step fires. The conjecture remains open.
+  `463 → 587 → 661 → 31` is a three-step drop.
+  `623 → 1579 → 1777 → 1333 → 125` is a four-step drop.
+  `303 → 769 → 577 → 433 → 325 → 61` is a five-step drop.
+  `639 → 5467 → 6151 → 10381 → 3893 → 365 → 137` is a six-step drop.
+  `223 → 425 → 319 → 911 → 577 → 433 → 325 → 61` is a seven-step drop.
+  `111 → 283 → 319 → 911 → 577 → 433 → 325 → 61 → 23` is an eight-step
+  drop, the last length of the spare-bit budget.
+  `47` misses the eighth exponent as well and stays open.
+  Runs of length at least 4 stay in the remaining Lemma X input only when
+  the one-step test fails and none of these later steps fires.
+  The conjecture remains open.
 
 - [First passage through 2,592 steps](Research/PassageAtlas/README.md) —
   a stronger conditional descent theorem, an exact residual condition
