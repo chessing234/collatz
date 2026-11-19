@@ -715,6 +715,32 @@ the coefficients that would expand in the forward direction.
 [Lean](../Collatz/Strategy/ExcursionBoundaryCone.lean)
 [Rational and lattice audit](../scripts/audit_excursion_boundary_cone.py)
 
+## Source constraints uniform over the corridor phase
+
+The balanced construction can be tested at every initial phase.
+For a thirty-excursion word using `(v,W)=(1,1)` or `(2,1)`, ask
+whether some positive phase keeps every scaled inverse prefix
+coefficient in `(2/3,1]`. Comparing every lower phase bound with
+every upper phase bound gives a finite pruning test. Lean proves
+that every such corridor word occurs in the resulting list, which
+contains 31 words at depth 30.
+
+Every genuine realization needs a source of at least
+`204661442731210757479531`. A kernel-reconstructed trace from that
+source to `182301555038774009708197` attains the bound. The source
+bound is therefore sharp across all initial phases.
+[Lean](../Collatz/Strategy/ExcursionPhaseWords.lean)
+
+All eight exponent pairs also have source and landing below
+`2^75`. A heavy prefix bounds its landing using its initial source
+and number of excursions. Combining these facts excludes any
+thirty-run corridor of the two high-offset types, at every position
+inside a hypothetical failed first crossing in the 325-billion
+odd-step range. The full trace may contain other excursion types
+or leave the corridor.
+[Lean composition](../Collatz/Strategy/ExcursionCorridorBoundary.lean)
+[Independent interval and orbit audit](../scripts/audit_excursion_phase_words.py)
+
 The [integer scan](../scripts/audit_excursion_anchor.py) checks
 the boundary argument against individual shortcut steps on
 9,999 odd starts. With `--coarse-limit 10000000`, it checks
