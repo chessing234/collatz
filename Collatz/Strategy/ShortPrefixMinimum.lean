@@ -16,16 +16,6 @@ open Collatz.SynchronousClasses Collatz.BoundedEvenDefect
 
 def shortPrefixLength (d : Nat) : Nat := 4 * d - 3
 
-private theorem full_odd_suffix {s J v x : Nat} (hs : s ≤ J) (hJ : J ≤ v)
-    (h : oddCount (acceleratedOrbit s x) (v - s) = v - s) :
-    oddCount (acceleratedOrbit J x) (v - J) = v - J := by
-  have hlen : J - s + (v - J) = v - s := by omega
-  have hsplit := AccumulatorArith.oddCount_add (acceleratedOrbit s x) (J - s) (v - J)
-  rw [hlen, h, acceleratedOrbit_add, Nat.sub_add_cancel hs] at hsplit
-  have hfirst := AffineExact.oddCount_le_self (acceleratedOrbit s x) (J - s)
-  have hlast := AffineExact.oddCount_le_self (acceleratedOrbit J x) (v - J)
-  omega
-
 /-- An exact scaled peak determines the image at the much shorter
 prefix where its final all-odd run begins. -/
 theorem short_fiber_of_scaled_peak {v d x u : Nat} (hd : 0 < d) (hdv : d < v)

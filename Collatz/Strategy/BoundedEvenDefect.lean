@@ -44,6 +44,18 @@ theorem runA_zero_of_full_oddCount {x j : Nat} (h : oddCount x j = j) : runA j x
   · have hcap := AffineExact.oddCount_le_self x i
     omega
 
+/-- Moving the start of a full odd suffix forward preserves its
+full odd count. -/
+theorem full_odd_suffix {s J v x : Nat} (hs : s ≤ J) (hJ : J ≤ v)
+    (h : oddCount (acceleratedOrbit s x) (v - s) = v - s) :
+    oddCount (acceleratedOrbit J x) (v - J) = v - J := by
+  have hlen : J - s + (v - J) = v - s := by omega
+  have hsplit := AccumulatorArith.oddCount_add (acceleratedOrbit s x) (J - s) (v - J)
+  rw [hlen, h, acceleratedOrbit_add, Nat.sub_add_cancel hs] at hsplit
+  have hfirst := AffineExact.oddCount_le_self (acceleratedOrbit s x) (J - s)
+  have hlast := AffineExact.oddCount_le_self (acceleratedOrbit J x) (v - J)
+  omega
+
 private theorem three_pow_dvd {a b : Nat} (h : a ≤ b) : (3 : Int) ^ a ∣ 3 ^ b := by
   simpa only [Int.natCast_pow, show ((3 : Nat) : Int) = 3 by rfl] using
     (Int.ofNat_dvd.mpr (Nat.pow_dvd_pow 3 h))
@@ -279,18 +291,19 @@ private theorem minus_one_precision (d : Nat) :
     _ < 24 ^ d * 3 := Nat.mul_lt_mul_of_pos_left (by decide) (Nat.pow_pos (by decide))
     _ ≤ _ := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left (by decide) _)
 
-/-- If the shifted defect is divisible by the full required ternary
-power, all even steps occur in a short initial segment. -/
-theorem trailing_odds_of_divisible_defect {d j x : Nat} (hd : 0 < d)
-    (hbudget : j - d ≤ oddCount x j) (hdiv : 3 ^ (j - d) ∣ runA j x) :
-    ∃ s, s ≤ j ∧ s ≤ 4 * d - 3 ∧ oddCount (acceleratedOrbit s x) (j - s) = j - s := by
+/-- Ternary divisibility forces the last even step toward the start.
+Each additional unit of precision shortens the allowed prefix by one. -/
+theorem trailing_odds_at_precision {d j p x : Nat} (hd : 0 < d) (hp : p ≤ j)
+    (hbudget : j - d ≤ oddCount x j) (hdiv : 3 ^ p ∣ runA j x) :
+    ∃ s, s ≤ j ∧ s ≤ j - p + 3 * d - 3 ∧
+      oddCount (acceleratedOrbit s x) (j - s) = j - s := by
   rcases last_even_with_parity x j with ⟨hodd, _⟩ | ⟨i, t, hlen, hcount, hA, he⟩
   · exact ⟨0, Nat.zero_le _, Nat.zero_le _, by simpa using hodd⟩
-  · have hshort : i + 1 ≤ 4 * d - 3 := by
+  · have hshort : i + 1 ≤ j - p + 3 * d - 3 := by
       apply Nat.le_of_not_gt
       intro hbad
       let P := 3 * (d - 1) + 1
-      have hP : t + P ≤ j - d := by dsimp only [P]; omega
+      have hP : t + P ≤ p := by dsimp only [P]; omega
       have htarget := Nat.dvd_trans (Nat.pow_dvd_pow 3 hP) hdiv
       rw [hA, Nat.pow_add] at htarget
       have hn : 3 ^ P ∣ runA i x + 2 ^ i :=
@@ -314,5 +327,13 @@ theorem trailing_odds_of_divisible_defect {d j x : Nat} (hd : 0 < d)
     rw [← hlen, hpre, hcount] at htail
     rw [show j - (i + 1) = t by omega]
     exact (Nat.add_left_cancel htail).symm
+
+/-- If the shifted defect is divisible by the full required ternary
+power, all even steps occur in a short initial segment. -/
+theorem trailing_odds_of_divisible_defect {d j x : Nat} (hd : 0 < d)
+    (hbudget : j - d ≤ oddCount x j) (hdiv : 3 ^ (j - d) ∣ runA j x) :
+    ∃ s, s ≤ j ∧ s ≤ 4 * d - 3 ∧ oddCount (acceleratedOrbit s x) (j - s) = j - s := by
+  obtain ⟨s, hs, hbound, hodd⟩ := trailing_odds_at_precision hd (Nat.sub_le _ _) hbudget hdiv
+  exact ⟨s, hs, by omega, hodd⟩
 
 end Collatz.BoundedEvenDefect
