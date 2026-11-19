@@ -31,7 +31,7 @@ import Collatz.Strategy.BoundaryWidthCycle
 import Collatz.Strategy.OneExtraCycle
 import Collatz.Strategy.PhasePolynomial
 import Collatz.Strategy.TriplePhaseCyclotomic
-import Collatz.Strategy.TriplePhaseCyclotomic
+import Collatz.Strategy.ThresholdCover
 import Collatz.Strategy.PhaseOrderCycle
 import Collatz.Strategy.CycleNumericalWidth
 import Collatz.Strategy.RoundedPhaseCycle

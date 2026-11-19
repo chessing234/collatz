@@ -5,6 +5,34 @@ Persistent checkpoint. Update at every synthesis round. Status codes:
 **CONJ** = conjectural. **REFUTED** = killed, with counterexample. **CLOSED** = provably
 unreachable by the stated method.
 
+## Threshold covering and the Sturmian envelope, 2026-11-19 (PROVED)
+
+For the accelerated map `T(n) = n/2` or `(3n+1)/2`, the identity
+`2^j T^j(n) = 3^a n + c(n,j)` has a nonnegative offset. When `3^a < 2^j`,
+`T^j(n) < n` if and only if `n` is strictly above `c(n,j)/(2^j − 3^a)`.
+When `3^a ≥ 2^j` the iterate does not fall below the start. Therefore every
+`n > 1` has a finite stopping time exactly when these threshold classes cover
+`{n | n > 1}`. That statement is the existing finite-stopping-time pillar, so
+it is equivalent to Collatz. The offset is constant on each residue class
+modulo `2^j`.
+
+A pattern is still uncontracted at depth `j` when its odd count is at least
+`lowOdd j`, the least `m` with `2^j ≤ 3^m`. This count increases by `0` or
+`1`, so it is the mechanical word of slope `log 2 / log 3`. One residue
+realizes it. Because `3^{2t} ≥ 2^{3t}`, an all-odd prefix of length `3t`
+leaves `t` steps of slack: any continuation no longer than that slack stays
+above `lowOdd`. The factorial language of uncontracted words is therefore the
+full shift, while the words that themselves stay uncontracted are constrained
+by the mechanical word. These are different objects.
+
+The exponential rate of the uncontracted count is the binary entropy of
+`log 3 / log 2`, about `0.966` per step, matching the earlier growth
+`1.9318^K / 2^K`. The displayed minimum `min_s ½·2^{−s}(3^s+1)` is at least
+`1` and is not that rate. Hausdorff dimension and a rigidity theorem for the
+2-adic set of never-contracting patterns are not formalized. Dimension
+counting does not exclude a positive integer. `ThresholdCover.lean` holds the
+proved statements.
+
 ## Finite-memory transfer defect, 2026-11-19 (PROVED)
 
 A level-`k` potential on odd inputs depends only on `n mod 2^k`. For the
@@ -499,7 +527,7 @@ bounds the count-rise deadline by `p(2^264 p^14+1)` given
 `PowerSeparation`. These conditions leave open nonrepeating
 trajectories with the required count rise.
 
-### Odd prime common divisors (paper argument)
+### Odd prime common divisors (g = 3 proved, width comparison open)
 
 For odd prime `g`, the partially lifted residues give nonzero
 coefficients in the cyclotomic field of `R`. A partial lift
@@ -534,10 +562,11 @@ pair and repeat every three exponents. This is the endpoint-unit
 statement the width argument needs.
 
 Expanding a Sylvester matrix on these coordinates and comparing the
-resulting box with `D` is still open. A prime divisor of `D` has
-residue one modulo three by the order of `R`, but that congruence
-is not formalized here. No width exclusion for `g = 3`, and no
-Collatz convergence, follows from the identities alone.
+resulting box with `D` is still open. The order of `R` is the natural
+route to the further claim that every prime divisor of `D` is congruent
+to one modulo three; that deduction is not formalized here. No width
+exclusion for `g = 3`, and no Collatz convergence, follows from the
+identities alone.
 
 Solomon's related work uses polynomial coordinates indexed by odd
 steps and excludes one-swap mechanical words. The certificate above
